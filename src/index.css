@@ -2,95 +2,146 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Contra-inspired Design System
+   Premium, minimalist, tech-forward aesthetic
+   Bright, airy layout with pastel accents
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core neutrals - warm off-white and charcoal */
+    --background: 40 20% 98%;
+    --foreground: 240 10% 10%;
 
+    /* Cards - pure white for elevated surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 240 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 240 10% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - deep charcoal for main actions */
+    --primary: 240 10% 10%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - soft neutral gray */
+    --secondary: 40 10% 94%;
+    --secondary-foreground: 240 10% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted - subtle backgrounds */
+    --muted: 40 10% 96%;
+    --muted-foreground: 240 5% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - warm peach for highlights */
+    --accent: 24 100% 94%;
+    --accent-foreground: 24 80% 30%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Pastel palette for feature cards and decorative elements */
+    --pastel-peach: 24 100% 92%;
+    --pastel-lavender: 270 67% 94%;
+    --pastel-mint: 150 60% 92%;
+    --pastel-yellow: 48 100% 92%;
+    --pastel-blue: 210 100% 94%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Pastel foregrounds for text on pastel backgrounds */
+    --pastel-peach-foreground: 24 70% 35%;
+    --pastel-lavender-foreground: 270 50% 35%;
+    --pastel-mint-foreground: 150 50% 30%;
+    --pastel-yellow-foreground: 48 70% 30%;
+    --pastel-blue-foreground: 210 70% 30%;
 
-    --radius: 0.5rem;
+    /* Utility colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
+    --border: 40 10% 90%;
+    --input: 40 10% 90%;
+    --ring: 240 10% 10%;
+
+    --radius: 1rem;
+
+    /* Sidebar */
     --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-foreground: 240 5% 26%;
+    --sidebar-primary: 240 6% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
+    --sidebar-accent: 240 5% 96%;
+    --sidebar-accent-foreground: 240 6% 10%;
     --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217 91% 60%;
 
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(240 10% 10% / 0.03);
+    --shadow-md: 0 4px 6px -1px hsl(240 10% 10% / 0.05), 0 2px 4px -2px hsl(240 10% 10% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(240 10% 10% / 0.05), 0 4px 6px -4px hsl(240 10% 10% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(240 10% 10% / 0.06), 0 8px 10px -6px hsl(240 10% 10% / 0.06);
+    --shadow-card: 0 0 0 1px hsl(240 10% 10% / 0.03), 0 2px 4px hsl(240 10% 10% / 0.03), 0 12px 24px hsl(240 10% 10% / 0.05);
+    --shadow-card-hover: 0 0 0 1px hsl(240 10% 10% / 0.04), 0 4px 8px hsl(240 10% 10% / 0.04), 0 24px 48px hsl(240 10% 10% / 0.08);
+
+    /* Gradients */
+    --gradient-cta: linear-gradient(135deg, hsl(24 100% 94%) 0%, hsl(270 67% 96%) 50%, hsl(210 100% 96%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(40 20% 98%) 0%, hsl(40 20% 96%) 100%);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 240 10% 6%;
+    --foreground: 40 20% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 10% 9%;
+    --card-foreground: 40 20% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 10% 9%;
+    --popover-foreground: 40 20% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 40 20% 98%;
+    --primary-foreground: 240 10% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 8% 14%;
+    --secondary-foreground: 40 20% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 8% 14%;
+    --muted-foreground: 40 10% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 24 60% 20%;
+    --accent-foreground: 24 100% 92%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --pastel-peach: 24 40% 18%;
+    --pastel-lavender: 270 30% 18%;
+    --pastel-mint: 150 30% 16%;
+    --pastel-yellow: 48 40% 16%;
+    --pastel-blue: 210 40% 18%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --pastel-peach-foreground: 24 100% 85%;
+    --pastel-lavender-foreground: 270 80% 85%;
+    --pastel-mint-foreground: 150 70% 80%;
+    --pastel-yellow-foreground: 48 100% 80%;
+    --pastel-blue-foreground: 210 100% 85%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 8% 18%;
+    --input: 240 8% 18%;
+    --ring: 40 20% 80%;
+
+    --sidebar-background: 240 6% 10%;
+    --sidebar-foreground: 240 5% 96%;
+    --sidebar-primary: 224 76% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 240 5% 96%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 217 91% 60%;
+
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -4px hsl(0 0% 0% / 0.2);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.4), 0 8px 10px -6px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 0 0 1px hsl(0 0% 100% / 0.05), 0 2px 4px hsl(0 0% 0% / 0.2), 0 12px 24px hsl(0 0% 0% / 0.3);
+    --shadow-card-hover: 0 0 0 1px hsl(0 0% 100% / 0.08), 0 4px 8px hsl(0 0% 0% / 0.3), 0 24px 48px hsl(0 0% 0% / 0.4);
+
+    --gradient-cta: linear-gradient(135deg, hsl(24 40% 15%) 0%, hsl(270 30% 15%) 50%, hsl(210 40% 15%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(240 10% 6%) 0%, hsl(240 10% 8%) 100%);
   }
 }
 
@@ -100,6 +151,45 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  /* Text balance for headings */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--foreground)) 0%, hsl(var(--muted-foreground)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Card shadows */
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-card-hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* Gradient backgrounds */
+  .bg-gradient-cta {
+    background: var(--gradient-cta);
+  }
+
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
   }
 }
