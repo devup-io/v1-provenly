@@ -1,27 +1,34 @@
 import { motion } from "framer-motion";
-import { UserPlus, Sparkles, Wallet, Check } from "lucide-react";
+import { Github, Folder, FileText, Globe, Check, Star, GitBranch } from "lucide-react";
 
-const steps = [
+const developerSteps = [
   {
     number: "01",
-    icon: UserPlus,
-    title: "Create your profile",
+    icon: Github,
+    title: "Sign up with GitHub",
     description:
-      "Set up your portfolio in minutes. Showcase your skills, experience, and best work samples.",
+      "One-click OAuth. We fetch your profile and public repositories automatically. No passwords, no email verification.",
   },
   {
     number: "02",
-    icon: Sparkles,
-    title: "Match with opportunities",
+    icon: Folder,
+    title: "Select your best projects",
     description:
-      "Get discovered by companies looking for your exact skills, or browse open projects.",
+      "Choose 2-5 projects you're proud of. We show repo stats, languages, and commit history automatically.",
   },
   {
     number: "03",
-    icon: Wallet,
-    title: "Collaborate and get paid",
+    icon: FileText,
+    title: "Add project breakdowns",
     description:
-      "Work on your terms with milestone-based payments. Keep every dollar you earn.",
+      "For each project: explain the problem, your contribution, and rate the technical complexity (L1-L3).",
+  },
+  {
+    number: "04",
+    icon: Globe,
+    title: "Publish your profile",
+    description:
+      "Get a public URL at provenly.live/dev/username. Founders can discover you instantly.",
   },
 ];
 
@@ -43,16 +50,16 @@ export function HowItWorks() {
               className="mb-12"
             >
               <h2 className="mb-4 text-display-sm md:text-display">
-                How it works
+                For developers
               </h2>
               <p className="text-body-lg text-muted-foreground">
-                Getting started is simple. Join thousands of independents
-                building successful careers on their own terms.
+                Create your verified profile in minutes. No resume needed, 
+                just your GitHub and real project experience.
               </p>
             </motion.div>
 
             <div className="space-y-8">
-              {steps.map((step, index) => (
+              {developerSteps.map((step, index) => (
                 <motion.div
                   key={step.number}
                   initial={{ opacity: 0, x: -20 }}
@@ -82,7 +89,7 @@ export function HowItWorks() {
             </div>
           </div>
 
-          {/* Right: UI Mockup */}
+          {/* Right: Profile Preview Mockup */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -96,57 +103,72 @@ export function HowItWorks() {
                 <div className="h-3 w-3 rounded-full bg-pastel-peach" />
                 <div className="h-3 w-3 rounded-full bg-pastel-yellow" />
                 <div className="h-3 w-3 rounded-full bg-pastel-mint" />
+                <div className="ml-4 flex-1 rounded-full bg-muted/50 px-4 py-1.5">
+                  <span className="text-caption text-muted-foreground">provenly.live/dev/alexrivera</span>
+                </div>
               </div>
 
-              {/* Mock profile preview */}
+              {/* Mock developer profile */}
               <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-start gap-4">
-                  <div className="h-16 w-16 rounded-2xl bg-pastel-lavender" />
-                  <div className="flex-1">
-                    <div className="mb-2 h-5 w-32 rounded bg-secondary" />
-                    <div className="h-4 w-24 rounded bg-muted" />
+                  <div className="h-16 w-16 overflow-hidden rounded-2xl bg-pastel-lavender">
+                    <img 
+                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+                      alt="Developer"
+                      className="h-full w-full object-cover"
+                    />
                   </div>
-                  <div className="rounded-lg bg-pastel-mint px-3 py-1.5">
-                    <span className="text-body-sm font-medium text-pastel-mint-foreground">
-                      Available
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-heading-sm">Alex Rivera</span>
+                      <Github className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <p className="text-body-sm text-muted-foreground">Full-Stack Engineer</p>
+                  </div>
+                  <div className="rounded-lg bg-pastel-peach px-3 py-1.5">
+                    <span className="text-body-sm font-bold text-pastel-peach-foreground">
+                      L3
                     </span>
                   </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4">
-                  {["$95k+ earned", "47 projects", "5.0 rating"].map((stat) => (
-                    <div
-                      key={stat}
-                      className="rounded-xl bg-muted/50 p-4 text-center"
+                {/* Tech stack */}
+                <div className="flex flex-wrap gap-2">
+                  {["React", "TypeScript", "Node.js", "PostgreSQL", "AWS"].map((tech) => (
+                    <span
+                      key={tech}
+                      className="rounded-full bg-secondary px-3 py-1.5 text-body-sm"
                     >
-                      <span className="text-body-sm font-medium">{stat}</span>
-                    </div>
+                      {tech}
+                    </span>
                   ))}
                 </div>
 
-                {/* Skills */}
-                <div>
-                  <div className="mb-3 h-4 w-16 rounded bg-muted" />
-                  <div className="flex flex-wrap gap-2">
-                    {["React", "TypeScript", "Node.js", "Figma"].map((skill) => (
-                      <span
-                        key={skill}
-                        className="rounded-full bg-secondary px-3 py-1.5 text-body-sm"
-                      >
-                        {skill}
+                {/* Project card */}
+                <div className="rounded-xl border border-border bg-muted/30 p-4">
+                  <div className="mb-3 flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold">real-time-collaboration-engine</p>
+                      <p className="text-caption text-muted-foreground">Complex distributed system</p>
+                    </div>
+                    <div className="flex items-center gap-3 text-caption text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Star className="h-3 w-3" /> 234
                       </span>
-                    ))}
+                      <span className="flex items-center gap-1">
+                        <GitBranch className="h-3 w-3" /> 89
+                      </span>
+                    </div>
                   </div>
-                </div>
-
-                {/* Projects */}
-                <div>
-                  <div className="mb-3 h-4 w-20 rounded bg-muted" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="aspect-[4/3] rounded-xl bg-pastel-peach/50" />
-                    <div className="aspect-[4/3] rounded-xl bg-pastel-blue/50" />
+                  <p className="mb-3 text-body-sm text-muted-foreground">
+                    Built a real-time collaboration engine supporting 10k concurrent users with conflict resolution...
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-pastel-peach px-2 py-0.5 text-caption font-medium text-pastel-peach-foreground">
+                      L3 - Complex
+                    </span>
+                    <span className="text-caption text-muted-foreground">TypeScript • WebSocket • Redis</span>
                   </div>
                 </div>
               </div>
@@ -163,7 +185,7 @@ export function HowItWorks() {
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pastel-mint">
                 <Check className="h-4 w-4 text-pastel-mint-foreground" />
               </div>
-              <span className="text-body-sm font-medium">Profile complete!</span>
+              <span className="text-body-sm font-medium">GitHub Verified</span>
             </motion.div>
           </motion.div>
         </div>

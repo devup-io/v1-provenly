@@ -1,33 +1,33 @@
 import { motion } from "framer-motion";
-import { DollarSign, Shield, UserCheck, Palette } from "lucide-react";
+import { Github, Shield, Layers, Eye } from "lucide-react";
 
 const features = [
   {
-    icon: DollarSign,
-    title: "Zero Commission",
+    icon: Github,
+    title: "GitHub-Only Verification",
     description:
-      "Keep 100% of what you earn. No hidden fees, no percentage cuts. Your work, your money.",
-    color: "peach" as const,
-  },
-  {
-    icon: Shield,
-    title: "Built-in Payments",
-    description:
-      "Fast, secure payouts with milestone tracking. Get paid on time, every time.",
+      "No fake profiles, no empty resumes. Every developer is verified through their actual GitHub contributions.",
     color: "mint" as const,
   },
   {
-    icon: UserCheck,
-    title: "Verified Talent",
+    icon: Layers,
+    title: "Complexity Levels",
     description:
-      "Access a curated network of independent professionals with proven track records.",
+      "Projects are rated L1 to L3 based on technical complexity, from simple CRUD apps to complex distributed systems.",
+    color: "peach" as const,
+  },
+  {
+    icon: Eye,
+    title: "Real Work, Not Buzzwords",
+    description:
+      "See actual code, commit history, and detailed project breakdowns. Thinking matters more than keywords.",
     color: "lavender" as const,
   },
   {
-    icon: Palette,
-    title: "Modern Profiles",
+    icon: Shield,
+    title: "No Login Required for Founders",
     description:
-      "Beautiful portfolio-style profiles that showcase your best work and attract clients.",
+      "Browse developer profiles, filter by skills and complexity, and reach out directly. Zero friction.",
     color: "yellow" as const,
   },
 ];
@@ -52,12 +52,11 @@ export function Features() {
           className="mx-auto mb-16 max-w-2xl text-center"
         >
           <h2 className="mb-4 text-display-sm md:text-display">
-            Everything you need to{" "}
-            <span className="text-muted-foreground">succeed independently</span>
+            Hire based on{" "}
+            <span className="text-muted-foreground">what developers actually built</span>
           </h2>
           <p className="text-body-lg text-muted-foreground">
-            Built for modern freelancers and teams who value transparency,
-            flexibility, and fair compensation.
+            Provenly shows you real work, not polished CVs. Technical credibility from day one.
           </p>
         </motion.div>
 

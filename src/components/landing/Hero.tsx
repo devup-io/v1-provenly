@@ -1,23 +1,31 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ArrowRight, DollarSign, Star, Verified } from "lucide-react";
+import { ArrowRight, Github, Code2, Star, GitBranch } from "lucide-react";
 
-// Floating profile card component
-function ProfileCard({
+// Floating developer card component
+function DeveloperCard({
   name,
   role,
   avatar,
-  earnings,
+  level,
+  techStack,
   delay = 0,
   className = "",
 }: {
   name: string;
   role: string;
   avatar: string;
-  earnings: string;
+  level: string;
+  techStack: string[];
   delay?: number;
   className?: string;
 }) {
+  const levelColors = {
+    "L1": "bg-pastel-mint text-pastel-mint-foreground",
+    "L2": "bg-pastel-yellow text-pastel-yellow-foreground",
+    "L3": "bg-pastel-peach text-pastel-peach-foreground",
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -34,20 +42,27 @@ function ProfileCard({
               className="h-full w-full object-cover"
             />
           </div>
-          <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-pastel-mint">
-            <Verified className="h-3 w-3 text-pastel-mint-foreground" />
+          <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-card shadow-sm">
+            <Github className="h-3 w-3 text-foreground" />
           </div>
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-body-sm font-semibold">{name}</p>
           <p className="truncate text-caption text-muted-foreground">{role}</p>
         </div>
+        <div className={`rounded-lg px-2 py-1 ${levelColors[level as keyof typeof levelColors]}`}>
+          <span className="text-caption font-bold">{level}</span>
+        </div>
       </div>
-      <div className="mt-3 flex items-center gap-2 rounded-lg bg-pastel-yellow/50 px-3 py-2">
-        <DollarSign className="h-4 w-4 text-pastel-yellow-foreground" />
-        <span className="text-body-sm font-medium text-pastel-yellow-foreground">
-          {earnings} earned
-        </span>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {techStack.map((tech) => (
+          <span
+            key={tech}
+            className="rounded-full bg-muted px-2 py-0.5 text-caption text-muted-foreground"
+          >
+            {tech}
+          </span>
+        ))}
       </div>
     </motion.div>
   );
@@ -90,7 +105,7 @@ function FloatingBadge({
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-hero pb-20 pt-16 md:pb-32 md:pt-24">
+    <section className="relative overflow-hidden bg-gradient-hero pb-20 pt-28 md:pb-32 md:pt-36">
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute left-1/4 top-1/4 h-96 w-96 rounded-full bg-pastel-peach/30 blur-3xl" />
@@ -112,80 +127,82 @@ export function Hero() {
               transition={{ duration: 0.4, delay: 0.1 }}
               className="mb-6 inline-flex items-center gap-2 rounded-full bg-pastel-mint/50 px-4 py-2"
             >
-              <Star className="h-4 w-4 text-pastel-mint-foreground" />
+              <Github className="h-4 w-4 text-pastel-mint-foreground" />
               <span className="text-body-sm font-medium text-pastel-mint-foreground">
-                Zero commission, always
+                GitHub-verified profiles only
               </span>
             </motion.div>
 
             <h1 className="mb-6 text-display text-balance md:text-display-lg lg:text-display-xl">
-              Work the way you want.{" "}
-              <span className="text-muted-foreground">Get paid commission-free.</span>
+              Provenly helps companies evaluate developers{" "}
+              <span className="text-muted-foreground">by real work, not CVs.</span>
             </h1>
 
             <p className="mb-8 text-body-lg text-muted-foreground">
-              Contra connects independent professionals with forward-thinking companies.
-              Build your portfolio, land projects, and keep 100% of what you earn.
+              No fake profiles. No empty resumes. Browse developers verified through their 
+              actual GitHub contributions, with real project breakdowns and complexity levels.
             </p>
 
             <div className="flex flex-wrap gap-4">
               <Button variant="hero" size="xl">
-                Join Contra
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <Github className="mr-2 h-5 w-5" />
+                Create Developer Profile
               </Button>
               <Button variant="hero-outline" size="xl">
-                Hire Talent
+                View Sample Developers
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
 
-            <div className="mt-8 flex items-center gap-4 text-body-sm text-muted-foreground">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="h-8 w-8 rounded-full border-2 border-background bg-pastel-lavender"
-                  />
-                ))}
+            <div className="mt-8 flex items-center gap-6 text-body-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Code2 className="h-4 w-4 text-pastel-mint-foreground" />
+                <span>Real code reviewed</span>
               </div>
-              <span>Join 500k+ independents worldwide</span>
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-pastel-yellow-foreground" />
+                <span>Complexity rated</span>
+              </div>
             </div>
           </motion.div>
 
           {/* Right visual - Floating cards */}
           <div className="relative hidden h-[500px] lg:block">
-            {/* Main profile card */}
-            <ProfileCard
-              name="Sarah Chen"
-              role="Product Designer"
-              avatar="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face"
-              earnings="$125k+"
+            {/* Main developer card */}
+            <DeveloperCard
+              name="Alex Rivera"
+              role="Full-Stack Engineer"
+              avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+              level="L3"
+              techStack={["React", "Node.js", "PostgreSQL"]}
               delay={0.3}
-              className="animate-float absolute left-8 top-16 w-64"
+              className="animate-float absolute left-4 top-16 w-72"
             />
 
-            {/* Secondary profile card */}
-            <ProfileCard
-              name="Marcus Johnson"
-              role="Full-Stack Developer"
-              avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-              earnings="$89k+"
+            {/* Secondary developer card */}
+            <DeveloperCard
+              name="Maya Chen"
+              role="Backend Engineer"
+              avatar="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face"
+              level="L2"
+              techStack={["Python", "FastAPI", "Redis"]}
               delay={0.5}
-              className="animate-float-delayed absolute bottom-20 right-4 w-64"
+              className="animate-float-delayed absolute bottom-20 right-0 w-72"
             />
 
             {/* Floating badges */}
             <FloatingBadge
-              icon={Verified}
-              text="Verified Pro"
+              icon={Github}
+              text="GitHub Verified"
               color="mint"
               delay={0.7}
-              className="absolute right-20 top-8 animate-float"
+              className="absolute right-16 top-8 animate-float"
             />
 
             <FloatingBadge
-              icon={DollarSign}
-              text="0% Fees"
-              color="peach"
+              icon={GitBranch}
+              text="847 commits"
+              color="lavender"
               delay={0.9}
               className="animate-float-delayed absolute bottom-8 left-0"
             />
