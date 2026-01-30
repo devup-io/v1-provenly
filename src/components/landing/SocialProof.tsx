@@ -2,11 +2,11 @@ import { motion } from "framer-motion";
 
 const companies = [
   { name: "Stripe", logo: "Stripe" },
-  { name: "Webflow", logo: "Webflow" },
+  { name: "Vercel", logo: "Vercel" },
   { name: "Linear", logo: "Linear" },
   { name: "Notion", logo: "Notion" },
-  { name: "Figma", logo: "Figma" },
-  { name: "Vercel", logo: "Vercel" },
+  { name: "Supabase", logo: "Supabase" },
+  { name: "Railway", logo: "Railway" },
 ];
 
 export function SocialProof() {
@@ -21,7 +21,7 @@ export function SocialProof() {
           className="mb-8 text-center"
         >
           <p className="text-body-sm font-medium uppercase tracking-wider text-muted-foreground">
-            Trusted by teams at
+            Developers hired at
           </p>
         </motion.div>
 

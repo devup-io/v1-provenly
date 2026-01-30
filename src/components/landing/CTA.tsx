@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Github, Users } from "lucide-react";
 
 export function CTA() {
   return (
@@ -41,34 +41,34 @@ export function CTA() {
             transition={{ duration: 0.4, delay: 0.1 }}
             className="mb-6 inline-flex items-center gap-2 rounded-full bg-card px-4 py-2 shadow-md"
           >
-            <Sparkles className="h-4 w-4 text-pastel-yellow-foreground" />
+            <Github className="h-4 w-4 text-foreground" />
             <span className="text-body-sm font-medium">
-              Join 500,000+ independents
+              Real work. Real developers.
             </span>
           </motion.div>
 
           <h2 className="mb-6 text-display-sm text-balance md:text-display lg:text-display-lg">
-            Independence starts here.
+            Stop hiring based on CVs.
           </h2>
 
           <p className="mb-10 text-body-lg text-muted-foreground">
-            Whether you're a freelancer looking for your next project or a
-            company searching for top talent, Contra is the platform built for
-            the future of work.
+            Whether you're a developer ready to showcase your real work, or a 
+            founder looking for verified talent—Provenly is built for you.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4">
             <Button variant="hero" size="xl">
-              Get Started Free
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <Github className="mr-2 h-5 w-5" />
+              Create Developer Profile
             </Button>
             <Button variant="hero-outline" size="xl">
-              Learn More
+              <Users className="mr-2 h-5 w-5" />
+              Browse Developers
             </Button>
           </div>
 
           <p className="mt-6 text-body-sm text-muted-foreground">
-            No credit card required • Free forever for freelancers
+            Free for developers • No login required for founders
           </p>
         </motion.div>
       </div>
