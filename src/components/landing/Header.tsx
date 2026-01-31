@@ -3,17 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const navLinks = [
-  { label: "Developers", href: "#developers" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Features", href: "#features" },
+  { label: "Developers", href: "/developers" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Features", href: "/#features" },
 ];
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,6 +25,24 @@ export function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleNavClick = (href: string) => {
+    setMobileMenuOpen(false);
+    if (href.startsWith("/#")) {
+      if (location.pathname !== "/") {
+        navigate("/");
+        setTimeout(() => {
+          const element = document.querySelector(href.substring(1));
+          element?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
+      } else {
+        const element = document.querySelector(href.substring(1));
+        element?.scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      navigate(href);
+    }
+  };
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 px-4 pt-4 md:px-6">
@@ -35,23 +56,23 @@ export function Header() {
       >
         <div className="flex h-14 items-center justify-between px-4 md:h-16 md:px-6">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2">
+          <button onClick={() => navigate("/")} className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <span className="text-sm font-bold text-primary-foreground">P</span>
             </div>
             <span className="text-heading-sm tracking-tight">Provenly</span>
-          </a>
+          </button>
 
           {/* Desktop Navigation */}
           <nav className="hidden items-center gap-6 lg:flex">
             {navLinks.map((link) => (
-              <a
+              <button
                 key={link.label}
-                href={link.href}
+                onClick={() => handleNavClick(link.href)}
                 className="text-body-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
                 {link.label}
-              </a>
+              </button>
             ))}
           </nav>
 
@@ -66,13 +87,14 @@ export function Header() {
                 className="h-9 rounded-full border-border/50 bg-muted/50 pl-9 text-sm focus:bg-background"
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
+                onClick={() => navigate("/developers")}
               />
             </div>
             
-            <Button variant="ghost" size="sm" className="rounded-full">
+            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => navigate("/signup")}>
               Log in
             </Button>
-            <Button variant="hero" size="sm" className="rounded-full">
+            <Button variant="hero" size="sm" className="rounded-full" onClick={() => navigate("/signup")}>
               Sign up with GitHub
             </Button>
           </div>
@@ -108,26 +130,29 @@ export function Header() {
                   type="text"
                   placeholder="Search developers..."
                   className="h-10 w-full rounded-full bg-muted/50 pl-9"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate("/developers");
+                  }}
                 />
               </div>
             </div>
 
             <nav className="flex flex-col p-2">
               {navLinks.map((link) => (
-                <a
+                <button
                   key={link.label}
-                  href={link.href}
-                  className="rounded-xl px-4 py-3 text-body text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => handleNavClick(link.href)}
+                  className="rounded-xl px-4 py-3 text-left text-body text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   {link.label}
-                </a>
+                </button>
               ))}
               <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4 px-2">
-                <Button variant="ghost" className="justify-start rounded-xl">
+                <Button variant="ghost" className="justify-start rounded-xl" onClick={() => { setMobileMenuOpen(false); navigate("/signup"); }}>
                   Log in
                 </Button>
-                <Button variant="hero" className="rounded-xl">
+                <Button variant="hero" className="rounded-xl" onClick={() => { setMobileMenuOpen(false); navigate("/signup"); }}>
                   Sign up with GitHub
                 </Button>
               </div>

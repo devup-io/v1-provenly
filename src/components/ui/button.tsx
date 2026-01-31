@@ -23,6 +23,7 @@ const buttonVariants = cva(
         peach: "bg-pastel-peach text-pastel-peach-foreground hover:bg-pastel-peach/80 active:scale-[0.98]",
         lavender: "bg-pastel-lavender text-pastel-lavender-foreground hover:bg-pastel-lavender/80 active:scale-[0.98]",
         mint: "bg-pastel-mint text-pastel-mint-foreground hover:bg-pastel-mint/80 active:scale-[0.98]",
+        yellow: "bg-pastel-yellow text-pastel-yellow-foreground hover:bg-pastel-yellow/80 active:scale-[0.98]",
       },
       size: {
         default: "h-10 px-4 py-2",
