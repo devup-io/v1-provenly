@@ -2,7 +2,7 @@ import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
 import { SocialProof } from "@/components/landing/SocialProof";
 import { Features } from "@/components/landing/Features";
-import { HowItWorks } from "@/components/landing/HowItWorks";
+import { HowItWorksNew } from "@/components/landing/HowItWorksNew";
 import { DeveloperShowcase } from "@/components/landing/DeveloperShowcase";
 import { CTA } from "@/components/landing/CTA";
 import { Footer } from "@/components/landing/Footer";
@@ -15,7 +15,7 @@ const Index = () => {
         <Hero />
         <SocialProof />
         <Features />
-        <HowItWorks />
+        <HowItWorksNew />
         <DeveloperShowcase />
         <CTA />
       </main>

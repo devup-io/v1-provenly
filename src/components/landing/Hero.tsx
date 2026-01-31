@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, Github, Code2, Star, GitBranch } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Floating developer card component
 function DeveloperCard({
@@ -104,6 +105,8 @@ function FloatingBadge({
 }
 
 export function Hero() {
+  const navigate = useNavigate();
+
   return (
     <section className="relative overflow-hidden bg-gradient-hero pb-20 pt-28 md:pb-32 md:pt-36">
       {/* Background decoration */}
@@ -144,11 +147,11 @@ export function Hero() {
             </p>
 
             <div className="flex flex-wrap gap-4">
-              <Button variant="hero" size="xl">
+              <Button variant="hero" size="xl" onClick={() => navigate("/signup")}>
                 <Github className="mr-2 h-5 w-5" />
                 Create Developer Profile
               </Button>
-              <Button variant="hero-outline" size="xl">
+              <Button variant="hero-outline" size="xl" onClick={() => navigate("/developers")}>
                 View Sample Developers
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
