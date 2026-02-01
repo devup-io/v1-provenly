@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Github, ArrowUpRight, Star, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const developers = [
   {
@@ -72,14 +73,16 @@ const levelColors = {
 };
 
 const colorClasses = {
-  peach: "bg-pastel-peach/10",
-  mint: "bg-pastel-mint/10",
-  lavender: "bg-pastel-lavender/10",
-  yellow: "bg-pastel-yellow/10",
-  blue: "bg-pastel-blue/10",
+  peach: "border-pastel-peach/30 hover:border-pastel-peach/60",
+  mint: "border-pastel-mint/30 hover:border-pastel-mint/60",
+  lavender: "border-pastel-lavender/30 hover:border-pastel-lavender/60",
+  yellow: "border-pastel-yellow/30 hover:border-pastel-yellow/60",
+  blue: "border-pastel-blue/30 hover:border-pastel-blue/60",
 };
 
 export function DeveloperShowcase() {
+  const navigate = useNavigate();
+
   return (
     <section id="developers" className="py-20 md:py-30">
       <div className="container">
@@ -89,8 +92,11 @@ export function DeveloperShowcase() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mx-auto mb-16 max-w-2xl text-center"
+          className="mx-auto mb-12 max-w-2xl text-center md:mb-16"
         >
+          <span className="mb-4 inline-block rounded-full bg-pastel-mint px-4 py-1.5 text-body-sm font-medium text-pastel-mint-foreground">
+            Developer Directory
+          </span>
           <h2 className="mb-4 text-display-sm md:text-display">
             Sample{" "}
             <span className="text-muted-foreground">verified developers</span>
@@ -101,8 +107,71 @@ export function DeveloperShowcase() {
           </p>
         </motion.div>
 
-        {/* Developer grid */}
-        <div className="mb-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Mobile: Horizontal Scroll Cards */}
+        <div className="mb-8 md:hidden">
+          <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 snap-x snap-mandatory scrollbar-hide">
+            {developers.slice(0, 4).map((developer, index) => (
+              <motion.div
+                key={developer.name}
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                className={`group min-w-[280px] snap-start cursor-pointer rounded-2xl border-2 bg-card p-5 shadow-card transition-all duration-300 hover:shadow-card-hover ${colorClasses[developer.color]}`}
+              >
+                {/* Header with avatar and level */}
+                <div className="mb-4 flex items-start justify-between">
+                  <div className="relative">
+                    <div className="h-14 w-14 overflow-hidden rounded-xl bg-muted">
+                      <img
+                        src={developer.avatar}
+                        alt={developer.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-card shadow-sm ring-2 ring-card">
+                      <Github className="h-3 w-3 text-foreground" />
+                    </div>
+                  </div>
+                  <div className={`rounded-lg px-2.5 py-1 ${levelColors[developer.level as keyof typeof levelColors]}`}>
+                    <span className="text-caption font-bold">{developer.level}</span>
+                  </div>
+                </div>
+
+                {/* Info */}
+                <h3 className="mb-1 text-heading-sm">{developer.name}</h3>
+                <p className="mb-3 text-body-sm text-muted-foreground">
+                  {developer.role}
+                </p>
+
+                {/* Tech stack */}
+                <div className="mb-4 flex flex-wrap gap-1.5">
+                  {developer.techStack.map((tech) => (
+                    <span
+                      key={tech}
+                      className="rounded-full bg-muted px-2.5 py-1 text-caption text-muted-foreground"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Stats */}
+                <div className="flex items-center gap-4 border-t border-border pt-4 text-caption text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Star className="h-3.5 w-3.5" /> {developer.stars}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <GitBranch className="h-3.5 w-3.5" /> {developer.commits}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop: Grid layout */}
+        <div className="mb-12 hidden gap-6 md:grid md:grid-cols-2 lg:grid-cols-3">
           {developers.map((developer, index) => (
             <motion.div
               key={developer.name}
@@ -110,7 +179,7 @@ export function DeveloperShowcase() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.08 }}
-              className={`group cursor-pointer rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-300 hover:shadow-card-hover ${colorClasses[developer.color]}`}
+              className={`group cursor-pointer rounded-2xl border-2 bg-card p-6 shadow-card transition-all duration-300 hover:shadow-card-hover ${colorClasses[developer.color]}`}
             >
               <div className="mb-4 flex items-start justify-between">
                 <div className="relative">
@@ -121,12 +190,12 @@ export function DeveloperShowcase() {
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-card shadow-sm">
+                  <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-card shadow-sm ring-2 ring-card">
                     <Github className="h-4 w-4 text-foreground" />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className={`rounded-lg px-2 py-1 ${levelColors[developer.level as keyof typeof levelColors]}`}>
+                  <div className={`rounded-lg px-2.5 py-1 ${levelColors[developer.level as keyof typeof levelColors]}`}>
                     <span className="text-caption font-bold">{developer.level}</span>
                   </div>
                   <div className="flex items-center gap-1 rounded-full p-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -145,7 +214,7 @@ export function DeveloperShowcase() {
                 {developer.techStack.map((tech) => (
                   <span
                     key={tech}
-                    className="rounded-full bg-muted px-2 py-0.5 text-caption text-muted-foreground"
+                    className="rounded-full bg-muted px-2.5 py-1 text-caption text-muted-foreground"
                   >
                     {tech}
                   </span>
@@ -153,12 +222,12 @@ export function DeveloperShowcase() {
               </div>
 
               {/* Stats */}
-              <div className="flex items-center gap-4 text-caption text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Star className="h-3 w-3" /> {developer.stars} stars
+              <div className="flex items-center gap-4 border-t border-border pt-4 text-caption text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Star className="h-3.5 w-3.5" /> {developer.stars} stars
                 </span>
-                <span className="flex items-center gap-1">
-                  <GitBranch className="h-3 w-3" /> {developer.commits} commits
+                <span className="flex items-center gap-1.5">
+                  <GitBranch className="h-3.5 w-3.5" /> {developer.commits} commits
                 </span>
               </div>
             </motion.div>
@@ -173,9 +242,14 @@ export function DeveloperShowcase() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="text-center"
         >
-          <Button variant="outline" size="lg">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={() => navigate("/developers")}
+            className="group"
+          >
             Browse all developers
-            <ArrowUpRight className="ml-2 h-4 w-4" />
+            <ArrowUpRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </Button>
         </motion.div>
       </div>
