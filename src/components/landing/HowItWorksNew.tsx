@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Github, FolderGit2, FileText, Globe, ArrowRight } from "lucide-react";
+import { Github, FolderGit2, FileText, Globe, CheckCircle2 } from "lucide-react";
 
 const steps = [
   {
@@ -7,42 +7,61 @@ const steps = [
     icon: Github,
     title: "Sign up with GitHub",
     description: "One-click OAuth. We fetch your profile and public repositories automatically.",
-    color: "bg-pastel-lavender",
-    iconColor: "text-pastel-lavender-foreground",
+    color: "lavender" as const,
   },
   {
     number: "02",
     icon: FolderGit2,
     title: "Select your best projects",
     description: "Choose 2-5 projects you're proud of. We show repo stats, languages, and commits.",
-    color: "bg-pastel-mint",
-    iconColor: "text-pastel-mint-foreground",
+    color: "mint" as const,
   },
   {
     number: "03",
     icon: FileText,
     title: "Add project breakdowns",
     description: "Explain the problem, your contribution, and rate the technical complexity.",
-    color: "bg-pastel-yellow",
-    iconColor: "text-pastel-yellow-foreground",
+    color: "yellow" as const,
   },
   {
     number: "04",
     icon: Globe,
     title: "Publish your profile",
     description: "Get a public URL at provenly.live/dev/username. Founders discover you instantly.",
-    color: "bg-pastel-peach",
-    iconColor: "text-pastel-peach-foreground",
+    color: "peach" as const,
   },
 ];
+
+const colorClasses = {
+  lavender: {
+    bg: "bg-pastel-lavender",
+    text: "text-pastel-lavender-foreground",
+    ring: "ring-pastel-lavender/50",
+  },
+  mint: {
+    bg: "bg-pastel-mint",
+    text: "text-pastel-mint-foreground",
+    ring: "ring-pastel-mint/50",
+  },
+  yellow: {
+    bg: "bg-pastel-yellow",
+    text: "text-pastel-yellow-foreground",
+    ring: "ring-pastel-yellow/50",
+  },
+  peach: {
+    bg: "bg-pastel-peach",
+    text: "text-pastel-peach-foreground",
+    ring: "ring-pastel-peach/50",
+  },
+};
 
 export function HowItWorksNew() {
   return (
     <section id="how-it-works" className="relative overflow-hidden bg-background py-20 md:py-30">
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute left-1/4 top-20 h-72 w-72 rounded-full bg-pastel-lavender/30 blur-3xl" />
-        <div className="absolute right-1/4 bottom-20 h-72 w-72 rounded-full bg-pastel-mint/30 blur-3xl" />
+        <div className="absolute left-1/4 top-20 h-72 w-72 rounded-full bg-pastel-lavender/20 blur-3xl" />
+        <div className="absolute right-1/4 bottom-20 h-72 w-72 rounded-full bg-pastel-mint/20 blur-3xl" />
       </div>
 
       <div className="container">
@@ -65,55 +84,78 @@ export function HowItWorksNew() {
           </p>
         </motion.div>
 
-        {/* Steps - Horizontal Timeline on Desktop */}
-        <div className="relative">
-          {/* Connecting Line (Desktop) */}
-          <div className="absolute left-0 right-0 top-[60px] hidden h-0.5 bg-gradient-to-r from-pastel-lavender via-pastel-mint via-50% to-pastel-peach lg:block" />
+        {/* Interactive Steps - Vertical Timeline Design */}
+        <div className="mx-auto max-w-3xl">
+          <div className="relative">
+            {/* Vertical connecting line */}
+            <div className="absolute left-8 top-0 hidden h-full w-px bg-gradient-to-b from-pastel-lavender via-pastel-mint via-50% to-pastel-peach md:left-1/2 md:block md:-translate-x-1/2" />
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((step, index) => (
               <motion.div
                 key={step.number}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="relative"
+                transition={{ duration: 0.5, delay: index * 0.15 }}
+                className={`relative mb-8 last:mb-0 md:mb-12 ${
+                  index % 2 === 0 ? "md:pr-[50%] md:text-right" : "md:pl-[50%]"
+                }`}
               >
-                {/* Step Card */}
-                <div className="rounded-2xl border border-border bg-card p-6 shadow-card transition-all hover:shadow-card-hover">
-                  {/* Icon Circle */}
-                  <div className="relative z-10 mb-6">
+                {/* Step Content Card */}
+                <div
+                  className={`group relative rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-300 hover:shadow-card-hover ${
+                    index % 2 === 0 ? "md:mr-12" : "md:ml-12"
+                  }`}
+                >
+                  {/* Floating Number Badge - Desktop Only */}
+                  <div
+                    className={`absolute top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full ring-4 ring-background md:flex ${
+                      colorClasses[step.color].bg
+                    } ${colorClasses[step.color].text} ${
+                      index % 2 === 0 ? "-right-18 translate-x-1/2" : "-left-18 -translate-x-1/2"
+                    }`}
+                  >
+                    <span className="text-lg font-bold">{step.number}</span>
+                  </div>
+
+                  {/* Mobile: Inline Icon & Number */}
+                  <div className="mb-4 flex items-center gap-4 md:hidden">
                     <div
-                      className={`mx-auto flex h-20 w-20 items-center justify-center rounded-2xl ${step.color}`}
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${colorClasses[step.color].bg} ${colorClasses[step.color].text}`}
                     >
-                      <step.icon className={`h-10 w-10 ${step.iconColor}`} />
+                      <step.icon className="h-6 w-6" />
                     </div>
-                    {/* Step Number Badge */}
-                    <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-caption font-bold text-primary-foreground">
-                      {step.number}
+                    <div className="flex-1">
+                      <span className="text-caption font-bold text-muted-foreground">
+                        Step {step.number}
+                      </span>
+                      <h3 className="text-heading-sm">{step.title}</h3>
                     </div>
                   </div>
 
-                  {/* Content */}
-                  <h3 className="mb-2 text-center text-heading-sm">{step.title}</h3>
-                  <p className="text-center text-body-sm text-muted-foreground">
+                  {/* Desktop: Icon Header */}
+                  <div className={`hidden items-center gap-3 md:flex ${index % 2 === 0 ? "flex-row-reverse" : ""}`}>
+                    <div
+                      className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${colorClasses[step.color].bg} ${colorClasses[step.color].text}`}
+                    >
+                      <step.icon className="h-7 w-7" />
+                    </div>
+                    <div className={index % 2 === 0 ? "text-right" : ""}>
+                      <h3 className="text-heading-sm">{step.title}</h3>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <p className={`mt-3 text-body-sm text-muted-foreground md:mt-4 ${index % 2 === 0 ? "md:text-right" : ""}`}>
                     {step.description}
                   </p>
                 </div>
-
-                {/* Arrow (between cards on desktop) */}
-                {index < steps.length - 1 && (
-                  <div className="absolute -right-4 top-[72px] z-20 hidden lg:block">
-                    <ArrowRight className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                )}
               </motion.div>
             ))}
           </div>
         </div>
 
-        {/* For Founders Section */}
+        {/* For Founders Section - Keeping original design */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -138,19 +180,19 @@ export function HowItWorksNew() {
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-3 rounded-xl bg-card/80 p-4 backdrop-blur">
-                  <div className="h-3 w-3 rounded-full bg-pastel-mint" />
+                  <CheckCircle2 className="h-5 w-5 text-pastel-mint-foreground" />
                   <span className="text-body-sm">Filter by role & technology</span>
                 </div>
                 <div className="flex items-center gap-3 rounded-xl bg-card/80 p-4 backdrop-blur">
-                  <div className="h-3 w-3 rounded-full bg-pastel-mint" />
+                  <CheckCircle2 className="h-5 w-5 text-pastel-mint-foreground" />
                   <span className="text-body-sm">View complexity levels (L1–L3)</span>
                 </div>
                 <div className="flex items-center gap-3 rounded-xl bg-card/80 p-4 backdrop-blur">
-                  <div className="h-3 w-3 rounded-full bg-pastel-mint" />
+                  <CheckCircle2 className="h-5 w-5 text-pastel-mint-foreground" />
                   <span className="text-body-sm">See real project breakdowns</span>
                 </div>
                 <div className="flex items-center gap-3 rounded-xl bg-card/80 p-4 backdrop-blur">
-                  <div className="h-3 w-3 rounded-full bg-pastel-mint" />
+                  <CheckCircle2 className="h-5 w-5 text-pastel-mint-foreground" />
                   <span className="text-body-sm">Contact developers directly</span>
                 </div>
               </div>

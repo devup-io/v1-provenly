@@ -117,12 +117,12 @@ export function Hero() {
 
       <div className="container">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          {/* Left content */}
+          {/* Left content - centered on mobile/tablet when right section hidden */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="max-w-xl"
+            className="mx-auto max-w-xl text-center lg:mx-0 lg:text-left"
           >
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -146,7 +146,7 @@ export function Hero() {
               actual GitHub contributions, with real project breakdowns and complexity levels.
             </p>
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap justify-center gap-4 lg:justify-start">
               <Button variant="hero" size="xl" onClick={() => navigate("/signup")}>
                 <Github className="mr-2 h-5 w-5" />
                 Create Developer Profile
@@ -157,7 +157,7 @@ export function Hero() {
               </Button>
             </div>
 
-            <div className="mt-8 flex items-center gap-6 text-body-sm text-muted-foreground">
+            <div className="mt-8 flex items-center justify-center gap-6 text-body-sm text-muted-foreground lg:justify-start">
               <div className="flex items-center gap-2">
                 <Code2 className="h-4 w-4 text-pastel-mint-foreground" />
                 <span>Real code reviewed</span>

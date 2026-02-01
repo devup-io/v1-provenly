@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { StepRoleBasics } from "@/components/onboarding/StepRoleBasics";
 import { StepGitHubProjects } from "@/components/onboarding/StepGitHubProjects";
 import { StepProjectBreakdown } from "@/components/onboarding/StepProjectBreakdown";
-import { Progress } from "@/components/ui/progress";
 
 export type ProfileData = {
   roles: string[];
@@ -59,26 +58,47 @@ export default function ProfileSetup() {
     <div className="min-h-screen bg-gradient-hero py-8">
       <div className="container max-w-2xl">
         {/* Progress Header */}
-        <div className="mb-8">
+        <motion.div 
+          className="mb-8"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
           <div className="mb-4 flex items-center justify-between">
-            <span className="text-body-sm font-medium text-muted-foreground">
+            <motion.span 
+              key={`step-${currentStep}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-body-sm font-medium text-muted-foreground"
+            >
               Step {currentStep} of {totalSteps}
-            </span>
+            </motion.span>
             <span className="text-body-sm font-medium text-muted-foreground">
               {Math.round(progress)}% complete
             </span>
           </div>
-          <Progress value={progress} className="h-2" />
-        </div>
+          <div className="relative h-2 overflow-hidden rounded-full bg-secondary">
+            <motion.div
+              className="absolute inset-y-0 left-0 bg-primary"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            />
+          </div>
+        </motion.div>
 
         {/* Step Content */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            transition={{ 
+              duration: 0.4, 
+              ease: [0.25, 0.46, 0.45, 0.94],
+              opacity: { duration: 0.3 }
+            }}
           >
             {currentStep === 1 && (
               <StepRoleBasics
