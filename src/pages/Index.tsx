@@ -4,6 +4,8 @@ import { SocialProof } from "@/components/landing/SocialProof";
 import { Features } from "@/components/landing/Features";
 import { HowItWorksNew } from "@/components/landing/HowItWorksNew";
 import { DeveloperShowcase } from "@/components/landing/DeveloperShowcase";
+import { Testimonials } from "@/components/landing/Testimonials";
+import { Stats } from "@/components/landing/Stats";
 import { CTA } from "@/components/landing/CTA";
 import { Footer } from "@/components/landing/Footer";
 
@@ -17,6 +19,8 @@ const Index = () => {
         <Features />
         <HowItWorksNew />
         <DeveloperShowcase />
+        <Testimonials />
+        <Stats />
         <CTA />
       </main>
       <Footer />
