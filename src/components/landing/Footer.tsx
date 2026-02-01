@@ -40,38 +40,38 @@ const socialLinks = [
 export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/30">
-      <div className="container py-16 md:py-20">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-6">
-          {/* Brand column */}
+      <div className="container py-12 md:py-20">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-2 lg:grid-cols-6">
+          {/* Brand column - full width on mobile */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="lg:col-span-2"
+            className="col-span-2 lg:col-span-2"
           >
             <a href="/" className="mb-4 inline-block">
-              <span className="text-heading-sm tracking-tight">Contra</span>
+              <span className="text-heading-sm tracking-tight">Provenly</span>
             </a>
-            <p className="mb-6 max-w-xs text-body text-muted-foreground">
-              The commission-free freelance platform for independent
-              professionals and forward-thinking companies.
+            <p className="mb-6 max-w-xs text-body-sm text-muted-foreground">
+              The GitHub-verified platform for developers who want to be judged
+              by their real work, not empty resumes.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
                   aria-label={social.label}
                 >
-                  <social.icon className="h-5 w-5" />
+                  <social.icon className="h-4 w-4" />
                 </a>
               ))}
             </div>
           </motion.div>
 
-          {/* Link columns */}
+          {/* Link columns - 2 per row on mobile */}
           {Object.entries(footerLinks).map(([title, links], index) => (
             <motion.div
               key={title}
@@ -79,16 +79,17 @@ export function Footer() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: (index + 1) * 0.1 }}
+              className="col-span-1"
             >
-              <h4 className="mb-4 text-body-sm font-semibold uppercase tracking-wider">
+              <h4 className="mb-3 text-caption font-semibold uppercase tracking-wider md:mb-4 md:text-body-sm">
                 {title}
               </h4>
-              <ul className="space-y-3">
+              <ul className="space-y-2 md:space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-body-sm text-muted-foreground transition-colors hover:text-foreground"
+                      className="text-caption text-muted-foreground transition-colors hover:text-foreground md:text-body-sm"
                     >
                       {link.label}
                     </a>

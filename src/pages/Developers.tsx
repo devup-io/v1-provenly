@@ -4,6 +4,7 @@ import { Search, Filter, Github, Star, GitBranch, ChevronDown, X } from "lucide-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/landing/Header";
+import { useNavigate } from "react-router-dom";
 
 const mockDevelopers = [
   {
@@ -16,6 +17,7 @@ const mockDevelopers = [
     maxComplexity: "L3",
     totalStars: 390,
     projectCount: 4,
+    complexityCounts: { L1: 1, L2: 1, L3: 2 },
   },
   {
     id: "2",
@@ -27,6 +29,7 @@ const mockDevelopers = [
     maxComplexity: "L2",
     totalStars: 156,
     projectCount: 3,
+    complexityCounts: { L1: 1, L2: 2, L3: 0 },
   },
   {
     id: "3",
@@ -38,6 +41,7 @@ const mockDevelopers = [
     maxComplexity: "L3",
     totalStars: 289,
     projectCount: 5,
+    complexityCounts: { L1: 0, L2: 3, L3: 2 },
   },
   {
     id: "4",
@@ -49,6 +53,7 @@ const mockDevelopers = [
     maxComplexity: "L3",
     totalStars: 445,
     projectCount: 6,
+    complexityCounts: { L1: 1, L2: 1, L3: 4 },
   },
   {
     id: "5",
@@ -60,6 +65,7 @@ const mockDevelopers = [
     maxComplexity: "L2",
     totalStars: 178,
     projectCount: 3,
+    complexityCounts: { L1: 1, L2: 2, L3: 0 },
   },
   {
     id: "6",
@@ -71,6 +77,7 @@ const mockDevelopers = [
     maxComplexity: "L2",
     totalStars: 234,
     projectCount: 4,
+    complexityCounts: { L1: 1, L2: 3, L3: 0 },
   },
 ];
 
@@ -104,6 +111,13 @@ const complexityFilters = [
   { value: "L3", label: "L3 – Complex", color: "bg-pastel-peach text-pastel-peach-foreground" },
 ];
 
+const projectCountOptions = [
+  { value: 1, label: "1+ project" },
+  { value: 2, label: "2+ projects" },
+  { value: 3, label: "3+ projects" },
+  { value: 5, label: "5+ projects" },
+];
+
 const complexityColors: Record<string, string> = {
   L1: "bg-pastel-mint text-pastel-mint-foreground",
   L2: "bg-pastel-yellow text-pastel-yellow-foreground",
@@ -111,10 +125,12 @@ const complexityColors: Record<string, string> = {
 };
 
 export default function Developers() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedTech, setSelectedTech] = useState<string[]>([]);
   const [selectedComplexity, setSelectedComplexity] = useState<string[]>([]);
+  const [minProjectsAtLevel, setMinProjectsAtLevel] = useState<number>(0);
   const [showFilters, setShowFilters] = useState(false);
 
   const toggleRole = (role: string) => {
@@ -139,6 +155,7 @@ export default function Developers() {
     setSelectedRoles([]);
     setSelectedTech([]);
     setSelectedComplexity([]);
+    setMinProjectsAtLevel(0);
     setSearchQuery("");
   };
 
@@ -161,13 +178,22 @@ export default function Developers() {
       selectedComplexity.length === 0 ||
       selectedComplexity.includes(dev.maxComplexity);
 
-    return matchesSearch && matchesRoles && matchesTech && matchesComplexity;
+    // Check if developer has minimum projects at selected complexity levels
+    const matchesMinProjects =
+      minProjectsAtLevel === 0 ||
+      selectedComplexity.length === 0 ||
+      selectedComplexity.some((level) => 
+        (dev.complexityCounts[level as keyof typeof dev.complexityCounts] || 0) >= minProjectsAtLevel
+      );
+
+    return matchesSearch && matchesRoles && matchesTech && matchesComplexity && matchesMinProjects;
   });
 
   const hasActiveFilters =
     selectedRoles.length > 0 ||
     selectedTech.length > 0 ||
-    selectedComplexity.length > 0;
+    selectedComplexity.length > 0 ||
+    minProjectsAtLevel > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -204,7 +230,7 @@ export default function Developers() {
             Filters
             {hasActiveFilters && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-caption font-bold text-primary-foreground">
-                {selectedRoles.length + selectedTech.length + selectedComplexity.length}
+                {selectedRoles.length + selectedTech.length + selectedComplexity.length + (minProjectsAtLevel > 0 ? 1 : 0)}
               </span>
             )}
             <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? "rotate-180" : ""}`} />
@@ -270,7 +296,7 @@ export default function Developers() {
             </div>
 
             {/* Complexity Filters */}
-            <div>
+            <div className="mb-6">
               <p className="mb-3 text-body-sm font-medium">Complexity Level</p>
               <div className="flex flex-wrap gap-2">
                 {complexityFilters.map((level) => (
@@ -288,6 +314,35 @@ export default function Developers() {
                 ))}
               </div>
             </div>
+
+            {/* Min Projects at Level Filter - only show when complexity is selected */}
+            {selectedComplexity.length > 0 && (
+              <div>
+                <p className="mb-3 text-body-sm font-medium">
+                  Min projects at selected level(s)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {projectCountOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setMinProjectsAtLevel(
+                        minProjectsAtLevel === option.value ? 0 : option.value
+                      )}
+                      className={`rounded-full px-3 py-1.5 text-body-sm transition-all ${
+                        minProjectsAtLevel === option.value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-caption text-muted-foreground">
+                  Filter by developers who have completed multiple projects at your selected complexity level
+                </p>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -305,6 +360,7 @@ export default function Developers() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
+              onClick={() => navigate(`/dev/${dev.username}`)}
               className="group cursor-pointer rounded-2xl border border-border bg-card p-6 shadow-card transition-all hover:shadow-card-hover"
             >
               {/* Developer Header */}
@@ -352,6 +408,22 @@ export default function Developers() {
                     +{dev.techStack.length - 4}
                   </span>
                 )}
+              </div>
+
+              {/* Complexity breakdown pills */}
+              <div className="mb-4 flex gap-2">
+                {["L1", "L2", "L3"].map((level) => {
+                  const count = dev.complexityCounts[level as keyof typeof dev.complexityCounts] || 0;
+                  if (count === 0) return null;
+                  return (
+                    <span
+                      key={level}
+                      className={`rounded-full px-2 py-0.5 text-caption font-medium ${complexityColors[level]}`}
+                    >
+                      {count}× {level}
+                    </span>
+                  );
+                })}
               </div>
 
               {/* Stats */}

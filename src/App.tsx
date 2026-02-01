@@ -10,6 +10,7 @@ import Welcome from "./pages/Welcome";
 import ProfileSetup from "./pages/ProfileSetup";
 import ProfilePreview from "./pages/ProfilePreview";
 import Developers from "./pages/Developers";
+import DeveloperProfile from "./pages/DeveloperProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/profile-setup" element={<ProfileSetup />} />
           <Route path="/profile-preview" element={<ProfilePreview />} />
           <Route path="/developers" element={<Developers />} />
+          <Route path="/dev/:username" element={<DeveloperProfile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

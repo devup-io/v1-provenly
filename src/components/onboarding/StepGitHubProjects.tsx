@@ -76,10 +76,12 @@ type Props = {
 };
 
 export function StepGitHubProjects({ data, onUpdate, onNext, onBack }: Props) {
+  const maxProjects = 10;
+  
   const toggleProject = (projectId: string) => {
     const newSelected = data.selectedProjects.includes(projectId)
       ? data.selectedProjects.filter((id) => id !== projectId)
-      : data.selectedProjects.length < 5
+      : data.selectedProjects.length < maxProjects
       ? [...data.selectedProjects, projectId]
       : data.selectedProjects;
     onUpdate({ selectedProjects: newSelected });
@@ -100,10 +102,13 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack }: Props) {
       <div className="mb-6 rounded-xl bg-muted/50 p-4">
         <p className="text-body-sm">
           <span className="font-semibold text-primary">{data.selectedProjects.length}</span> of{" "}
-          <span className="font-semibold">5</span> projects selected
+          <span className="font-semibold">10</span> projects selected
           {data.selectedProjects.length < 2 && (
             <span className="ml-2 text-muted-foreground">(minimum 2 required)</span>
           )}
+        </p>
+        <p className="mt-1 text-caption text-muted-foreground">
+          You can select up to 10 projects to showcase on your profile
         </p>
       </div>
 
