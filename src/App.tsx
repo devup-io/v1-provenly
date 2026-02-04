@@ -11,6 +11,7 @@ import ProfileSetup from "./pages/ProfileSetup";
 import ProfilePreview from "./pages/ProfilePreview";
 import Developers from "./pages/Developers";
 import DeveloperProfile from "./pages/DeveloperProfile";
+import CompareDevelopers from "./pages/CompareDevelopers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/profile-preview" element={<ProfilePreview />} />
           <Route path="/developers" element={<Developers />} />
           <Route path="/dev/:username" element={<DeveloperProfile />} />
+          <Route path="/compare" element={<CompareDevelopers />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
