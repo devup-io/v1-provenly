@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Search, Filter, Github, Star, GitBranch, ChevronDown, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Filter, Github, Star, GitBranch, ChevronDown, X, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/landing/Header";
 import { useNavigate } from "react-router-dom";
-
+import { CompareDrawer, type CompareDeveloper } from "@/components/CompareDrawer";
+import { Checkbox } from "@/components/ui/checkbox";
 const mockDevelopers = [
   {
     id: "1",
@@ -132,6 +133,7 @@ export default function Developers() {
   const [selectedComplexity, setSelectedComplexity] = useState<string[]>([]);
   const [minProjectsAtLevel, setMinProjectsAtLevel] = useState<number>(0);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedForCompare, setSelectedForCompare] = useState<CompareDeveloper[]>([]);
 
   const toggleRole = (role: string) => {
     setSelectedRoles((prev) =>
@@ -157,6 +159,36 @@ export default function Developers() {
     setSelectedComplexity([]);
     setMinProjectsAtLevel(0);
     setSearchQuery("");
+  };
+
+  const toggleCompare = (dev: typeof mockDevelopers[0]) => {
+    const compareDev: CompareDeveloper = {
+      id: dev.id,
+      name: dev.name,
+      username: dev.username,
+      avatarUrl: dev.avatarUrl,
+      roles: dev.roles,
+      techStack: dev.techStack,
+      maxComplexity: dev.maxComplexity,
+      totalStars: dev.totalStars,
+      projectCount: dev.projectCount,
+      complexityCounts: dev.complexityCounts,
+    };
+
+    setSelectedForCompare((prev) => {
+      const exists = prev.find((d) => d.id === dev.id);
+      if (exists) {
+        return prev.filter((d) => d.id !== dev.id);
+      }
+      if (prev.length >= 3) {
+        return prev; // Max 3
+      }
+      return [...prev, compareDev];
+    });
+  };
+
+  const isSelectedForCompare = (id: string) => {
+    return selectedForCompare.some((d) => d.id === id);
   };
 
   const filteredDevelopers = mockDevelopers.filter((dev) => {
@@ -353,89 +385,108 @@ export default function Developers() {
         </p>
 
         {/* Developer Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-24">
           {filteredDevelopers.map((dev, index) => (
             <motion.div
               key={dev.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              onClick={() => navigate(`/dev/${dev.username}`)}
-              className="group cursor-pointer rounded-2xl border border-border bg-card p-6 shadow-card transition-all hover:shadow-card-hover"
+              className={`group relative cursor-pointer rounded-2xl border bg-card p-6 shadow-card transition-all hover:shadow-card-hover ${
+                isSelectedForCompare(dev.id) ? "border-primary ring-2 ring-primary/20" : "border-border"
+              }`}
             >
-              {/* Developer Header */}
-              <div className="mb-4 flex items-start gap-4">
-                <img
-                  src={dev.avatarUrl}
-                  alt={dev.name}
-                  className="h-14 w-14 rounded-xl object-cover"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="truncate font-semibold">{dev.name}</h3>
-                    <Github className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+              {/* Compare Checkbox */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleCompare(dev);
+                }}
+                className={`absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-md border-2 transition-all ${
+                  isSelectedForCompare(dev.id)
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-muted-foreground/30 hover:border-primary"
+                }`}
+              >
+                {isSelectedForCompare(dev.id) && <Check className="h-4 w-4" />}
+              </button>
+
+              {/* Clickable area for navigation */}
+              <div onClick={() => navigate(`/dev/${dev.username}`)}>
+                {/* Developer Header */}
+                <div className="mb-4 flex items-start gap-4 pr-8">
+                  <img
+                    src={dev.avatarUrl}
+                    alt={dev.name}
+                    className="h-14 w-14 rounded-xl object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="truncate font-semibold">{dev.name}</h3>
+                      <Github className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                    </div>
+                    <p className="truncate text-body-sm text-muted-foreground">
+                      @{dev.username}
+                    </p>
                   </div>
-                  <p className="truncate text-body-sm text-muted-foreground">
-                    @{dev.username}
-                  </p>
-                </div>
-                <span
-                  className={`flex-shrink-0 rounded-full px-2.5 py-1 text-caption font-bold ${
-                    complexityColors[dev.maxComplexity]
-                  }`}
-                >
-                  {dev.maxComplexity}
-                </span>
-              </div>
-
-              {/* Roles */}
-              <p className="mb-3 text-body-sm text-muted-foreground">
-                {dev.roles.join(" · ")}
-              </p>
-
-              {/* Tech Stack */}
-              <div className="mb-4 flex flex-wrap gap-1.5">
-                {dev.techStack.slice(0, 4).map((tech) => (
                   <span
-                    key={tech}
-                    className="rounded-full bg-secondary px-2.5 py-1 text-caption"
+                    className={`flex-shrink-0 rounded-full px-2.5 py-1 text-caption font-bold ${
+                      complexityColors[dev.maxComplexity]
+                    }`}
                   >
-                    {tech}
+                    {dev.maxComplexity}
                   </span>
-                ))}
-                {dev.techStack.length > 4 && (
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-caption text-muted-foreground">
-                    +{dev.techStack.length - 4}
-                  </span>
-                )}
-              </div>
+                </div>
 
-              {/* Complexity breakdown pills */}
-              <div className="mb-4 flex gap-2">
-                {["L1", "L2", "L3"].map((level) => {
-                  const count = dev.complexityCounts[level as keyof typeof dev.complexityCounts] || 0;
-                  if (count === 0) return null;
-                  return (
+                {/* Roles */}
+                <p className="mb-3 text-body-sm text-muted-foreground">
+                  {dev.roles.join(" · ")}
+                </p>
+
+                {/* Tech Stack */}
+                <div className="mb-4 flex flex-wrap gap-1.5">
+                  {dev.techStack.slice(0, 4).map((tech) => (
                     <span
-                      key={level}
-                      className={`rounded-full px-2 py-0.5 text-caption font-medium ${complexityColors[level]}`}
+                      key={tech}
+                      className="rounded-full bg-secondary px-2.5 py-1 text-caption"
                     >
-                      {count}× {level}
+                      {tech}
                     </span>
-                  );
-                })}
-              </div>
+                  ))}
+                  {dev.techStack.length > 4 && (
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-caption text-muted-foreground">
+                      +{dev.techStack.length - 4}
+                    </span>
+                  )}
+                </div>
 
-              {/* Stats */}
-              <div className="flex items-center gap-4 text-caption text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Star className="h-3.5 w-3.5" />
-                  {dev.totalStars} stars
-                </span>
-                <span className="flex items-center gap-1">
-                  <GitBranch className="h-3.5 w-3.5" />
-                  {dev.projectCount} projects
-                </span>
+                {/* Complexity breakdown pills */}
+                <div className="mb-4 flex gap-2">
+                  {["L1", "L2", "L3"].map((level) => {
+                    const count = dev.complexityCounts[level as keyof typeof dev.complexityCounts] || 0;
+                    if (count === 0) return null;
+                    return (
+                      <span
+                        key={level}
+                        className={`rounded-full px-2 py-0.5 text-caption font-medium ${complexityColors[level]}`}
+                      >
+                        {count}× {level}
+                      </span>
+                    );
+                  })}
+                </div>
+
+                {/* Stats */}
+                <div className="flex items-center gap-4 text-caption text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Star className="h-3.5 w-3.5" />
+                    {dev.totalStars} stars
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <GitBranch className="h-3.5 w-3.5" />
+                    {dev.projectCount} projects
+                  </span>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -454,6 +505,16 @@ export default function Developers() {
           </div>
         )}
       </main>
+
+      {/* Compare Drawer */}
+      <AnimatePresence>
+        <CompareDrawer
+          selectedDevelopers={selectedForCompare}
+          onRemove={(id) => setSelectedForCompare((prev) => prev.filter((d) => d.id !== id))}
+          onClear={() => setSelectedForCompare([])}
+          onCompare={() => navigate("/compare", { state: { developers: selectedForCompare } })}
+        />
+      </AnimatePresence>
     </div>
   );
 }
