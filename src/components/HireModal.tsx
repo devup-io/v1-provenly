@@ -1,0 +1,184 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Mail, Send, MessageSquare, Briefcase, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+
+interface HireModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  developerName: string;
+  developerUsername: string;
+}
+
+export function HireModal({ isOpen, onClose, developerName, developerUsername }: HireModalProps) {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    company: "",
+    message: "",
+  });
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    
+    setIsSubmitting(false);
+    setIsSubmitted(true);
+  };
+
+  const handleClose = () => {
+    onClose();
+    // Reset state after animation
+    setTimeout(() => {
+      setFormData({ name: "", email: "", company: "", message: "" });
+      setIsSubmitted(false);
+    }, 300);
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleClose}
+            className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm"
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2"
+          >
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
+              {/* Header */}
+              <div className="mb-6 flex items-start justify-between">
+                <div>
+                  <h2 className="text-heading-sm">Contact {developerName}</h2>
+                  <p className="text-body-sm text-muted-foreground">
+                    @{developerUsername}
+                  </p>
+                </div>
+                <button
+                  onClick={handleClose}
+                  className="rounded-full p-2 hover:bg-muted transition-colors"
+                >
+                  <X className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </div>
+
+              {isSubmitted ? (
+                // Success State
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="py-8 text-center"
+                >
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-pastel-mint">
+                    <CheckCircle2 className="h-8 w-8 text-pastel-mint-foreground" />
+                  </div>
+                  <h3 className="mb-2 text-heading-sm">Message Sent!</h3>
+                  <p className="mb-6 text-body-sm text-muted-foreground">
+                    {developerName} will receive your inquiry and get back to you soon.
+                  </p>
+                  <Button onClick={handleClose}>Close</Button>
+                </motion.div>
+              ) : (
+                // Form
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Your Name</Label>
+                      <div className="relative">
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="John Doe"
+                          required
+                          className="pl-10"
+                        />
+                        <MessageSquare className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <div className="relative">
+                        <Input
+                          id="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="john@company.com"
+                          required
+                          className="pl-10"
+                        />
+                        <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Company (Optional)</Label>
+                    <div className="relative">
+                      <Input
+                        id="company"
+                        value={formData.company}
+                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                        placeholder="Acme Inc."
+                        className="pl-10"
+                      />
+                      <Briefcase className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Message</Label>
+                    <Textarea
+                      id="message"
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      placeholder={`Hi ${developerName.split(" ")[0]}, I came across your profile and would love to discuss...`}
+                      rows={4}
+                      required
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting} className="flex-1 gap-2">
+                      {isSubmitting ? (
+                        "Sending..."
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4" />
+                          Send Message
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}

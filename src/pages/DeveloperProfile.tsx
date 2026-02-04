@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -6,7 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/landing/Header";
-
+import { HireModal } from "@/components/HireModal";
 const mockDevelopers: Record<string, {
   name: string;
   username: string;
@@ -240,7 +241,7 @@ const complexityColors: Record<string, string> = {
 export default function DeveloperProfile() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
-
+  const [isHireModalOpen, setIsHireModalOpen] = useState(false);
   const developer = username ? mockDevelopers[username] : null;
 
   if (!developer) {
@@ -345,9 +346,9 @@ export default function DeveloperProfile() {
 
             {/* Contact */}
             <div className="flex flex-col gap-2">
-              <Button variant="default" size="lg" className="gap-2">
+              <Button variant="default" size="lg" className="gap-2" onClick={() => setIsHireModalOpen(true)}>
                 <Mail className="h-4 w-4" />
-                Contact
+                Hire Me
               </Button>
               <Button variant="outline" size="lg" className="gap-2">
                 <Linkedin className="h-4 w-4" />
@@ -490,6 +491,14 @@ export default function DeveloperProfile() {
           </div>
         </motion.div>
       </main>
+
+      {/* Hire Modal */}
+      <HireModal
+        isOpen={isHireModalOpen}
+        onClose={() => setIsHireModalOpen(false)}
+        developerName={developer.name}
+        developerUsername={developer.username}
+      />
     </div>
   );
 }
