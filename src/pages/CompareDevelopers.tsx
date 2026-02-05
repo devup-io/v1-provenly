@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Github, Star, GitBranch, Check, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/landing/Header";
+ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { CompareDeveloper } from "@/components/CompareDrawer";
 
 const complexityColors: Record<string, string> = {
@@ -163,68 +164,74 @@ export default function CompareDevelopers() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="overflow-hidden rounded-2xl border border-border bg-card shadow-card"
+         className="rounded-2xl border border-border bg-card shadow-card"
         >
-          {/* Developer Headers */}
-          <div className="grid border-b border-border" style={{ gridTemplateColumns: `200px repeat(${developers.length}, 1fr)` }}>
-            <div className="p-4 font-medium text-muted-foreground">Developer</div>
-            {developers.map((dev) => (
-              <div key={dev.id} className="border-l border-border p-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <img
-                      src={dev.avatarUrl}
-                      alt={dev.name}
-                      className="h-12 w-12 rounded-xl object-cover"
-                    />
-                    <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-card shadow-sm ring-2 ring-card">
-                      <Github className="h-3 w-3" />
+         <ScrollArea className="w-full">
+           <div className="min-w-[600px]">
+             {/* Developer Headers */}
+             <div className="grid border-b border-border" style={{ gridTemplateColumns: `140px repeat(${developers.length}, minmax(180px, 1fr))` }}>
+               <div className="p-3 md:p-4 font-medium text-muted-foreground text-sm">Developer</div>
+               {developers.map((dev) => (
+                 <div key={dev.id} className="border-l border-border p-3 md:p-4">
+                   <div className="flex items-center gap-2 md:gap-3">
+                     <div className="relative flex-shrink-0">
+                       <img
+                         src={dev.avatarUrl}
+                         alt={dev.name}
+                         className="h-10 w-10 md:h-12 md:w-12 rounded-xl object-cover"
+                       />
+                       <div className="absolute -bottom-1 -right-1 flex h-4 w-4 md:h-5 md:w-5 items-center justify-center rounded-full bg-card shadow-sm ring-2 ring-card">
+                         <Github className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                       </div>
+                     </div>
+                     <div className="min-w-0">
+                       <h3 className="font-semibold text-sm md:text-base truncate">{dev.name}</h3>
+                       <p className="text-xs md:text-caption text-muted-foreground truncate">@{dev.username}</p>
+                     </div>
                     </div>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     className="mt-2 md:mt-3 w-full gap-1.5 text-xs md:text-sm"
+                     onClick={() => navigate(`/dev/${dev.username}`)}
+                   >
+                     <span className="hidden sm:inline">View Profile</span>
+                     <span className="sm:hidden">Profile</span>
+                     <ExternalLink className="h-3 w-3" />
+                   </Button>
                   </div>
-                  <div>
-                    <h3 className="font-semibold">{dev.name}</h3>
-                    <p className="text-caption text-muted-foreground">@{dev.username}</p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3 w-full gap-1.5"
-                  onClick={() => navigate(`/dev/${dev.username}`)}
-                >
-                  View Profile
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
+               ))}
               </div>
-            ))}
-          </div>
 
-          {/* Comparison Rows */}
-          {comparisonRows.map((row, index) => {
-            const bestDevIds = getBestDev(row.key);
-            return (
-              <div
-                key={row.key}
-                className={`grid ${index < comparisonRows.length - 1 ? "border-b border-border" : ""}`}
-                style={{ gridTemplateColumns: `200px repeat(${developers.length}, 1fr)` }}
-              >
-                <div className="flex items-center p-4 text-body-sm font-medium text-muted-foreground">
-                  {row.label}
-                </div>
-                {developers.map((dev) => {
-                  const isBest = bestDevIds.includes(dev.id) && bestDevIds.length < developers.length;
-                  return (
-                    <div
-                      key={dev.id}
-                      className={`flex items-center border-l border-border p-4 ${isBest ? "bg-pastel-mint/20" : ""}`}
-                    >
-                      {renderValue(dev, row.key)}
+             {/* Comparison Rows */}
+             {comparisonRows.map((row, index) => {
+               const bestDevIds = getBestDev(row.key);
+               return (
+                 <div
+                   key={row.key}
+                   className={`grid ${index < comparisonRows.length - 1 ? "border-b border-border" : ""}`}
+                   style={{ gridTemplateColumns: `140px repeat(${developers.length}, minmax(180px, 1fr))` }}
+                 >
+                   <div className="flex items-center p-3 md:p-4 text-xs md:text-body-sm font-medium text-muted-foreground">
+                     {row.label}
                     </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+                   {developers.map((dev) => {
+                     const isBest = bestDevIds.includes(dev.id) && bestDevIds.length < developers.length;
+                     return (
+                       <div
+                         key={dev.id}
+                         className={`flex items-center border-l border-border p-3 md:p-4 ${isBest ? "bg-pastel-mint/20" : ""}`}
+                       >
+                         {renderValue(dev, row.key)}
+                       </div>
+                     );
+                   })}
+                 </div>
+               );
+             })}
+           </div>
+           <ScrollBar orientation="horizontal" />
+         </ScrollArea>
         </motion.div>
       </main>
     </div>
