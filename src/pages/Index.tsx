@@ -20,7 +20,6 @@ const Index = () => {
         <SocialProof />
         <Features />
         <HowItWorksNew />
-        <FeaturedDevelopers />
         <DeveloperShowcase />
         <WhyJoin />
         <Testimonials />
