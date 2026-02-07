@@ -94,7 +94,7 @@ export function Header() {
             <Button variant="ghost" size="sm" className="rounded-full" onClick={() => navigate("/signup")}>
               Log in
             </Button>
-            <Button variant="hero" size="sm" className="rounded-full" onClick={() => navigate("/signup")}>
+            <Button variant="hero" size="sm" className="rounded-full text-white" onClick={() => navigate("/signup")}>
               Sign up with GitHub
             </Button>
           </div>
