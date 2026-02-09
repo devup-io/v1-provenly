@@ -22,8 +22,6 @@ const Index = () => {
         <HowItWorksNew />
         <DeveloperShowcase />
         <WhyJoin />
-        <Testimonials />
-        <Stats />
         <CTA />
       </main>
       <Footer />
