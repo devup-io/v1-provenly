@@ -173,7 +173,7 @@ export function Hero() {
           <div className="relative hidden h-[500px] lg:block">
             {/* Main developer card */}
             <DeveloperCard
-              name="Alex Rivera"
+              name="Adeola Babatunde"
               role="Full-Stack Engineer"
               avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
               level="L3"
@@ -184,7 +184,7 @@ export function Hero() {
 
             {/* Secondary developer card */}
             <DeveloperCard
-              name="Maya Chen"
+              name="Tunde Ogunwale"
               role="Backend Engineer"
               avatar="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face"
               level="L2"
