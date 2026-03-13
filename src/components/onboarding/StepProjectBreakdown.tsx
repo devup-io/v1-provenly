@@ -6,15 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import type { ProfileData } from "@/pages/ProfileSetup";
 
-const mockProjectNames: Record<string, string> = {
-  "1": "real-time-collaboration-engine",
-  "2": "ml-image-classifier",
-  "3": "nextjs-saas-starter",
-  "4": "rust-cli-toolkit",
-  "5": "graphql-api-gateway",
-  "6": "react-component-library",
-};
-
 const complexityLevels = [
   {
     level: "L1" as const,
@@ -117,6 +108,10 @@ export function StepProjectBreakdown({ data, onUpdate, onNext, onBack }: Props) 
             techUsed: [],
             challenges: "",
           };
+          
+          // Get project name from repos array
+          const project = data.repos?.find((r) => r.id === projectId);
+          const projectName = project?.name || projectId;
 
           return (
             <div
@@ -137,7 +132,7 @@ export function StepProjectBreakdown({ data, onUpdate, onNext, onBack }: Props) 
                     <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/30" />
                   )}
                   <span className="font-semibold">
-                    {mockProjectNames[projectId] || projectId}
+                    {projectName}
                   </span>
                 </div>
                 {isExpanded ? (
@@ -232,8 +227,10 @@ export function StepProjectBreakdown({ data, onUpdate, onNext, onBack }: Props) 
                           >
                             {tech}
                             <button
+                              type="button"
                               onClick={() => removeTech(projectId, tech)}
                               className="rounded-full p-0.5 hover:bg-secondary-foreground/10"
+                              aria-label={`Remove ${tech}`}
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -310,7 +307,7 @@ export function StepProjectBreakdown({ data, onUpdate, onNext, onBack }: Props) 
           className="flex-1"
           disabled={!allProjectsComplete}
         >
-          Preview profile
+          Finish
         </Button>
       </div>
     </div>

@@ -26,7 +26,18 @@ const comparisonRows = [
 export default function CompareDevelopers() {
   const location = useLocation();
   const navigate = useNavigate();
-  const developers: CompareDeveloper[] = location.state?.developers || [];
+  const incoming: CompareDeveloper[] = location.state?.developers || [];
+  // log raw incoming data for debugging
+  console.log("[CompareDevelopers] incoming developers:", incoming);
+  // ensure complexityCounts object always has L1/L2/L3 keys to avoid runtime errors
+  const developers: CompareDeveloper[] = incoming.map((d) => ({
+    ...d,
+    complexityCounts: {
+      L1: d.complexityCounts?.L1 || 0,
+      L2: d.complexityCounts?.L2 || 0,
+      L3: d.complexityCounts?.L3 || 0,
+    },
+  }));
 
   if (developers.length < 2) {
     return (
@@ -79,13 +90,14 @@ export default function CompareDevelopers() {
         );
       case "L1":
       case "L2":
-      case "L3":
+      case "L3": {
         const count = dev.complexityCounts[key as keyof typeof dev.complexityCounts] || 0;
         return (
           <span className={`rounded-full px-2 py-0.5 text-caption font-medium ${complexityColors[key]}`}>
             {count}
           </span>
         );
+      }
       case "techStack":
         return (
           <div className="flex flex-wrap gap-1">
@@ -168,8 +180,10 @@ export default function CompareDevelopers() {
         >
          <ScrollArea className="w-full">
            <div className="min-w-[600px]">
-             {/* Developer Headers */}
-             <div className="grid border-b border-border" style={{ gridTemplateColumns: `140px repeat(${developers.length}, minmax(180px, 1fr))` }}>
+             {/* Header Row */}
+             <div 
+               className={`grid border-b border-border grid-cols-[140px_repeat(${developers.length},minmax(180px,1fr))]`}
+             >
                <div className="p-3 md:p-4 font-medium text-muted-foreground text-sm">Developer</div>
                {developers.map((dev) => (
                  <div key={dev.id} className="border-l border-border p-3 md:p-4">
@@ -201,16 +215,15 @@ export default function CompareDevelopers() {
                    </Button>
                   </div>
                ))}
-              </div>
+             </div>
 
              {/* Comparison Rows */}
              {comparisonRows.map((row, index) => {
                const bestDevIds = getBestDev(row.key);
                return (
-                 <div
+               <div
                    key={row.key}
-                   className={`grid ${index < comparisonRows.length - 1 ? "border-b border-border" : ""}`}
-                   style={{ gridTemplateColumns: `140px repeat(${developers.length}, minmax(180px, 1fr))` }}
+                   className={`grid ${index < comparisonRows.length - 1 ? "border-b border-border" : ""} grid-cols-[140px_repeat(${developers.length},minmax(180px,1fr))]`}
                  >
                    <div className="flex items-center p-3 md:p-4 text-xs md:text-body-sm font-medium text-muted-foreground">
                      {row.label}

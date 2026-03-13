@@ -2,12 +2,62 @@ import { motion } from "framer-motion";
 import { Github, Shield, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getDeveloper, getGitHubAuthorize, saveOAuthState, getCurrentDeveloper } from "@/lib/api";
 
 export default function SignUp() {
   const navigate = useNavigate();
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
-  const handleGitHubSignUp = () => {
-    navigate("/oauth-loading");
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const dev = getDeveloper();
+        if (!dev) return;
+
+        // Verify the session is actually valid using /me endpoint
+        try {
+          await getCurrentDeveloper();
+          // Session valid - redirect to welcome
+          navigate('/welcome');
+        } catch (err) {
+          // Session invalid - stay on login/signup and mark expired
+          console.warn('Session expired, showing login');
+          setSessionExpired(true);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    checkSession();
+  }, [navigate]);
+
+  const handleGitHubSignUp = async () => {
+    try {
+      setIsConnecting(true);
+      
+      // Get authorization URL and state from backend
+      const { authorization_url, state } = await getGitHubAuthorize();
+      
+      // Save state to localStorage for verification after redirect
+      // Clear any existing developer data to ensure clean slate
+      localStorage.removeItem('v1_developer');
+      saveOAuthState(state);
+      
+      console.log('[OAuth] Starting GitHub OAuth flow with state:', state);
+      
+      // Redirect to GitHub authorization page
+      window.location.href = authorization_url;
+    } catch (err) {
+      console.error("Error initiating GitHub OAuth:", err);
+      setIsConnecting(false);
+      
+      // Show error in alert
+      const errorMessage = err instanceof Error ? err.message : "Failed to connect to backend";
+      alert(`Error: ${errorMessage}\n\nPlease make sure:\n1. Backend is running at http://localhost:8000\n2. CORS is configured to allow requests from this origin`);
+    }
   };
 
   return (
@@ -27,10 +77,12 @@ export default function SignUp() {
           {/* Header */}
           <div className="mb-8 text-center">
             <h1 className="mb-3 text-display-sm">
-              Create your Provenly developer profile
+              {sessionExpired ? 'Log in to your Provenly profile' : 'Create your Provenly developer profile'}
             </h1>
             <p className="text-body text-muted-foreground">
-              Let companies evaluate your real work, not just your CV.
+              {sessionExpired
+                ? 'Your session expired or you previously signed in. Please log in again.'
+                : 'Let companies evaluate your real work, not just your CV.'}
             </p>
           </div>
 
@@ -39,9 +91,10 @@ export default function SignUp() {
             onClick={handleGitHubSignUp}
             size="xl"
             className="w-full gap-3"
+            disabled={isConnecting}
           >
             <Github className="h-5 w-5" />
-            Continue with GitHub
+            {isConnecting ? "Connecting..." : sessionExpired ? "Log in with GitHub" : "Continue with GitHub"}
           </Button>
 
           {/* Helper text */}

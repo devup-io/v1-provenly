@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Search } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getDeveloper } from "@/lib/api";
 
 const navLinks = [
   { label: "Developers", href: "/developers" },
@@ -15,15 +17,29 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 20);
+          ticking = false;
+        });
+      }
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const developer = getDeveloper();
+    setIsAuthenticated(!!developer);
   }, []);
 
   const handleNavClick = (href: string) => {
@@ -78,6 +94,7 @@ export function Header() {
 
           {/* Desktop Search & Actions */}
           <div className="hidden items-center gap-3 md:flex">
+            <ThemeToggle />
             {/* Search Bar */}
             <div className={`relative transition-all duration-300 ${searchFocused ? "w-64" : "w-48"}`}>
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -91,12 +108,15 @@ export function Header() {
               />
             </div>
             
-            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => navigate("/signup")}>
-              Log in
-            </Button>
-            <Button variant="hero" size="sm" className="rounded-full text-white" onClick={() => navigate("/signup")}>
-              Sign up with GitHub
-            </Button>
+            {isAuthenticated ? (
+              <Button variant="hero" size="sm" className="rounded-full text-black" onClick={() => navigate("/dashboard") }>
+                View My Profile
+              </Button>
+            ) : (
+              <Button variant="hero" size="sm" className="rounded-full text-black" onClick={() => navigate("/signup") }>
+                Sign in with GitHub
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -149,12 +169,16 @@ export function Header() {
                 </button>
               ))}
               <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4 px-2">
-                <Button variant="ghost" className="justify-start rounded-xl" onClick={() => { setMobileMenuOpen(false); navigate("/signup"); }}>
-                  Log in
-                </Button>
-                <Button variant="hero" className="rounded-xl" onClick={() => { setMobileMenuOpen(false); navigate("/signup"); }}>
-                  Sign up with GitHub
-                </Button>
+                <ThemeToggle />
+                {isAuthenticated ? (
+                  <Button variant="hero" className="rounded-xl text-black" onClick={() => { setMobileMenuOpen(false); navigate("/dashboard"); }}>
+                    View My Profile
+                  </Button>
+                ) : (
+                  <Button variant="hero" className="rounded-xl text-black" onClick={() => { setMobileMenuOpen(false); navigate("/signup"); }}>
+                    Sign in with GitHub
+                  </Button>
+                )}
               </div>
             </nav>
           </motion.div>

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Endpoint Tester</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+        }
+        h1 {
+            color: #6366f1;
+        }
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #999;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #fff;
+            font-family: monospace;
+        }
+        button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4f46e5;
+        }
+        button:disabled {
+            background: #333;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        .success {
+            color: #22c55e;
+        }
+        .error {
+            color: #ef4444;
+        }
+        .info {
+            color: #3b82f6;
+        }
+        .warning {
+            color: #f59e0b;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .status.ok { background: #22c55e; color: #000; }
+        .status.error { background: #ef4444; color: #fff; }
+        .text-muted { color: #999; }
+        .text-small { font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Backend API Tester</h1>
+    <p class="text-muted">Test your backend endpoints to debug dashboard issues</p>
+
+    <div class="section">
+        <h2>Step 1: Get Your Developer ID</h2>
+        <button onclick="getDeveloperId()">Get Developer ID from localStorage</button>
+        <div class="input-group">
+            <label>Developer ID (UUID)</label>
+            <input type="text" id="developerId" placeholder="e.g., 123e4567-e89b-12d3-a456-426614174000">
+        </div>
+        <div id="devIdResult"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 2: Test Endpoints</h2>
+        <div class="input-group">
+            <label>Backend URL</label>
+            <input type="text" id="backendUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+        </div>
+        
+        <button onclick="testGetDeveloper()">Test: GET Developer</button>
+        <button onclick="testGetProjects()">Test: GET Projects</button>
+        <button onclick="testGetEvaluation()">Test: GET Aggregate Evaluation</button>
+        <button onclick="testImportProjects()">Test: POST Import Projects</button>
+        
+        <div id="testResults"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 3: Check Database</h2>
+        <p class="text-muted text-small">Run these SQL queries in your database:</p>
+        <pre id="sqlQueries">-- Will populate when you enter Developer ID --</pre>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('testResults');
+        const devIdResult = document.getElementById('devIdResult');
+
+        function getDeveloperId() {
+            try {
+                const stored = localStorage.getItem('v1_developer');
+                if (!stored) {
+                    devIdResult.innerHTML = '<p class="error">❌ No developer data in localStorage. Please sign in first.</p>';
+                    return;
+                }
+                
+                const developer = JSON.parse(stored);
+                if (!developer.id) {
+                    devIdResult.innerHTML = '<p class="error">❌ Developer object has no ID field</p><pre>' + JSON.stringify(developer, null, 2) + '</pre>';
+                    return;
+                }
+                
+                document.getElementById('developerId').value = developer.id;
+                devIdResult.innerHTML = `<p class="success">✅ Found Developer ID: <code>${developer.id}</code></p>`;
+                
+                // Update SQL queries
+                updateSQLQueries(developer.id);
+            } catch (err) {
+                devIdResult.innerHTML = `<p class="error">❌ Error: ${err.message}</p>`;
+            }
+        }
+
+        function updateSQLQueries(developerId) {
+            const queries = `-- Check developer exists
+SELECT * FROM developers WHERE id = '${developerId}';
+
+-- Count projects for this developer
+SELECT COUNT(*) FROM projects WHERE developer_id = '${developerId}';
+
+-- View all projects
+SELECT id, name, language, stars, commits_count, created_at 
+FROM projects 
+WHERE developer_id = '${developerId}';
+
+-- Check AI evaluations
+SELECT p.name, e.difficulty_tier, e.ai_status, e.overall_assessment
+FROM projects p
+LEFT JOIN ai_evaluations e ON p.id = e.project_id
+WHERE p.developer_id = '${developerId}';`;
+            
+            document.getElementById('sqlQueries').textContent = queries;
+        }
+
+        async function makeRequest(endpoint, options = {}) {
+            const backendUrl = document.getElementById('backendUrl').value;
+            const url = backendUrl + endpoint;
+            
+            console.log(`[Test] ${options.method || 'GET'} ${url}`);
+            
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    credentials: 'include', // Important: send cookies
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                
+                const statusClass = response.ok ? 'ok' : 'error';
+                const statusText = `<span class="status ${statusClass}">${response.status} ${response.statusText}</span>`;
+                
+                let data;
+                const contentType = response.headers.get('content-type');
+                if (contentType?.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    data = await response.text();
+                }
+                
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    statusText: response.statusText,
+                    statusHtml: statusText,
+                    data: data
+                };
+            } catch (err) {
+                console.error('[Test] Error:', err);
+                return {
+                    ok: false,
+                    status: 0,
+                    statusText: 'Network Error',
+                    statusHtml: '<span class="status error">Network Error</span>',
+                    data: { error: err.message }
+                };
+            }
+        }
+
+        async function testGetDeveloper() {
+            const developerId = document.getElementById('developerId').value;
+            if (!developerId) {
+                alert('Please enter or get Developer ID first');
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<p class="info">⏳ Testing GET /api/v1/developers/{id}...</p>';
+            
+            const result = await makeRequest(`/api/v1/developers/${developerId}`, {
+                method: 'GET'
+            });
+            
+            let html = `<h3>GET /api/v1/developers/${developerId} ${result.statusHtml}</h3>`;
+            
+            if (result.ok) {
+                html += `<p class="success">✅ Developer endpoint working!</p>`;
+                html += `<pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+            } else {
+                html += `<p class="error">❌ Failed to get developer</p>`;
+                html += `<pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+                
+                if (result.status === 404) {
+                    html += `<p class="warning">⚠️ Developer not found. Check database or use correct ID.</p>`;
+                } else if (result.status === 401 || result.status === 403) {
+                    html += `<p class="warning">⚠️ Authentication failed. Make sure you're signed in and cookies are working.</p>`;
+                }
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        async function testGetProjects() {
+            const developerId = document.getElementById('developerId').value;
+            if (!developerId) {
+                alert('Please enter or get Developer ID first');
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<p class="info">⏳ Testing GET /api/v1/developers/{id}/projects...</p>';
+            
+            const result = await makeRequest(`/api/v1/developers/${developerId}/projects`, {
+                method: 'GET'
+            });
+            
+            let html = `<h3>GET /api/v1/developers/${developerId}/projects ${result.statusHtml}</h3>`;
+            
+            if (result.ok) {
+                const projects = Array.isArray(result.data) ? result.data : [];
+                html += `<p class="success">✅ Projects endpoint working! Found ${projects.length} project(s)</p>`;
+                
+                if (projects.length === 0) {
+                    html += `<p class="warning">⚠️ No projects found. Either:</p>`;
+                    html += `<ul style="color: #f59e0b;">`;
+                    html += `<li>Projects haven't been imported yet (click "Test: POST Import Projects")</li>`;
+                    html += `<li>Import succeeded but didn't save to database</li>`;
+                    html += `<li>Wrong developer ID</li>`;
+                    html += `</ul>`;
+                } else {
+                    html += `<p class="info">📊 Projects summary:</p>`;
+                    html += `<ul>`;
+                    projects.forEach(p => {
+                        html += `<li><strong>${p.name || 'Unnamed'}</strong> - ${p.language || 'Unknown'} - ${p.stars || 0} ⭐ - ${p.commits_count || 0} commits</li>`;
+                    });
+                    html += `</ul>`;
+                }
+                
+                html += `<details><summary>View Full Response</summary><pre>${JSON.stringify(result.data, null, 2)}</pre></details>`;
+            } else {
+                html += `<p class="error">❌ Failed to get projects</p>`;
+                html += `<pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+                
+                if (result.status === 404) {
+                    html += `<p class="warning">⚠️ Endpoint not found. Backend might not have this route implemented yet.</p>`;
+                    html += `<p>Expected backend route: <code>GET /api/v1/developers/{developer_id}/projects</code></p>`;
+                }
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        async function testGetEvaluation() {
+            const developerId = document.getElementById('developerId').value;
+            if (!developerId) {
+                alert('Please enter or get Developer ID first');
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<p class="info">⏳ Testing GET /api/v1/developers/{id}/aggregate-evaluation...</p>';
+            
+            const result = await makeRequest(`/api/v1/developers/${developerId}/aggregate-evaluation`, {
+                method: 'GET'
+            });
+            
+            let html = `<h3>GET /api/v1/developers/${developerId}/aggregate-evaluation ${result.statusHtml}</h3>`;
+            
+            if (result.ok) {
+                html += `<p class="success">✅ Aggregate evaluation endpoint working!</p>`;
+                
+                if (result.data) {
+                    html += `<p class="info">📊 Evaluation summary:</p>`;
+                    html += `<ul>`;
+                    if (result.data.overall_skill_level) html += `<li>Skill Level: <strong>${result.data.overall_skill_level}</strong></li>`;
+                    if (result.data.total_projects !== undefined) html += `<li>Total Projects: ${result.data.total_projects}</li>`;
+                    if (result.data.total_commits) html += `<li>Total Commits: ${result.data.total_commits}</li>`;
+                    if (result.data.primary_technologies) html += `<li>Technologies: ${result.data.primary_technologies.join(', ')}</li>`;
+                    html += `</ul>`;
+                } else {
+                    html += `<p class="warning">⚠️ Evaluation returned null. Might need to run evaluation first.</p>`;
+                }
+                
+                html += `<details><summary>View Full Response</summary><pre>${JSON.stringify(result.data, null, 2)}</pre></details>`;
+            } else {
+                html += `<p class="error">❌ Failed to get aggregate evaluation</p>`;
+                html += `<pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+                
+                if (result.status === 404) {
+                    html += `<p class="warning">⚠️ Endpoint not found. Backend might not have this route implemented yet.</p>`;
+                    html += `<p>Expected backend route: <code>GET /api/v1/developers/{developer_id}/aggregate-evaluation</code></p>`;
+                }
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        async function testImportProjects() {
+            resultsDiv.innerHTML = '<p class="info">⏳ Testing POST /api/v1/projects/import-all...</p>';
+            
+            const result = await makeRequest('/api/v1/projects/import-all?evaluate_ai=true', {
+                method: 'POST'
+            });
+            
+            let html = `<h3>POST /api/v1/projects/import-all ${result.statusHtml}</h3>`;
+            
+            if (result.ok) {
+                html += `<p class="success">✅ Import succeeded!</p>`;
+                html += `<pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+                html += `<p class="info">💡 Now test <code>GET Projects</code> to see if they were saved to database</p>`;
+            } else {
+                html += `<p class="error">❌ Import failed</p>`;
+                html += `<pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+                
+                if (result.status === 401 || result.status === 403) {
+                    html += `<p class="warning">⚠️ Not authenticated. Sign in to the app first, then test again.</p>`;
+                }
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        // Auto-load developer ID on page load
+        window.addEventListener('load', () => {
+            setTimeout(getDeveloperId, 500);
+        });
+    </script>
+</body>
+</html>

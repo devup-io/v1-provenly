@@ -1,96 +1,89 @@
-import { useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Filter, Github, Star, GitBranch, ChevronDown, X, Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Search, Filter, Github, Star, GitBranch, ChevronDown, X, Check, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input"; // still needed for numeric filters
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/landing/Header";
 import { useNavigate } from "react-router-dom";
 import { CompareDrawer, type CompareDeveloper } from "@/components/CompareDrawer";
 import { Checkbox } from "@/components/ui/checkbox";
-const mockDevelopers = [
-  {
-    id: "1",
-    name: "Alex Rivera",
-    username: "alexrivera",
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-    roles: ["Full-stack Engineer", "AI / ML Engineer"],
-    techStack: ["React", "TypeScript", "Python", "AWS"],
-    maxComplexity: "L3",
-    totalStars: 390,
-    projectCount: 4,
-    complexityCounts: { L1: 1, L2: 1, L3: 2 },
-  },
-  {
-    id: "2",
-    name: "Sarah Chen",
-    username: "sarahchen",
-    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
-    roles: ["Frontend Engineer", "Designer"],
-    techStack: ["React", "Vue", "Figma", "Tailwind"],
-    maxComplexity: "L2",
-    totalStars: 156,
-    projectCount: 3,
-    complexityCounts: { L1: 1, L2: 2, L3: 0 },
-  },
-  {
-    id: "3",
-    name: "Marcus Johnson",
-    username: "marcusj",
-    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
-    roles: ["Backend Engineer", "DevOps / Cloud"],
-    techStack: ["Go", "Kubernetes", "PostgreSQL", "AWS"],
-    maxComplexity: "L3",
-    totalStars: 289,
-    projectCount: 5,
-    complexityCounts: { L1: 0, L2: 3, L3: 2 },
-  },
-  {
-    id: "4",
-    name: "Emily Watson",
-    username: "emilywatson",
-    avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-    roles: ["AI / ML Engineer"],
-    techStack: ["Python", "PyTorch", "TensorFlow", "FastAPI"],
-    maxComplexity: "L3",
-    totalStars: 445,
-    projectCount: 6,
-    complexityCounts: { L1: 1, L2: 1, L3: 4 },
-  },
-  {
-    id: "5",
-    name: "David Kim",
-    username: "davidkim",
-    avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-    roles: ["Blockchain / Web3"],
-    techStack: ["Solidity", "Rust", "TypeScript", "Ethereum"],
-    maxComplexity: "L2",
-    totalStars: 178,
-    projectCount: 3,
-    complexityCounts: { L1: 1, L2: 2, L3: 0 },
-  },
-  {
-    id: "6",
-    name: "Lisa Park",
-    username: "lisapark",
-    avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
-    roles: ["Mobile Developer", "Full-stack Engineer"],
-    techStack: ["React Native", "Swift", "Node.js", "Firebase"],
-    maxComplexity: "L2",
-    totalStars: 234,
-    projectCount: 4,
-    complexityCounts: { L1: 1, L2: 3, L3: 0 },
-  },
-];
+import type { Developer, DeveloperSearchResponse, DeveloperSearchFilters } from "@/types/developer";
+import { searchDevelopers } from "@/lib/api";
+type Dev = {
+  id: string;
+  name: string;
+  username: string;
+  avatarUrl?: string;
+  roles?: string[];
+  techStack?: string[];
+  maxComplexity?: string;
+  totalStars?: number;
+  projectCount?: number;
+  // structure matches CompareDeveloper requirements
+  complexityCounts?: { L1: number; L2: number; L3: number };
+  // hiring signal metrics
+  verified_projects?: number;
+  average_confidence?: number;
+  experience_signal?: string;
+  contribution_breakdown?: Record<string, number>;
+};
+
+// helper to map backend Developer to frontend Dev
+const mapBackendDev = (d: Developer): Dev => {
+  const stats = d.project_stats || { L1_count: 0, L2_count: 0, L3_count: 0, total_projects: 0 };
+  const complexityCounts: { L1: number; L2: number; L3: number } = {
+    L1: stats.L1_count || 0,
+    L2: stats.L2_count || 0,
+    L3: stats.L3_count || 0,
+  };
+  // determine max complexity with >0 projects
+  let maxC: string | undefined;
+  if (complexityCounts.L3 > 0) maxC = 'L3';
+  else if (complexityCounts.L2 > 0) maxC = 'L2';
+  else if (complexityCounts.L1 > 0) maxC = 'L1';
+
+  const totalStarsVal =
+    typeof d.total_stars === 'number'
+      ? d.total_stars
+      : typeof d.stars === 'number'
+      ? d.stars
+      : undefined;
+
+  return {
+    id: d.dev_id || d.id || '',
+    name: d.dev_name || d.name || '',
+    username: d.username || d.id || '',
+    avatarUrl: d.profile_photo || d.avatar_url || undefined,
+    roles: d.services || d.roles || [],
+    techStack: d.skill_tags || d.tech_stack || [],
+    maxComplexity: maxC,
+    totalStars: totalStarsVal,
+    projectCount: stats.total_projects || 0,
+    complexityCounts,
+    // additional hiring-signal fields (may be undefined)
+    verified_projects: d.verified_projects,
+    average_confidence: d.average_confidence,
+    experience_signal: d.experience_signal,
+    contribution_breakdown: d.contribution_breakdown,
+  };
+};
 
 const roleFilters = [
-  "Frontend Engineer",
-  "Backend Engineer",
-  "Full-stack Engineer",
-  "AI / ML Engineer",
-  "DevOps / Cloud",
-  "Blockchain / Web3",
+  "Frontend Developer",
+  "Backend Developer",
+  "Full-stack Developer",
+  "AI / ML Developer",
+  "DevOps / Cloud Developer",
+  "Blockchain / Web3 Developer",
   "Designer",
   "Mobile Developer",
+];
+
+
+const contributionOptions: Array<"Primary Builder" | "Major Contributor" | "Minor Contributor"> = [
+  "Primary Builder",
+  "Major Contributor",
+  "Minor Contributor",
 ];
 
 const techFilters = [
@@ -127,13 +120,28 @@ const complexityColors: Record<string, string> = {
 
 export default function Developers() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
+  // searchQuery state is intentionally removed: filters suffice for finding developers
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedTech, setSelectedTech] = useState<string[]>([]);
-  const [selectedComplexity, setSelectedComplexity] = useState<string[]>([]);
+  // only one complexity level may be selected at a time
+  const [selectedComplexity, setSelectedComplexity] = useState<string | null>(null);
   const [minProjectsAtLevel, setMinProjectsAtLevel] = useState<number>(0);
+  const [minVerified, setMinVerified] = useState<number>(0);
+  const [contributionLevel, setContributionLevel] = useState<
+    "Primary Builder" | "Major Contributor" | "Minor Contributor" | null
+  >(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedForCompare, setSelectedForCompare] = useState<CompareDeveloper[]>([]);
+  const [developers, setDevelopers] = useState<Dev[]>([]);
+  // simple in-memory cache of search results keyed by JSON filters
+  const cacheRef = useRef<Map<string, { developers: Dev[]; totalCount: number; totalPages: number }>>(new Map());
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   const toggleRole = (role: string) => {
     setSelectedRoles((prev) =>
@@ -148,20 +156,19 @@ export default function Developers() {
   };
 
   const toggleComplexity = (level: string) => {
-    setSelectedComplexity((prev) =>
-      prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]
-    );
+    setSelectedComplexity((prev) => (prev === level ? null : level));
   };
 
   const clearFilters = () => {
     setSelectedRoles([]);
     setSelectedTech([]);
-    setSelectedComplexity([]);
+    setSelectedComplexity(null);
     setMinProjectsAtLevel(0);
-    setSearchQuery("");
+    setMinVerified(0);
+    setContributionLevel(null);
   };
 
-  const toggleCompare = (dev: typeof mockDevelopers[0]) => {
+  const toggleCompare = (dev: Dev) => {
     const compareDev: CompareDeveloper = {
       id: dev.id,
       name: dev.name,
@@ -191,41 +198,97 @@ export default function Developers() {
     return selectedForCompare.some((d) => d.id === id);
   };
 
-  const filteredDevelopers = mockDevelopers.filter((dev) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      dev.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dev.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dev.techStack.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesRoles =
-      selectedRoles.length === 0 ||
-      dev.roles.some((r) => selectedRoles.includes(r));
-
-    const matchesTech =
-      selectedTech.length === 0 ||
-      dev.techStack.some((t) => selectedTech.includes(t));
-
-    const matchesComplexity =
-      selectedComplexity.length === 0 ||
-      selectedComplexity.includes(dev.maxComplexity);
-
-    // Check if developer has minimum projects at selected complexity levels
-    const matchesMinProjects =
-      minProjectsAtLevel === 0 ||
-      selectedComplexity.length === 0 ||
-      selectedComplexity.some((level) => 
-        (dev.complexityCounts[level as keyof typeof dev.complexityCounts] || 0) >= minProjectsAtLevel
-      );
-
-    return matchesSearch && matchesRoles && matchesTech && matchesComplexity && matchesMinProjects;
-  });
-
+  // results are already filtered by the backend; just use developers array
+  const filteredDevelopers = developers;
   const hasActiveFilters =
     selectedRoles.length > 0 ||
     selectedTech.length > 0 ||
-    selectedComplexity.length > 0 ||
-    minProjectsAtLevel > 0;
+    !!selectedComplexity ||
+    minProjectsAtLevel > 0 ||
+    minVerified > 0 ||
+    Boolean(contributionLevel);
+
+  // fetch with backend search when filters/page change
+  const loadDevelopers = useCallback(async () => {
+    // only perform search when at least one filter is active
+    if (!hasActiveFilters) {
+      setDevelopers([]);
+      setTotalCount(0);
+      setTotalPages(1);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const filters: DeveloperSearchFilters = {
+        page,
+        limit,
+      };
+      if (selectedRoles.length > 0) {
+        filters.role = selectedRoles[0];
+      }
+      if (selectedTech.length > 0) {
+        filters.technologies = selectedTech;
+      }
+      if (selectedComplexity) {
+        filters.complexity_levels = [selectedComplexity];
+      }
+      if (minVerified > 0) {
+        filters.min_verified_projects = minVerified;
+      }
+      if (contributionLevel) {
+        filters.contribution_level = contributionLevel;
+      }
+      if (minProjectsAtLevel > 0) {
+        // backend expects this name for filtering by number of projects at the selected complexity
+        filters.min_selected_level_count = minProjectsAtLevel;
+      }
+      const cacheKey = JSON.stringify(filters);
+      // check cache first
+      if (cacheRef.current.has(cacheKey)) {
+        const cached = cacheRef.current.get(cacheKey)!;
+        console.log('[Developers] using cached results for', filters);
+        setDevelopers(cached.developers);
+        setTotalCount(cached.totalCount);
+        setTotalPages(cached.totalPages);
+        setLoading(false);
+      } else {
+        try {
+          const resp = await searchDevelopers(filters);
+          console.log('[Developers] raw response', resp, 'filters', filters);
+          setTotalPages(resp.total_pages || 1);
+          setTotalCount(resp.total_count || 0);
+          const items = Array.isArray(resp.developers) ? resp.developers : [];
+          console.log('[Developers] items array length', items.length);
+          const mapped = items.map(mapBackendDev);
+          console.log('[Developers] mapped developers', mapped);
+          setDevelopers(mapped);
+          cacheRef.current.set(cacheKey, { developers: mapped, totalCount: resp.total_count || 0, totalPages: resp.total_pages || 1 });
+        } finally {
+          setLoading(false);
+        }
+      }
+    } catch (err) {
+      console.error('Developer search failed', err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit, selectedRoles, selectedComplexity, contributionLevel, minVerified, selectedTech, minProjectsAtLevel, hasActiveFilters]);
+  useEffect(() => {
+    loadDevelopers();
+  }, [loadDevelopers]);
+
+  // clear cache when key filters change (especially role)
+  useEffect(() => {
+    cacheRef.current.clear();
+  }, [selectedRoles, selectedTech, selectedComplexity, minProjectsAtLevel, minVerified, contributionLevel]);
+
+  // reset page when filter criteria change
+  useEffect(() => {
+    setPage(1);
+  }, [selectedRoles, selectedTech, selectedComplexity, minProjectsAtLevel, minVerified, contributionLevel]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -242,17 +305,8 @@ export default function Developers() {
           </p>
         </div>
 
-        {/* Search & Filter Bar */}
-        <div className="mb-6 flex flex-col gap-4 md:flex-row">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, username, or technology..."
-              className="h-12 pl-12 pr-4"
-            />
-          </div>
+        {/* Filter button */}
+        <div className="mb-6 flex justify-end">
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
@@ -262,7 +316,7 @@ export default function Developers() {
             Filters
             {hasActiveFilters && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-caption font-bold text-primary-foreground">
-                {selectedRoles.length + selectedTech.length + selectedComplexity.length + (minProjectsAtLevel > 0 ? 1 : 0)}
+                {selectedRoles.length + selectedTech.length + (selectedComplexity ? 1 : 0) + (minProjectsAtLevel > 0 ? 1 : 0) + (minVerified > 0 ? 1 : 0) + (contributionLevel ? 1 : 0)}
               </span>
             )}
             <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? "rotate-180" : ""}`} />
@@ -307,87 +361,154 @@ export default function Developers() {
               </div>
             </div>
 
-            {/* Tech Filters */}
-            <div className="mb-6">
-              <p className="mb-3 text-body-sm font-medium">Technology</p>
-              <div className="flex flex-wrap gap-2">
-                {techFilters.map((tech) => (
-                  <button
-                    key={tech}
-                    onClick={() => toggleTech(tech)}
-                    className={`rounded-full px-3 py-1.5 text-body-sm transition-all ${
-                      selectedTech.includes(tech)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    }`}
-                  >
-                    {tech}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Complexity Filters */}
-            <div className="mb-6">
-              <p className="mb-3 text-body-sm font-medium">Complexity Level</p>
-              <div className="flex flex-wrap gap-2">
-                {complexityFilters.map((level) => (
-                  <button
-                    key={level.value}
-                    onClick={() => toggleComplexity(level.value)}
-                    className={`rounded-full px-3 py-1.5 text-body-sm font-medium transition-all ${
-                      selectedComplexity.includes(level.value)
-                        ? level.color
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    }`}
-                  >
-                    {level.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Min Projects at Level Filter - only show when complexity is selected */}
-            {selectedComplexity.length > 0 && (
-              <div>
-                <p className="mb-3 text-body-sm font-medium">
-                  Min projects at selected level(s)
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {projectCountOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => setMinProjectsAtLevel(
-                        minProjectsAtLevel === option.value ? 0 : option.value
-                      )}
-                      className={`rounded-full px-3 py-1.5 text-body-sm transition-all ${
-                        minProjectsAtLevel === option.value
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+            {/* only show further filters once a role is selected */}
+            {selectedRoles.length > 0 && (
+              <>
+                {/* Tech Filters */}
+                <div className="mb-6">
+                  <p className="mb-3 text-body-sm font-medium">Technology</p>
+                  <div className="flex flex-wrap gap-2">
+                    {techFilters.map((tech) => (
+                      <button
+                        key={tech}
+                        onClick={() => toggleTech(tech)}
+                        className={`rounded-full px-3 py-1.5 text-body-sm transition-all ${
+                          selectedTech.includes(tech)
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        }`}
+                      >
+                        {tech}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <p className="mt-2 text-caption text-muted-foreground">
-                  Filter by developers who have completed multiple projects at your selected complexity level
-                </p>
-              </div>
+
+                {/* Verified Projects Filter */}
+                <div className="mb-6">
+                  <p className="mb-3 text-body-sm font-medium">Min verified projects</p>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={minVerified}
+                    onChange={(e) => setMinVerified(Number(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+
+                {/* Contribution Level Filter */}
+                <div className="mb-6">
+                  <p className="mb-3 text-body-sm font-medium">Contribution level</p>
+                  <div className="flex flex-wrap gap-2">
+                    {contributionOptions.map((lvl) => (
+                      <button
+                        key={lvl}
+                        onClick={() => setContributionLevel(contributionLevel === lvl ? null : lvl)}
+                        className={`rounded-full px-3 py-1.5 text-body-sm transition-all ${
+                          contributionLevel === lvl
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        }`}
+                      >
+                        {lvl}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Complexity Filters */}
+                <div className="mb-6">
+                  <p className="mb-3 text-body-sm font-medium">Complexity Level</p>
+                  <div className="flex flex-wrap gap-2">
+                    {complexityFilters.map((level) => (
+                      <button
+                        key={level.value}
+                        onClick={() => toggleComplexity(level.value)}
+                        className={`rounded-full px-3 py-1.5 text-body-sm font-medium transition-all ${
+                          selectedComplexity === level.value
+                            ? level.color
+                            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        }`}
+                      >
+                        {level.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Min Projects at Level Filter - only show when complexity is selected */}
+                {selectedComplexity && (
+                  <div>
+                    <p className="mb-3 text-body-sm font-medium">
+                      Min projects at selected level(s)
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {projectCountOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => setMinProjectsAtLevel(
+                            minProjectsAtLevel === option.value ? 0 : option.value
+                          )}
+                          className={`rounded-full px-3 py-1.5 text-body-sm transition-all ${
+                            minProjectsAtLevel === option.value
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-caption text-muted-foreground">
+                      Filter by developers who have completed multiple projects at your selected complexity level
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </motion.div>
         )}
 
-        {/* Results Count */}
-        <p className="mb-6 text-body-sm text-muted-foreground">
-          Showing <span className="font-semibold text-foreground">{filteredDevelopers.length}</span>{" "}
-          developers
-        </p>
+        {/* Results Count & error */}
+        {error && (
+          <div className="mb-4 rounded-lg border border-destructive bg-destructive/5 p-4 flex items-center justify-between">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button size="sm" variant="ghost" onClick={loadDevelopers}>Retry</Button>
+          </div>
+        )}
+        {hasActiveFilters && filteredDevelopers.length > 0 && (
+          <p className="mb-6 text-body-sm text-muted-foreground">
+            Showing <span className="font-semibold text-foreground">{filteredDevelopers.length}</span> of <span className="font-semibold text-foreground">{totalCount}</span> developers
+          </p>
+        )}
 
-        {/* Developer Grid */}
+        {/* Developer Grid (skeletons or results) */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-24">
-          {filteredDevelopers.map((dev, index) => (
-            <motion.div
+          {loading && !filteredDevelopers.length ? (
+            // display skeleton cards while initial search is running
+            Array.from({ length: 6 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="animate-pulse rounded-2xl border bg-card p-6 shadow-card"
+              >
+                <div className="mb-4 flex items-start gap-4 pr-8">
+                  <div className="h-14 w-14 rounded-xl bg-muted" />
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="h-4 w-3/4 bg-muted" />
+                    <div className="h-3 w-1/2 bg-muted" />
+                  </div>
+                </div>
+                <div className="h-4 w-1/2 bg-muted mb-3" />
+                <div className="h-3 w-1/3 bg-muted mb-4" />
+                <div className="flex flex-wrap gap-2">
+                  <div className="h-6 w-16 rounded bg-muted" />
+                  <div className="h-6 w-16 rounded bg-muted" />
+                </div>
+              </div>
+            ))
+          ) : (
+            filteredDevelopers.map((dev, index) => (
+              <motion.div
               key={dev.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -412,7 +533,16 @@ export default function Developers() {
               </button>
 
               {/* Clickable area for navigation */}
-              <div onClick={() => navigate(`/dev/${dev.username}`)}>
+              <div
+                onClick={() => {
+                  const target = dev.username || dev.id;
+                  if (!target) {
+                    console.warn('[Developers] cannot navigate to developer, missing username/id', dev);
+                    return;
+                  }
+                  navigate(`/dev/${target}`);
+                }}
+              >
                 {/* Developer Header */}
                 <div className="mb-4 flex items-start gap-4 pr-8">
                   <img
@@ -438,31 +568,61 @@ export default function Developers() {
                   </span>
                 </div>
 
-                {/* Roles */}
-                <p className="mb-3 text-body-sm text-muted-foreground">
-                  {dev.roles.join(" · ")}
-                </p>
-
-                {/* Tech Stack */}
-                <div className="mb-4 flex flex-wrap gap-1.5">
-                  {dev.techStack.slice(0, 4).map((tech) => (
-                    <span
-                      key={tech}
-                      className="rounded-full bg-secondary px-2.5 py-1 text-caption"
-                    >
-                      {tech}
+                {/* roles + experience */}
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {dev.roles.map((r) => (
+                    <span key={r} className="rounded-full bg-primary/10 px-2 py-0.5 text-caption">
+                      {r}
                     </span>
                   ))}
-                  {dev.techStack.length > 4 && (
-                    <span className="rounded-full bg-muted px-2.5 py-1 text-caption text-muted-foreground">
-                      +{dev.techStack.length - 4}
+                  {dev.experience_signal && (
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-caption">
+                      {dev.experience_signal}
                     </span>
                   )}
                 </div>
 
-                {/* Complexity breakdown pills */}
+                {/* badges row */}
+                <div className="mb-4 flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
+                  {dev.verified_projects !== undefined && (
+                    <span>✅ {dev.verified_projects} verified</span>
+                  )}
+                  {dev.contribution_breakdown && (
+                    <>
+                      <span className="text-muted-foreground">·</span>
+                      <span>
+                        {dev.contribution_breakdown['Primary Builder'] || 0} primary
+                      </span>
+                    </>
+                  )}
+                  <span
+                    className="ml-1 cursor-help text-muted-foreground"
+                    title="Verified: number of projects we confirmed you contributed to. Primary: projects where you were listed as the primary builder."
+                  >
+                    (i)
+                  </span>
+                </div>
+
+                {/* tech stack */}
+                <div className="mb-4 flex flex-wrap gap-1">
+                  {dev.techStack.slice(0, 5).map((tech) => (
+                    <span
+                      key={tech}
+                      className="rounded-full bg-secondary px-2 py-0.5 text-caption"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                  {dev.techStack.length > 5 && (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-caption text-muted-foreground">
+                      +{dev.techStack.length - 5}
+                    </span>
+                  )}
+                </div>
+
+                {/* complexity pills */}
                 <div className="mb-4 flex gap-2">
-                  {["L1", "L2", "L3"].map((level) => {
+                  {['L1', 'L2', 'L3'].map((level) => {
                     const count = dev.complexityCounts[level as keyof typeof dev.complexityCounts] || 0;
                     if (count === 0) return null;
                     return (
@@ -476,32 +636,79 @@ export default function Developers() {
                   })}
                 </div>
 
-                {/* Stats */}
-                <div className="flex items-center gap-4 text-caption text-muted-foreground">
+                {/* bottom stats with project tooltip */}
+                <div className="flex flex-wrap items-center gap-4 text-caption text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Star className="h-3.5 w-3.5" />
                     {dev.totalStars} stars
                   </span>
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1" title="Total imported projects (verified projects may be different)">
                     <GitBranch className="h-3.5 w-3.5" />
                     {dev.projectCount} projects
                   </span>
+                  {dev.average_confidence !== undefined && (
+                    <span className="flex itemscenter gap-1">
+                      📊
+                      {Math.round(dev.average_confidence)}% confidence
+                    </span>
+                  )}
                 </div>
               </div>
             </motion.div>
-          ))}
+          )))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mb-12 flex justify-center items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="gap-1"
+            >
+              <ChevronDown className="h-4 w-4 rotate-90" />
+              Prev
+            </Button>
+            <span className="text-body-sm">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages || loading}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="gap-1"
+            >
+              Next
+              <ChevronDown className="h-4 w-4 -rotate-90" />
+            </Button>
+          </div>
+        )}
 
         {/* Empty State */}
         {filteredDevelopers.length === 0 && (
           <div className="py-16 text-center">
-            <p className="mb-2 text-heading-sm">No developers found</p>
-            <p className="text-body text-muted-foreground">
-              Try adjusting your filters or search query.
-            </p>
-            <Button onClick={clearFilters} variant="outline" className="mt-4">
-              Clear filters
-            </Button>
+            {!hasActiveFilters ? (
+              <>
+                <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <p className="mb-2 text-heading-sm">Looking for qualified developers?</p>
+                <p className="text-body text-muted-foreground">
+                  Are you a founder or an HR searching for verified engineers? Apply one or more filters above to get started.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mb-2 text-heading-sm">No developers found</p>
+                <p className="text-body text-muted-foreground">
+                  Try adjusting your filters.
+                </p>
+                <Button onClick={clearFilters} variant="outline" className="mt-4">
+                  Clear filters
+                </Button>
+              </>
+            )}
           </div>
         )}
       </main>

@@ -17,9 +17,10 @@ interface HireModalProps {
   onClose: () => void;
   developerName: string;
   developerUsername: string;
+  onSubmit?: (payload: { name: string; email: string; company?: string; message: string }) => Promise<void>;
 }
 
-export function HireModal({ isOpen, onClose, developerName, developerUsername }: HireModalProps) {
+export function HireModal({ isOpen, onClose, developerName, developerUsername, onSubmit }: HireModalProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -28,16 +29,30 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername }:
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
     setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+
+    try {
+      if (onSubmit) {
+        await onSubmit({
+          name: formData.name,
+          email: formData.email,
+          company: formData.company || undefined,
+          message: formData.message,
+        });
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+      setIsSubmitted(true);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -46,6 +61,7 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername }:
     setTimeout(() => {
       setFormData({ name: "", email: "", company: "", message: "" });
       setIsSubmitted(false);
+      setSubmitError(null);
     }, 300);
   };
 
@@ -128,6 +144,12 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername }:
                />
              </div>
  
+             {submitError && (
+               <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                 {submitError}
+               </div>
+             )}
+
              <div className="flex gap-3 pt-2">
                <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
                  Cancel

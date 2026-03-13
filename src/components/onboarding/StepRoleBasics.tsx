@@ -3,16 +3,17 @@ import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useState } from "react";
 import type { ProfileData } from "@/pages/ProfileSetup";
 
 const roleOptions = [
-  "Frontend Engineer",
-  "Backend Engineer",
-  "Full-stack Engineer",
-  "AI / ML Engineer",
-  "DevOps / Cloud",
-  "Blockchain / Web3",
+  "Frontend Developer",
+  "Backend Developer",
+  "Full-stack Developer",
+  "AI / ML Developer",
+  "DevOps / Cloud Developer",
+  "Blockchain / Web3 Developer",
   "Designer",
   "Mobile Developer",
 ];
@@ -66,6 +67,7 @@ export function StepRoleBasics({ data, onUpdate, onNext }: Props) {
     onUpdate({ techStack: data.techStack.filter((t) => t !== tech) });
   };
 
+  const [showWarning, setShowWarning] = useState(false);
   const canContinue = data.roles.length > 0 && data.techStack.length > 0;
 
   return (
@@ -75,6 +77,9 @@ export function StepRoleBasics({ data, onUpdate, onNext }: Props) {
         <p className="text-body text-muted-foreground">
           Select your primary roles and tech stack to help founders find you.
         </p>
+        <div className="mt-4 rounded-lg bg-yellow-50 border border-yellow-200 p-4 text-body-sm text-yellow-900">
+          <strong>Important:</strong> to get jobs aligned with your selected role and tech stack, import projects that match those selections. If you upload unrelated repositories or only build in a language different from your stated stack, your account may be flagged for low relevance or even temporarily suspended. Make sure your work reflects your declared expertise.
+        </div>
       </div>
 
       {/* Roles */}
@@ -139,8 +144,10 @@ export function StepRoleBasics({ data, onUpdate, onNext }: Props) {
               >
                 {tech}
                 <button
+                  type="button"
                   onClick={() => removeTech(tech)}
                   className="rounded-full p-0.5 hover:bg-pastel-mint-foreground/10"
+                  aria-label={`Remove ${tech}`}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -180,9 +187,29 @@ export function StepRoleBasics({ data, onUpdate, onNext }: Props) {
       </div>
 
       {/* Continue Button */}
-      <Button onClick={onNext} size="xl" className="w-full" disabled={!canContinue}>
+      <Button onClick={() => canContinue ? setShowWarning(true) : null} size="xl" className="w-full" disabled={!canContinue}>
         Continue
       </Button>
+
+      {/* confirmation dialog */}
+      <Dialog open={showWarning} onOpenChange={setShowWarning}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm your selections</DialogTitle>
+            <DialogDescription>
+              You're about to proceed with the role and tech stack you've chosen. Please ensure the projects you import later will align with these choices to maintain account credibility.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowWarning(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => { setShowWarning(false); onNext(); }}>
+              I understand
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
