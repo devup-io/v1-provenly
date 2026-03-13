@@ -90,10 +90,20 @@ Backend code should look like:
         // Decode from base64
         const decoded = atob(decodeURIComponent(encodedData));
         console.log('Decoded data:', decoded);
-        
+
         const parsedData = JSON.parse(decoded);
         console.log('Parsed data structure:', parsedData);
-        
+
+        // Immediately remove the token/data from the URL so it isn't stored in history
+        // and keep it out of accidental logs, while still allowing router navigation.
+        window.history.replaceState({}, document.title, '/dashboard');
+
+        // If we received an access token, store it in sessionStorage (not localStorage)
+        // so it is cleared when the tab closes.
+        if (parsedData.access_token) {
+          sessionStorage.setItem('v1_access_token', parsedData.access_token);
+        }
+
         // Handle different backend response structures
         let developer: DeveloperProfile;
         
