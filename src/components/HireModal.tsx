@@ -96,7 +96,7 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                      placeholder="John Doe"
                      required
-                     className="pl-10"
+                     className="pl-10 w-full"
                    />
                    <MessageSquare className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                  </div>
@@ -111,7 +111,7 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                      placeholder="john@company.com"
                      required
-                     className="pl-10"
+                     className="pl-10 w-full"
                    />
                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                  </div>
@@ -122,12 +122,12 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
                <Label htmlFor="company">Company (Optional)</Label>
                <div className="relative">
                  <Input
-                   id="company"
-                   value={formData.company}
-                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                   placeholder="Acme Inc."
-                   className="pl-10"
-                 />
+                     id="company"
+                     value={formData.company}
+                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                     placeholder="Acme Inc."
+                     className="pl-10 w-full"
+                   />
                  <Briefcase className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                </div>
              </div>
@@ -141,6 +141,7 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
                  placeholder={`Hi ${developerName.split(" ")[0]}, I came across your profile and would love to discuss...`}
                  rows={4}
                  required
+                 className="w-full"
                />
              </div>
  
@@ -150,11 +151,11 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
                </div>
              )}
 
-             <div className="flex gap-3 pt-2">
-               <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
+             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+               <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto">
                  Cancel
                </Button>
-               <Button type="submit" disabled={isSubmitting} className="flex-1 gap-2">
+               <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto gap-2">
                  {isSubmitting ? (
                    "Sending..."
                  ) : (
