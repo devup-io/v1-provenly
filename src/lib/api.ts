@@ -434,6 +434,13 @@ export async function getGitHubStatus(state: string): Promise<GitHubStatusRespon
   });
 }
 
+export async function refreshAuthSession(): Promise<void> {
+  await apiRequest<void>("/api/v1/auth/refresh", {
+    method: "POST",
+    expectJson: false,
+  });
+}
+
 // fetch draft profile for review/publish step
 export async function getProfilePreview(): Promise<DeveloperProfile> {
   return apiRequest<DeveloperProfile>(`/api/v1/profile/preview`, {

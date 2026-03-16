@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import type { DeveloperProfile } from '@/types/api';
-import { saveDeveloper, getCurrentDeveloper, clearOAuthState } from '@/lib/api';
+import { saveDeveloper, getCurrentDeveloper, clearOAuthState, refreshAuthSession, isAuthError } from '@/lib/api';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -30,9 +30,30 @@ export default function AuthCallback() {
 
         clearOAuthState();
 
-        // IMPORTANT: Fetch accurate developer data from server
-        // This validates the JWT token and gets the correct profile_complete status
-        const accurateDeveloper: DeveloperProfile = await getCurrentDeveloper();
+        // IMPORTANT: Fetch accurate developer data from server.
+        // With cookie-based auth, allow a few retries while cookies/session settle.
+        let accurateDeveloper: DeveloperProfile | null = null;
+        const delays = [250, 600, 1200];
+
+        for (let attempt = 0; attempt < delays.length; attempt++) {
+          try {
+            accurateDeveloper = await getCurrentDeveloper();
+            break;
+          } catch (err) {
+            if (isAuthError(err)) {
+              try {
+                await refreshAuthSession();
+              } catch {
+                // Refresh may fail if no refresh cookie yet; retry /me after delay.
+              }
+            }
+            await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+          }
+        }
+
+        if (!accurateDeveloper) {
+          throw new Error('Sign-in session could not be established. Please try again.');
+        }
 
         saveDeveloper(accurateDeveloper);
 
@@ -45,7 +66,7 @@ export default function AuthCallback() {
           navigate('/onboarding');
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to process authentication';
+        const message = error instanceof Error ? error.message : 'Failed to complete sign-in.';
         setError(message);
         
         // Show error for a bit longer so user can read it
