@@ -461,19 +461,22 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-hero p-4 sm:p-6 md:p-8">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
+            className="space-y-2"
           >
-            <h1 className="text-display-sm">Welcome, {developer.name || developer.github_username}!</h1>
-            <p className="text-body text-muted-foreground">Here's your developer profile dashboard</p>
+            <p className="text-body text-muted-foreground">Welcome back,</p>
+            <h1 className="text-display-sm font-bold">{developer.name || developer.github_username}</h1>
+            <p className="text-body-sm text-muted-foreground">Here's your developer profile dashboard</p>
           </motion.div>
+
           <Button
             variant="outline"
             onClick={() => navigate('/profile-setup')}
-            className="gap-2"
+            className="w-full lg:w-auto gap-2"
           >
             Edit Profile
           </Button>
@@ -503,34 +506,51 @@ export default function Dashboard() {
             whileHover={{ y: -4 }}
             className="col-span-1 rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-6 shadow-lg hover:shadow-xl transition-all"
           >
-            <div className="flex flex-col items-center text-center">
+            <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
               {developer.github_avatar && (
                 <img
                   src={developer.github_avatar}
                   alt={developer.name || developer.github_username}
-                  className="mb-4 h-20 w-20 rounded-full object-cover"
+                  className="h-20 w-20 rounded-full object-cover"
                 />
               )}
-              <h2 className="text-heading-sm">{developer.name || developer.github_username}</h2>
-              <p className="text-body-sm text-muted-foreground">@{developer.github_username}</p>
+              <div className="flex flex-col justify-center">
+                <p className="text-body-sm text-muted-foreground">Welcome back,</p>
+                <h2 className="text-heading-lg font-bold">{developer.name || developer.github_username}</h2>
+                <p className="text-body-sm text-muted-foreground">@{developer.github_username}</p>
 
-              {developer.primary_role && (
-                <span className="mt-4 inline-block rounded-full bg-primary/10 px-3 py-1 text-body-sm font-medium text-primary">
-                  {developer.primary_role}
-                </span>
-              )}
-              {supportedRoles.length > 0 && (
-                <div className="mt-2 text-caption text-muted-foreground">
-                  Supported roles: {supportedRoles.join(', ')}
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {developer.primary_role && (
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-body-sm font-medium text-primary">
+                      {developer.primary_role}
+                    </span>
+                  )}
+                  {developer.primary_stack && developer.primary_stack.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {developer.primary_stack.slice(0, 5).map((tech: string) => (
+                        <span
+                          key={tech}
+                          className="rounded-full bg-secondary/10 px-2.5 py-1 text-caption font-medium text-secondary"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-              {developer.primary_role && supportedRoles.length > 0 && !supportedRoles.includes(developer.primary_role) && (
-                <div className="mt-2 rounded-md bg-yellow-100 p-2 text-yellow-800 text-caption">
-                  Your declared role (‘{developer.primary_role}’) is not currently supported; evaluations may be limited.
-                </div>
-              )}
 
-                <div className="mt-4 space-y-2 text-body-sm text-muted-foreground">
+                {supportedRoles.length > 0 && (
+                  <div className="mt-2 text-caption text-muted-foreground">
+                    Supported roles: {supportedRoles.join(', ')}
+                  </div>
+                )}
+                {developer.primary_role && supportedRoles.length > 0 && !supportedRoles.includes(developer.primary_role) && (
+                  <div className="mt-2 rounded-md bg-yellow-100 p-2 text-yellow-800 text-caption">
+                    Your declared role (‘{developer.primary_role}’) is not currently supported; evaluations may be limited.
+                  </div>
+                )}
+
+                <div className="mt-4 grid gap-2 text-body-sm text-muted-foreground sm:grid-cols-2">
                   {developer.experience_signal && (
                     <div>Experience: {developer.experience_signal}</div>
                   )}
@@ -547,33 +567,20 @@ export default function Dashboard() {
                   )}
                 </div>
 
-              {/* primary tech stack */}
-              {developer.primary_stack && developer.primary_stack.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {developer.primary_stack.map((tech: string) => (
-                    <span
-                      key={tech}
-                      className="rounded-full px-3 py-1.5 text-body-sm bg-secondary border border-secondary/70 dark:bg-secondary/10 dark:border-secondary/50"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-              )}
+                {developer.bio && (
+                  <p className="mt-4 text-body-sm text-muted-foreground">{developer.bio}</p>
+                )}
 
-              {developer.bio && (
-                <p className="mt-4 text-body-sm text-muted-foreground">{developer.bio}</p>
-              )}
-
-              <a
-                href={`https://github.com/${developer.github_username}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-6 flex items-center gap-2 text-primary hover:underline"
-              >
-                <Github className="h-4 w-4" />
-                View on GitHub
-              </a>
+                <a
+                  href={`https://github.com/${developer.github_username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-6 inline-flex items-center gap-2 text-primary hover:underline"
+                >
+                  <Github className="h-4 w-4" />
+                  View on GitHub
+                </a>
+              </div>
             </div>
           </motion.div>
 
@@ -613,7 +620,7 @@ export default function Dashboard() {
                 )}
 
                 {/* numeric/stat summary items */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-border bg-card p-4">
                     <p className="text-body-sm text-muted-foreground">Total Projects</p>
                     <p className="text-heading-md">{stats.total_projects || 0}</p>

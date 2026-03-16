@@ -98,10 +98,11 @@ Backend code should look like:
         // and keep it out of accidental logs, while still allowing router navigation.
         window.history.replaceState({}, document.title, '/dashboard');
 
-        // If we received an access token, store it in sessionStorage (not localStorage)
-        // so it is cleared when the tab closes.
+        // If we received an access token, store it in both sessionStorage and localStorage
+        // This helps survive cross-site redirects on some browsers/devices where sessionStorage may be cleared.
         if (parsedData.access_token) {
           sessionStorage.setItem('v1_access_token', parsedData.access_token);
+          localStorage.setItem('v1_access_token', parsedData.access_token);
         }
 
         // Handle different backend response structures
