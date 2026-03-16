@@ -301,11 +301,17 @@ export const apiRequest = async <T>(path: string, options: ApiRequestOptions = {
     console.log(`[API] ${rest.method || 'GET'} ${path}`);
   }
 
+  // If an access token is available (from OAuth callback), send it as a Bearer header
+  // This supports devices/browsers where the cookie is not being stored/sent reliably.
+  const storedToken = typeof window !== 'undefined'
+    ? sessionStorage.getItem('v1_access_token') || localStorage.getItem('v1_access_token')
+    : null;
+  const authHeaders: Record<string, string> = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
 
   const res = await fetch(fullUrl, {
     credentials: 'include',
     mode: 'cors',
-    headers: { "Content-Type": "application/json", ...(headers || {}) },
+    headers: { "Content-Type": "application/json", ...(headers || {}), ...authHeaders },
     ...rest,
   });
 
