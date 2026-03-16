@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, GitCommit, Star, Check } from 'lucide-react';
+import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, Check, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Header } from '@/components/landing/Header';
 import { useToast } from '@/hooks/use-toast';
 import { getDeveloper, getDeveloperProjects, getAggregateEvaluation, clearAuth, getCurrentDeveloper, getSupportedDevTypes, publishProfile, unpublishProfile, getDeveloperAnalyzer } from '@/lib/api';
 import type { DeveloperProfile, Project, AggregateEvaluation, AIEvaluation } from '@/types/api';
@@ -49,6 +51,20 @@ const PROJECT_TYPE_CONFIG: Record<string, { badge: string; weights: Record<strin
 };
 
 const signalOrder = ['code_quality','architecture_quality','engineering_depth','commit_quality','production_readiness'];
+
+const techBadgeClasses: Record<string, string> = {
+  React: 'border border-cyan-500/30 bg-cyan-500/15 text-cyan-700 dark:text-cyan-300',
+  TypeScript: 'border border-blue-500/30 bg-blue-500/15 text-blue-700 dark:text-blue-300',
+  JavaScript: 'border border-yellow-500/30 bg-yellow-500/15 text-yellow-700 dark:text-yellow-300',
+  Tailwind: 'border border-teal-500/30 bg-teal-500/15 text-teal-700 dark:text-teal-300',
+  Vite: 'border border-violet-500/30 bg-violet-500/15 text-violet-700 dark:text-violet-300',
+  Recharts: 'border border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+  Python: 'border border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
+  'Node.js': 'border border-lime-500/30 bg-lime-500/15 text-lime-700 dark:text-lime-300',
+};
+
+const getTechBadgeClass = (tech: string) =>
+  techBadgeClasses[tech] || 'border border-border bg-secondary text-secondary-foreground';
 
 function renderSignals(evaluation: AIEvaluation, detectedType?: string) {
   const config = detectedType ? PROJECT_TYPE_CONFIG[detectedType] : undefined;
@@ -457,9 +473,25 @@ export default function Dashboard() {
     return null;
   }
 
+  const primaryStack = normalizeTechStack(developer.primary_stack).slice(0, 5);
+  const topTechnologies =
+    stats?.primary_technologies?.length
+      ? stats.primary_technologies.slice(0, 5)
+      : Array.from(new Set(projects.map((project) => project.language).filter(Boolean) as string[])).slice(0, 5);
+  const totalCommits = stats?.total_commits ?? projects.reduce((sum, project) => sum + (project.commits_count || 0), 0);
+  const repoCountLabel = `${projects.length} ${projects.length === 1 ? 'repository' : 'repositories'}`;
+  const experienceValue = developer.experience_signal || 'N/A';
+  const verifiedProjectsValue = developer.verified_projects !== undefined ? `${developer.verified_projects}/${projects.length}` : 'N/A';
+  const avgConfidenceValue = developer.average_confidence !== undefined ? `${Math.round(developer.average_confidence)}%` : 'N/A';
+  const contributionValue = developer.contribution_breakdown
+    ? `Primary ${developer.contribution_breakdown['Primary Builder'] || 0} | Major ${developer.contribution_breakdown['Major Contributor'] || 0} | Minor ${developer.contribution_breakdown['Minor Contributor'] || 0}`
+    : 'N/A';
+
   return (
-    <div className="min-h-screen bg-gradient-hero p-4 sm:p-6 md:p-8">
-      <div className="mx-auto max-w-6xl">
+    <div className="min-h-screen bg-gradient-hero">
+      <Header />
+
+      <div className="mx-auto max-w-6xl px-4 pb-4 pt-24 sm:px-6 sm:pb-6 md:px-8 md:pb-8 md:pt-28">
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <motion.div
@@ -497,90 +529,100 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {/* Profile Card */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             whileHover={{ y: -4 }}
-            className="col-span-1 rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-6 shadow-lg hover:shadow-xl transition-all"
+            className="rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
           >
-            <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
-              {developer.github_avatar && (
-                <img
-                  src={developer.github_avatar}
-                  alt={developer.name || developer.github_username}
-                  className="h-20 w-20 rounded-full object-cover"
-                />
-              )}
-              <div className="flex flex-col justify-center">
-                <p className="text-body-sm text-muted-foreground">Welcome back,</p>
-                <h2 className="text-heading-lg font-bold">{developer.name || developer.github_username}</h2>
-                <p className="text-body-sm text-muted-foreground">@{developer.github_username}</p>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  {developer.primary_role && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                {developer.github_avatar && (
+                  <img
+                    src={developer.github_avatar}
+                    alt={developer.name || developer.github_username}
+                    className="h-20 w-20 rounded-full object-cover"
+                  />
+                )}
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="text-heading-lg font-bold">{developer.name || developer.github_username}</h2>
+                    <span className="text-body-sm text-muted-foreground">@{developer.github_username}</span>
+                  </div>
+                  <div className="mt-1">
                     <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-body-sm font-medium text-primary">
-                      {developer.primary_role}
+                      {developer.primary_role || 'N/A'}
                     </span>
-                  )}
-                  {developer.primary_stack && developer.primary_stack.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {developer.primary_stack.slice(0, 5).map((tech: string) => (
-                        <span
-                          key={tech}
-                          className="rounded-full bg-secondary/10 px-2.5 py-1 text-caption font-medium text-secondary"
-                        >
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {supportedRoles.length > 0 && (
-                  <div className="mt-2 text-caption text-muted-foreground">
-                    Supported roles: {supportedRoles.join(', ')}
                   </div>
-                )}
-                {developer.primary_role && supportedRoles.length > 0 && !supportedRoles.includes(developer.primary_role) && (
-                  <div className="mt-2 rounded-md bg-yellow-100 p-2 text-yellow-800 text-caption">
-                    Your declared role (‘{developer.primary_role}’) is not currently supported; evaluations may be limited.
-                  </div>
-                )}
-
-                <div className="mt-4 grid gap-2 text-body-sm text-muted-foreground sm:grid-cols-2">
-                  {developer.experience_signal && (
-                    <div>Experience: {developer.experience_signal}</div>
-                  )}
-                  {developer.verified_projects !== undefined && (
-                    <div>Verified projects: {developer.verified_projects}/{projects.length}</div>
-                  )}
-                  {developer.average_confidence !== undefined && (
-                    <div>Avg confidence: {Math.round(developer.average_confidence)}%</div>
-                  )}
-                  {developer.contribution_breakdown && (
-                    <div>
-                      Contribution: Primary {developer.contribution_breakdown['Primary Builder']||0} | Major {developer.contribution_breakdown['Major Contributor']||0} | Minor {developer.contribution_breakdown['Minor Contributor']||0}
-                    </div>
-                  )}
                 </div>
-
-                {developer.bio && (
-                  <p className="mt-4 text-body-sm text-muted-foreground">{developer.bio}</p>
-                )}
-
-                <a
-                  href={`https://github.com/${developer.github_username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-6 inline-flex items-center gap-2 text-primary hover:underline"
-                >
-                  <Github className="h-4 w-4" />
-                  View on GitHub
-                </a>
               </div>
+
+              <div className="mt-3 space-y-3 px-4">
+                <div className="flex items-center gap-2 text-body-sm font-medium text-muted-foreground">
+                  <Cpu className="h-4 w-4 text-primary" />
+                  <span>Tech Stack</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {primaryStack.length > 0 ? (
+                    primaryStack.map((tech) => (
+                      <span
+                        key={tech}
+                        className={`rounded-full px-2.5 py-1 text-caption font-medium ${getTechBadgeClass(tech)}`}
+                      >
+                        {tech}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-caption text-muted-foreground">N/A</span>
+                  )}
+                </div>
+              </div>
+
+              {supportedRoles.length > 0 && (
+                <div className="px-4 text-caption text-muted-foreground">
+                  Supported roles: {supportedRoles.join(', ')}
+                </div>
+              )}
+              {developer.primary_role && supportedRoles.length > 0 && !supportedRoles.includes(developer.primary_role) && (
+                <div className="mx-4 rounded-md bg-yellow-100 p-2 text-caption text-yellow-800">
+                  Your declared role (‘{developer.primary_role}’) is not currently supported; evaluations may be limited.
+                </div>
+              )}
+
+              <div className="mt-4 grid grid-cols-1 gap-3 text-body-sm lg:grid-cols-2">
+                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-caption uppercase tracking-wide text-muted-foreground">Experience</span>
+                  <span className="font-medium text-foreground">{experienceValue}</span>
+                </div>
+                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-caption uppercase tracking-wide text-muted-foreground">Verified Projects</span>
+                  <span className="font-medium text-foreground">{verifiedProjectsValue}</span>
+                </div>
+                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-caption uppercase tracking-wide text-muted-foreground">Avg Confidence</span>
+                  <span className="font-medium text-foreground">{avgConfidenceValue}</span>
+                </div>
+                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3">
+                  <span className="text-caption uppercase tracking-wide text-muted-foreground">Contribution</span>
+                  <span className="font-medium text-foreground">{contributionValue}</span>
+                </div>
+              </div>
+
+              <p className="mt-4 text-body-sm text-muted-foreground">{developer.bio || 'N/A'}</p>
+
+              <a
+                href={`https://github.com/${developer.github_username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 inline-flex items-center gap-2 text-primary hover:underline"
+              >
+                <Github className="h-4 w-4" />
+                View on GitHub
+              </a>
             </div>
           </motion.div>
 
@@ -590,108 +632,66 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             whileHover={{ y: -4 }}
-            className="col-span-1 rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-6 shadow-lg hover:shadow-xl transition-all"
+            className="rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
           >
             <h3 className="mb-4 text-heading-sm">Statistics</h3>
-            {stats ? (
-              <div className="space-y-4">
-                {/* colored progress bars first */}
-                {stats.repository_quality !== undefined && (
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <p className="text-body-sm text-muted-foreground">Repository Quality</p>
-                    <div className="w-full bg-muted/20 rounded-full h-2">
-                      <div
-                        className={`bg-primary h-2 rounded-full w-[${Math.round(stats.repository_quality)}%]`}
-                      />
-                    </div>
-                    <p className="mt-1 text-caption">{Math.round(stats.repository_quality)}%</p>
-                  </div>
-                )}
-                {stats.collaborative_development !== undefined && (
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <p className="text-body-sm text-muted-foreground">Collaborative Development</p>
-                    <div className="w-full bg-muted/20 rounded-full h-2">
-                      <div
-                        className={`bg-primary h-2 rounded-full w-[${Math.round(stats.collaborative_development)}%]`}
-                      />
-                    </div>
-                    <p className="mt-1 text-caption">{Math.round(stats.collaborative_development)}%</p>
-                  </div>
-                )}
+            <div className="space-y-4">
+              <div className="rounded-lg bg-primary/10 p-3">
+                <p className="text-body-sm text-muted-foreground">Repository Quality</p>
+                <Progress className="h-2 bg-muted/20" value={Math.round(stats?.repository_quality ?? 0)} />
+                <p className="mt-1 text-caption">
+                  {stats?.repository_quality !== undefined ? `${Math.round(stats.repository_quality)}%` : 'N/A'}
+                </p>
+              </div>
+              <div className="rounded-lg bg-primary/10 p-3">
+                <p className="text-body-sm text-muted-foreground">Collaborative Development</p>
+                <Progress className="h-2 bg-muted/20" value={Math.round(stats?.collaborative_development ?? 0)} />
+                <p className="mt-1 text-caption">
+                  {stats?.collaborative_development !== undefined ? `${Math.round(stats.collaborative_development)}%` : 'N/A'}
+                </p>
+              </div>
 
-                {/* numeric/stat summary items */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-border bg-card p-4">
-                    <p className="text-body-sm text-muted-foreground">Total Projects</p>
-                    <p className="text-heading-md">{stats.total_projects || 0}</p>
-                  </div>
-                  <div className="rounded-2xl border border-border bg-card p-4">
-                    <p className="text-body-sm text-muted-foreground">Overall Level</p>
-                    <p className="text-heading-md capitalize">{stats.overall_skill_level || 'Not evaluated'}</p>
-                  </div>
-                  <div className="rounded-2xl border border-border bg-card p-4">
-                    <p className="text-body-sm text-muted-foreground">Total Commits</p>
-                    <p className="text-heading-md">
-                      {(() => {
-                        const total = stats.total_commits || projects.reduce((sum, p) => sum + (p.commits_count || 0), 0);
-                        console.log('[Dashboard] Total commits calculation:', { statsCommits: stats.total_commits, projectsCommits: projects.map(p => ({ name: p.name, commits: p.commits_count })), total });
-                        return total || 0;
-                      })()}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-border bg-card p-4">
-                    <p className="text-body-sm text-muted-foreground mb-2">Top Technologies</p>
-                    <div className="flex flex-wrap gap-2">
-                      {stats.primary_technologies && stats.primary_technologies.length > 0 ? (
-                        stats.primary_technologies.slice(0, 3).map((tech: string) => (
-                          <span key={tech} className="rounded-full border border-border bg-secondary px-2.5 py-1 text-caption font-medium">
-                            {tech}
-                          </span>
-                        ))
-                      ) : projects.some(p => p.language) ? (
-                        Array.from(new Set(projects.map(p => p.language).filter(Boolean)))
-                          .slice(0, 3)
-                          .map((tech: string) => (
-                            <span key={tech} className="rounded-full border border-border bg-secondary px-2.5 py-1 text-caption font-medium">
-                              {tech}
-                            </span>
-                          ))
-                      ) : (
-                        <span className="text-caption text-muted-foreground">No technologies yet</span>
-                      )}
-                    </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <p className="text-body-sm text-muted-foreground">Total Projects</p>
+                  <p className="text-heading-md">{stats?.total_projects ?? projects.length ?? 'N/A'}</p>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <p className="text-body-sm text-muted-foreground">Overall Level</p>
+                  <p className="text-heading-md capitalize">{stats?.overall_skill_level ?? 'N/A'}</p>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <p className="text-body-sm text-muted-foreground">Total Commits</p>
+                  <p className="text-heading-md">{totalCommits || 'N/A'}</p>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <p className="mb-2 text-body-sm text-muted-foreground">Top Technologies</p>
+                  <div className="flex flex-wrap gap-2">
+                    {topTechnologies.length > 0 ? (
+                      topTechnologies.map((tech) => (
+                        <span
+                          key={tech}
+                          className={`rounded-full px-2.5 py-1 text-caption font-medium ${getTechBadgeClass(tech)}`}
+                        >
+                          {tech}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-caption text-muted-foreground">N/A</span>
+                    )}
                   </div>
                 </div>
-                {stats.evaluation_profile_counts && (
-                  <div>
-                    <p className="text-body-sm text-muted-foreground">Profiles</p>
-                    <ul className="text-caption">
-                      {Object.entries(stats.evaluation_profile_counts).map(([k,v]) => (
-                        <li key={k}>{k}: {v}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {stats.detected_project_type_counts && (
-                  <div>
-                    <p className="text-body-sm text-muted-foreground">Project types</p>
-                    <ul className="text-caption">
-                      {Object.entries(stats.detected_project_type_counts).map(([k,v]) => (
-                        <li key={k}>{k}: {v}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
               </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-body-sm text-muted-foreground mb-4">No evaluation data yet</p>
-                <Button onClick={handleRefreshEvaluations} variant="outline" size="sm" disabled={importing}>
-                  {importing ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
-                  Run Evaluation
-                </Button>
-              </div>
-            )}
+
+              {!stats && (
+                <div className="py-2 text-center">
+                  <Button onClick={handleRefreshEvaluations} variant="outline" size="sm" disabled={importing}>
+                    {importing ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
+                    Run Evaluation
+                  </Button>
+                </div>
+              )}
+            </div>
           </motion.div>
 
           {/* Actions Card */}
@@ -700,7 +700,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             whileHover={{ y: -4 }}
-            className="col-span-1 rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-6 shadow-lg hover:shadow-xl transition-all"
+            className="rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-lg transition-all hover:shadow-xl sm:col-span-2 sm:p-6 xl:col-span-1"
           >
             <h3 className="mb-4 text-heading-sm">Actions</h3>
             <div className="space-y-3">
@@ -736,21 +736,21 @@ export default function Dashboard() {
               <Button
                 variant="outline"
                 onClick={() => navigate('/profile-setup')}
-                className="w-full mt-2"
+                className="mt-2 w-full"
               >
                 Edit Profile
               </Button>
               <Button
                 variant="outline"
                 onClick={() => navigate('/settings')}
-                className="w-full mt-2"
+                className="mt-2 w-full"
               >
                 Go to Settings
               </Button>
               <Button
                 variant="secondary"
                 onClick={() => setPublishModal(true)}
-                className="w-full mt-2"
+                className="mt-2 w-full"
                 disabled={publishing}
               >
                 {published ? 'Make Profile Private' : (publishing ? (published ? 'Unpublishing...' : 'Publishing...') : 'Publish Profile')}
@@ -786,7 +786,7 @@ export default function Dashboard() {
               </Button>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {projects.map((project, index) => (
                 <motion.div
                   key={project.id}
@@ -795,20 +795,17 @@ export default function Dashboard() {
                   transition={{ delay: 0.4 + (index * 0.05) }}
                   whileHover={{ y: -4 }}
                   onClick={() => navigate(`/dashboard/projects/${project.id}`)}
-                  className="group rounded-[24px] bg-gradient-to-br from-card to-card/80 p-6 shadow-lg hover:shadow-xl cursor-pointer transition-all"
+                  className="group cursor-pointer rounded-[24px] bg-gradient-to-br from-card to-card/80 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* left column: basic info */}
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <div className="mb-3 flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-heading-sm mb-2 break-words">{project.name}</h3>
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            {project.ai_evaluation?.difficulty_tier && (
-                              <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-semibold text-white bg-blue-600 shadow-sm">
-                                {(project.ai_evaluation.difficulty_tier).replace(/\s*complexity\s*/gi, '').trim()} complexity
-                              </span>
-                            )}
+                      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="mb-2 break-words text-heading-sm">{project.name || 'N/A'}</h3>
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-body-sm font-semibold text-white shadow-sm">
+                              {(project.ai_evaluation?.difficulty_tier || 'N/A').replace(/\s*complexity\s*/gi, '').trim()} complexity
+                            </span>
                             {project.language && (
                               <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-medium bg-secondary text-secondary-foreground">
                                 {project.language}
@@ -816,81 +813,38 @@ export default function Dashboard() {
                             )}
                           </div>
                           <div className="mb-1 flex flex-wrap items-center gap-3 text-body-sm">
-                            {project.ai_evaluation?.repo_score !== undefined && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
-                                {Math.round(project.ai_evaluation.repo_score)}% score
-                              </span>
-                            )}
-                            {project.commits_count !== undefined && (
-                              <span className="inline-flex items-center gap-1 text-muted-foreground">
-                                <GitCommit className="h-3.5 w-3.5" />
-                                {project.commits_count} commits
-                              </span>
-                            )}
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
+                              {project.ai_evaluation?.repo_score !== undefined ? `${Math.round(project.ai_evaluation.repo_score)}% score` : 'N/A score'}
+                            </span>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-muted/20 px-3 py-0.5 text-muted-foreground">
+                              <GitBranch className="h-3 w-3" />
+                              {project.commits_count !== undefined ? `${project.commits_count} commits` : 'N/A commits'}
+                            </span>
                           </div>
-                          {/* show tech stack if available */}
-                          {project.primary_stack && project.primary_stack.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {project.primary_stack.slice(0,3).map(tech => (
-                                <span key={tech} className="rounded-full bg-secondary px-2 py-0.5 text-caption">
-                                  {tech}
-                                </span>
-                              ))}
-                              {project.primary_stack.length > 3 && (
-                                <span className="rounded-full bg-muted px-2 py-0.5 text-caption text-muted-foreground">
-                                  +{project.primary_stack.length - 3}
-                                </span>
-                              )}
-                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
+                          Active
+                          {project.github_url && (
+                            <a
+                              href={project.github_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-1 text-muted-foreground transition hover:text-primary"
+                              onClick={(e) => e.stopPropagation()}
+                              title="View on GitHub"
+                            >
+                              <Github className="h-4 w-4" />
+                            </a>
                           )}
                         </div>
-                        {project.github_url && (
-                          <a
-                            href={project.github_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-primary transition"
-                            title="View on GitHub"
-                          >
-                            <Github className="h-4 w-4" />
-                          </a>
-                        )}                          {project.warnings && project.warnings.length > 0 && (
-                            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-0.5 text-caption text-yellow-800">
-                              ⚠️ {project.warnings.length}
-                            </span>
-                          )}                      </div>
+                      </div>
 
-                      {project.description && (
-                        <div className="mb-4">
-                          <p className="text-caption font-semibold text-muted-foreground mb-1">Description</p>
-                          <p className="text-body-sm text-muted-foreground line-clamp-2">
-                            {project.description}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    {/* right column: stars only */}
-                    <div>
-                      {project.stars !== undefined && project.stars > 0 && (
-                        <div className="flex items-center gap-1.5 text-caption text-amber-700 dark:text-amber-300">
-                          <Star className="h-3.5 w-3.5" />
-                          <span className="font-medium">{project.stars} stars</span>
-                        </div>
-                      )}
+                      <p className="text-body-sm text-muted-foreground">
+                        {project.description || 'N/A'}
+                      </p>
                     </div>
                   </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4 w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/dashboard/projects/${project.id}`);
-                    }}
-                  >
-                    View More About This Project
-                  </Button>
                 </motion.div>
               ))}
             </div>

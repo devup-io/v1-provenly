@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,6 +31,7 @@ import CompareDevelopers from "./pages/CompareDevelopers";
 import Settings from "./pages/Settings";
 import Analysis from "./pages/Analysis";
 import DebugAuth from "./pages/DebugAuth";
+import MockDashboard from "./pages/MockDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +39,7 @@ const queryClient = new QueryClient();
 function AppContent() {
   const { isChecking: isCheckingBackend, isReady, error, retry } = useBackendReadiness();
   const { isChecking } = useSessionCheck();
+  const [bypassBackendCheck, setBypassBackendCheck] = useState(false);
 
   if (isCheckingBackend) {
     return (
@@ -46,7 +49,7 @@ function AppContent() {
     );
   }
 
-  if (!isReady) {
+  if (!isReady && !bypassBackendCheck) {
     // enhanced 503 page using custom illustrations and components
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-gradient-hero p-4">
@@ -70,10 +73,16 @@ function AppContent() {
             <LoadingDots />
           </div>
           <div className="mb-6">
-            <CountdownTimer />
-          </div>
-          <div className="mb-6">
             <ActionButtons onRetry={() => void retry()} />
+          </div>
+          <div className="mb-2">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setBypassBackendCheck(true)}
+            >
+              Continue without backend (dev mode)
+            </Button>
           </div>
           <p className="mt-6 text-xs">
             Need urgent help?{' '}
@@ -104,6 +113,7 @@ function AppContent() {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/mock-dashboard" element={<MockDashboard />} />
       <Route path="/dashboard/projects/:projectId" element={<ProjectDetails />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/analysis" element={<Analysis />} />

@@ -13,8 +13,17 @@ export function useBackendReadiness(): BackendReadinessState {
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const skipCheck = import.meta.env.VITE_SKIP_BACKEND_READINESS === 'true';
+
   const runReadinessCheck = useCallback(async () => {
     setIsChecking(true);
+
+    if (skipCheck) {
+      setIsReady(true);
+      setError(null);
+      setIsChecking(false);
+      return;
+    }
 
     const status = await checkBackendReadiness();
     if (status.ready) {
@@ -27,7 +36,7 @@ export function useBackendReadiness(): BackendReadinessState {
     setIsReady(false);
     setError(status.error || 'Backend is not ready.');
     setIsChecking(false);
-  }, []);
+  }, [skipCheck]);
 
   useEffect(() => {
     // Only run health check once on app startup
