@@ -612,45 +612,47 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* numeric summary items */}
-                <div>
-                  <p className="text-body-sm text-muted-foreground">Total Projects</p>
-                  <p className="text-heading-md">{stats.total_projects || 0}</p>
-                </div>
-                <div>
-                  <p className="text-body-sm text-muted-foreground">Overall Level</p>
-                  <p className="text-heading-md capitalize">{stats.overall_skill_level || 'Not evaluated'}</p>
-                </div>
-                <div>
-                  <p className="text-body-sm text-muted-foreground">Total Commits</p>
-                  <p className="text-heading-md">
-                    {(() => {
-                      const total = stats.total_commits || projects.reduce((sum, p) => sum + (p.commits_count || 0), 0);
-                      console.log('[Dashboard] Total commits calculation:', { statsCommits: stats.total_commits, projectsCommits: projects.map(p => ({ name: p.name, commits: p.commits_count })), total });
-                      return total || 0;
-                    })()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-body-sm text-muted-foreground mb-2">Top Technologies</p>
-                  <div className="flex flex-wrap gap-2">
-                    {stats.primary_technologies && stats.primary_technologies.length > 0 ? (
-                      stats.primary_technologies.slice(0, 3).map((tech: string) => (
-                        <span key={tech} className="rounded-full border border-border bg-secondary px-2.5 py-1 text-caption font-medium">
-                          {tech}
-                        </span>
-                      ))
-                    ) : projects.some(p => p.language) ? (
-                      Array.from(new Set(projects.map(p => p.language).filter(Boolean)))
-                        .slice(0, 3)
-                        .map((tech: string) => (
+                {/* numeric/stat summary items */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <p className="text-body-sm text-muted-foreground">Total Projects</p>
+                    <p className="text-heading-md">{stats.total_projects || 0}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <p className="text-body-sm text-muted-foreground">Overall Level</p>
+                    <p className="text-heading-md capitalize">{stats.overall_skill_level || 'Not evaluated'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <p className="text-body-sm text-muted-foreground">Total Commits</p>
+                    <p className="text-heading-md">
+                      {(() => {
+                        const total = stats.total_commits || projects.reduce((sum, p) => sum + (p.commits_count || 0), 0);
+                        console.log('[Dashboard] Total commits calculation:', { statsCommits: stats.total_commits, projectsCommits: projects.map(p => ({ name: p.name, commits: p.commits_count })), total });
+                        return total || 0;
+                      })()}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <p className="text-body-sm text-muted-foreground mb-2">Top Technologies</p>
+                    <div className="flex flex-wrap gap-2">
+                      {stats.primary_technologies && stats.primary_technologies.length > 0 ? (
+                        stats.primary_technologies.slice(0, 3).map((tech: string) => (
                           <span key={tech} className="rounded-full border border-border bg-secondary px-2.5 py-1 text-caption font-medium">
                             {tech}
                           </span>
                         ))
-                    ) : (
-                      <span className="text-caption text-muted-foreground">No technologies yet</span>
-                    )}
+                      ) : projects.some(p => p.language) ? (
+                        Array.from(new Set(projects.map(p => p.language).filter(Boolean)))
+                          .slice(0, 3)
+                          .map((tech: string) => (
+                            <span key={tech} className="rounded-full border border-border bg-secondary px-2.5 py-1 text-caption font-medium">
+                              {tech}
+                            </span>
+                          ))
+                      ) : (
+                        <span className="text-caption text-muted-foreground">No technologies yet</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 {stats.evaluation_profile_counts && (
