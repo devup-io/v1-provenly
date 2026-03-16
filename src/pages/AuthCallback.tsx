@@ -2,13 +2,37 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import type { DeveloperProfile } from '@/types/api';
-import { saveDeveloper, getCurrentDeveloper, clearOAuthState, refreshAuthSession, isAuthError, clearLegacyAuthStorageKeysOnce, postGitHubCallback } from '@/lib/api';
+import { saveDeveloper, getCurrentDeveloper, clearOAuthState, refreshAuthSession, isAuthError, clearLegacyAuthStorageKeysOnce, postGitHubCallback, getGitHubStatus, getOAuthState } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const resolveCurrentDeveloper = useCallback(async (): Promise<DeveloperProfile | null> => {
+    const delays = [250, 500, 800, 1200, 1600, 2000, 2500, 3000];
+
+    for (let attempt = 0; attempt < delays.length; attempt++) {
+      try {
+        return await getCurrentDeveloper();
+      } catch (err) {
+        if (isAuthError(err)) {
+          try {
+            await refreshAuthSession();
+            return await getCurrentDeveloper();
+          } catch {
+            // Continue retry loop
+          }
+        }
+        await sleep(delays[attempt]);
+      }
+    }
+
+    return null;
+  }, []);
 
   const processCallback = useCallback(async () => {
     setLoading(true);
@@ -31,6 +55,8 @@ export default function AuthCallback() {
         return;
       }
 
+      const callbackState = state || getOAuthState();
+
       // If provider redirected with code/state, finalize exchange on backend to set auth cookies.
       if (code && state) {
         try {
@@ -41,33 +67,41 @@ export default function AuthCallback() {
         }
       }
 
-      clearOAuthState();
+      let accurateDeveloper: DeveloperProfile | null = await resolveCurrentDeveloper();
 
-      // Cookie-based auth can require some time before /me and refresh become available.
-      let accurateDeveloper: DeveloperProfile | null = null;
-      const delays = [250, 500, 800, 1200, 1600, 2000, 2500, 3000];
+      // Fallback for async OAuth processing on backend: wait for status=completed, then retry /me.
+      if (!accurateDeveloper && callbackState) {
+        const pollStart = Date.now();
+        const timeoutMs = 45000;
+        const intervalMs = 1500;
 
-      for (let attempt = 0; attempt < delays.length; attempt++) {
-        try {
-          accurateDeveloper = await getCurrentDeveloper();
-          break;
-        } catch (err) {
-          if (isAuthError(err)) {
-            try {
-              await refreshAuthSession();
-              accurateDeveloper = await getCurrentDeveloper();
-              break;
-            } catch {
-              // Continue retry loop
+        while (Date.now() - pollStart < timeoutMs) {
+          try {
+            const status = await getGitHubStatus(callbackState);
+
+            if (status.status === 'completed') {
+              accurateDeveloper = await resolveCurrentDeveloper();
+              if (accurateDeveloper) {
+                break;
+              }
             }
+
+            if (status.status === 'error') {
+              throw new Error(status.error || status.status_message || 'Authentication failed.');
+            }
+          } catch {
+            // Continue polling in case of transient errors
           }
-          await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+
+          await sleep(intervalMs);
         }
       }
 
       if (!accurateDeveloper) {
         throw new Error('Sign-in session could not be established. Please try again.');
       }
+
+      clearOAuthState();
 
       saveDeveloper(accurateDeveloper);
 
@@ -86,7 +120,7 @@ export default function AuthCallback() {
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, resolveCurrentDeveloper]);
 
   useEffect(() => {
     clearLegacyAuthStorageKeysOnce();
