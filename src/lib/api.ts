@@ -1,4 +1,4 @@
-import type { V1AuthToken, DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse } from "@/types/api";
+import type { V1AuthToken, DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload } from "@/types/api";
 import type { DeveloperSearchResponse, DeveloperSearchFilters } from "@/types/developer";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -301,19 +301,11 @@ export const apiRequest = async <T>(path: string, options: ApiRequestOptions = {
     console.log(`[API] ${rest.method || 'GET'} ${path}`);
   }
 
-  // If an access token is stored (sessionStorage preferred), use it for Authorization
-  const storedToken = typeof window !== 'undefined'
-    ? sessionStorage.getItem('v1_access_token') || localStorage.getItem('v1_access_token')
-    : null;
-
-  const authHeaders: Record<string, string> = storedToken
-    ? { Authorization: `Bearer ${storedToken}` }
-    : {};
 
   const res = await fetch(fullUrl, {
     credentials: 'include',
     mode: 'cors',
-    headers: { "Content-Type": "application/json", ...(headers || {}), ...authHeaders },
+    headers: { "Content-Type": "application/json", ...(headers || {}) },
     ...rest,
   });
 
@@ -329,15 +321,7 @@ export const apiRequest = async <T>(path: string, options: ApiRequestOptions = {
     const text = await res.text();
 
     if (res.status === 401) {
-      console.warn('[API] Received 401 Unauthorized - clearing local session and redirecting to login');
-      clearAuth();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/signup?error=session_expired';
-      }
-    }
-
-    if (res.status === 503) {
-      console.warn('[API] Received 503 Service Unavailable - backend may be down or overloaded');
+      console.warn('[API] Received 401 Unauthorized - check if session cookie is valid');
     }
 
     throw new Error(text || `Request failed with status ${res.status}`);
