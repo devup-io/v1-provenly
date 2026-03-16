@@ -513,6 +513,8 @@ export function clearAuth() {
   try {
     localStorage.removeItem(DEVELOPER_KEY);
     localStorage.removeItem(OAUTH_STATE_KEY);
+    sessionStorage.removeItem('v1_access_token');
+    localStorage.removeItem('v1_access_token');
   } catch (e) {
     // ignore
   }

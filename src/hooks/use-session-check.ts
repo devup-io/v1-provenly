@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDeveloper, clearAuth } from '@/lib/api';
+import { getDeveloper, clearAuth, apiRequest } from '@/lib/api';
 
 /**
  * Get JWT token from cookie (non-HttpOnly tokens only)
@@ -123,57 +123,34 @@ export function useSessionCheck() {
         console.log('[Session Check] Calling: /api/v1/me (authenticated endpoint)');
         console.log('[Session Check] Credentials: include (browser will send cookie)');
 
-        const response = await fetch(url, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        // Use apiRequest so it can include the access token header (if stored)
+        try {
+          await apiRequest('/api/v1/me', { method: 'GET' });
+          console.log('[Session Check] ✅ Backend confirmed: Session valid');
+          setIsChecking(false);
+          return;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.warn('[Session Check] ❌ Session validation failed', message);
 
-        console.log('[Session Check] Response status:', response.status);
-
-        if (response.status === 200) {
-          try {
-            const data = await response.json();
-            console.log('[Session Check] ✅ Backend confirmed: Session valid');
-            console.log('[Session Check] User:', data.github_username);
-          } catch {
-            console.log('[Session Check] ✅ Backend confirmed: Session valid');
+          if (message.includes('401') || message.includes('403') || message.toLowerCase().includes('unauthorized')) {
+            clearAuth();
+            console.log('[Session Check] 🔄 Redirecting to login...\n');
+            navigate('/signup?error=session_expired', { replace: true });
+            return;
           }
+
+          if (message.includes('404')) {
+            console.warn('[Session Check] ⚠️ Backend returned 404 - clearing session');
+            clearAuth();
+            setIsChecking(false);
+            return;
+          }
+
+          console.warn('[Session Check] ⚠️ Session check completed with non-fatal error');
           setIsChecking(false);
           return;
         }
-
-        if (response.status === 401) {
-          const text = await response.text();
-          console.warn('[Session Check] ❌ Backend returned 401 Unauthorized');
-          console.warn('[Session Check] Response:', text);
-          clearAuth();
-          console.log('[Session Check] 🔄 Redirecting to login...\n');
-          navigate('/signup?error=session_expired', { replace: true });
-          return;
-        }
-
-        if (response.status === 403) {
-          const text = await response.text();
-          console.warn('[Session Check] ❌ Backend returned 403 Forbidden');
-          console.warn('[Session Check] Response:', text);
-          clearAuth();
-          navigate('/signup?error=access_denied', { replace: true });
-          return;
-        }
-
-        if (response.status === 404) {
-          console.warn('[Session Check] ⚠️ Backend returned 404 - clearing session');
-          clearAuth();
-          setIsChecking(false);
-          return;
-        }
-
-        console.warn('[Session Check] ⚠️ Unexpected status:', response.status);
-        console.log('[Session Check] Session check completed\n');
-        setIsChecking(false);
 
       } catch (err) {
         console.error('[Session Check] 💥 Error during validation:', err);
