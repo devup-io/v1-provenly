@@ -613,7 +613,7 @@ export default function Dashboard() {
                 )}
 
                 {/* numeric/stat summary items */}
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-2xl border border-border bg-card p-4">
                     <p className="text-body-sm text-muted-foreground">Total Projects</p>
                     <p className="text-heading-md">{stats.total_projects || 0}</p>
