@@ -287,11 +287,6 @@ export default function DeveloperProfile() {
           <ArrowLeft className="h-4 w-4" />
           Back to developers
         </Button>
-        {developer?.is_suspended && (
-          <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive p-4 text-destructive">
-            Your account has been suspended due to inactivity. Some features are disabled.
-          </div>
-        )}
         {isOwnProfile && developer?.suspicious_flags && developer.suspicious_flags.length > 0 && (
           <div className="mb-4 rounded-lg bg-yellow-100 border border-yellow-300 p-4 text-yellow-800">
             ⚠️ Suspicious activity detected: {developer.suspicious_flags.join(', ')}
@@ -324,24 +319,38 @@ export default function DeveloperProfile() {
                 ))}
               </div>
 
-              {/* Quick stats */}
-              <div className="mb-4 flex flex-wrap justify-center gap-4 text-caption text-muted-foreground md:justify-start">
-                {developer.experience_signal && (
-                  <span className="inline-block rounded-full bg-secondary px-2 py-0.5">{developer.experience_signal}</span>
-                )}
-                {totalVerified !== undefined && (
-                  <span>✅ {totalVerified} verified</span>
-                )}
-                {developer.average_confidence !== undefined && (
-                  <span>📊 {Math.round(developer.average_confidence)}% confidence</span>
-                )}
+              <div className="mb-4 grid grid-cols-1 gap-2 text-body-sm sm:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+                  <p className="text-caption text-muted-foreground">Experience</p>
+                  <p className="font-medium">{developer.experience_signal || 'N/A'}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+                  <p className="text-caption text-muted-foreground">Verified Projects</p>
+                  <p className="font-medium">{totalVerified ?? 0}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+                  <p className="text-caption text-muted-foreground">Avg Confidence</p>
+                  <p className="font-medium">
+                    {developer.average_confidence !== undefined ? `${Math.round(developer.average_confidence)}%` : 'N/A'}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+                  <p className="text-caption text-muted-foreground">Projects</p>
+                  <p className="font-medium">{developer.projectCount ?? developerProjects.length ?? 0}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+                  <p className="text-caption text-muted-foreground">Total Stars</p>
+                  <p className="font-medium">{developer.totalStars ?? 0}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+                  <p className="text-caption text-muted-foreground">Top Complexity</p>
+                  <p className="font-medium">{developer.maxComplexity || 'N/A'}</p>
+                </div>
               </div>
 
-              {Object.keys(contributions).length > 0 && (
-                <div className="mb-4 text-caption text-muted-foreground">
-                  Contribution: Primary {contributions['Primary Builder'] || 0} | Major {contributions['Major Contributor'] || 0} | Minor {contributions['Minor Contributor'] || 0}
-                </div>
-              )}
+              <div className="mb-4 rounded-xl border border-border/60 bg-background/60 px-3 py-2 text-body-sm text-muted-foreground">
+                Contribution: Primary {contributions['Primary Builder'] || 0} | Major {contributions['Major Contributor'] || 0} | Minor {contributions['Minor Contributor'] || 0}
+              </div>
             </div>
 
             <div className="flex flex-col gap-2">

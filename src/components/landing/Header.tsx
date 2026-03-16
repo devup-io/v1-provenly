@@ -20,6 +20,7 @@ export function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const isDashboardRoute = location.pathname.startsWith('/dashboard');
 
   useEffect(() => {
     let ticking = false;
@@ -108,27 +109,30 @@ export function Header() {
               />
             </div>
             
-            {isAuthenticated ? (
+            {isAuthenticated && !isDashboardRoute ? (
               <Button variant="hero" size="sm" className="rounded-full text-black" onClick={() => navigate("/dashboard") }>
                 View My Profile
               </Button>
-            ) : (
+            ) : !isAuthenticated ? (
               <Button variant="hero" size="sm" className="rounded-full text-black" onClick={() => navigate("/signup") }>
                 Sign in with GitHub
               </Button>
-            )}
+            ) : null}
           </div>
 
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
+          {/* Mobile Actions */}
+          <div className="flex items-center gap-1 md:hidden">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
       </motion.div>
 
@@ -168,17 +172,16 @@ export function Header() {
                   {link.label}
                 </button>
               ))}
-              <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4 px-2">
-                <ThemeToggle />
-                {isAuthenticated ? (
+              <div className="mt-2 flex flex-col gap-2 border-t border-border px-2 pt-4">
+                {isAuthenticated && !isDashboardRoute ? (
                   <Button variant="hero" className="rounded-xl text-black" onClick={() => { setMobileMenuOpen(false); navigate("/dashboard"); }}>
                     View My Profile
                   </Button>
-                ) : (
+                ) : !isAuthenticated ? (
                   <Button variant="hero" className="rounded-xl text-black" onClick={() => { setMobileMenuOpen(false); navigate("/signup"); }}>
                     Sign in with GitHub
                   </Button>
-                )}
+                ) : null}
               </div>
             </nav>
           </motion.div>

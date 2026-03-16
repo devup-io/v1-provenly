@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Github, Plus, GitBranch, RefreshCw, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/landing/Header';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNavigate } from 'react-router-dom';
 import type { AggregateEvaluation, DeveloperProfile, Project } from '@/types/api';
 
@@ -203,42 +204,67 @@ export default function MockDashboard() {
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 gap-3 text-body-sm lg:grid-cols-2">
-                  <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-caption uppercase tracking-wide text-muted-foreground">Experience</span>
-                    <span className="font-medium text-foreground">{mockDeveloper.experience_signal}</span>
-                  </div>
-                  <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-caption uppercase tracking-wide text-muted-foreground">Verified Projects</span>
-                    <span className="font-medium text-foreground">
-                      {mockDeveloper.verified_projects}/{mockProjects.length}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-caption uppercase tracking-wide text-muted-foreground">Avg Confidence</span>
-                    <span className="font-medium text-foreground">{mockDeveloper.average_confidence}%</span>
-                  </div>
-                  <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3">
-                    <span className="text-caption uppercase tracking-wide text-muted-foreground">Contribution</span>
-                    <span className="font-medium text-foreground">
-                      Primary {mockDeveloper.contribution_breakdown?.['Primary Builder'] || 0} | Major{' '}
-                      {mockDeveloper.contribution_breakdown?.['Major Contributor'] || 0} | Minor{' '}
-                      {mockDeveloper.contribution_breakdown?.['Minor Contributor'] || 0}
-                    </span>
-                  </div>
+                <div className="mt-4 grid grid-cols-2 gap-3 text-body-sm">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-caption uppercase tracking-wide text-muted-foreground">Experience</span>
+                        <span className="font-medium text-foreground">{mockDeveloper.experience_signal}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>Estimated seniority from project history and code depth.</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-caption uppercase tracking-wide text-muted-foreground">Verified Projects</span>
+                        <span className="font-medium text-foreground">
+                          {mockDeveloper.verified_projects}/{mockProjects.length}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>Projects where ownership/contribution has been verified.</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-caption uppercase tracking-wide text-muted-foreground">Avg Confidence</span>
+                        <span className="font-medium text-foreground">{mockDeveloper.average_confidence}%</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>Average confidence score across all analyzed repositories.</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3">
+                        <span className="text-caption uppercase tracking-wide text-muted-foreground">Contribution</span>
+                        <span className="font-medium text-foreground">
+                          Primary {mockDeveloper.contribution_breakdown?.['Primary Builder'] || 0} | Major{' '}
+                          {mockDeveloper.contribution_breakdown?.['Major Contributor'] || 0} | Minor{' '}
+                          {mockDeveloper.contribution_breakdown?.['Minor Contributor'] || 0}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>How often this developer was the primary/major/minor contributor.</TooltipContent>
+                  </Tooltip>
                 </div>
 
                 <p className="mt-4 text-body-sm text-muted-foreground">{mockDeveloper.bio}</p>
 
-                <a
-                  href={`https://github.com/${mockDeveloper.github_username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-6 inline-flex items-center gap-2 text-primary hover:underline"
-                >
-                  <Github className="h-4 w-4" />
-                  View on GitHub
-                </a>
+                <div className="mt-6 flex justify-center">
+                  <a
+                    href={`https://github.com/${mockDeveloper.github_username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2 text-body-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                  >
+                    <Github className="h-4 w-4" />
+                    View on GitHub
+                  </a>
+                </div>
               </div>
           </motion.div>
 
@@ -266,7 +292,7 @@ export default function MockDashboard() {
                 <p className="mt-1 text-caption">82%</p>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-border bg-card p-4">
                   <p className="text-body-sm text-muted-foreground">Total Projects</p>
                   <p className="text-heading-md">{mockStats.total_projects}</p>

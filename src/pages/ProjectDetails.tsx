@@ -329,6 +329,27 @@ export default function ProjectDetails() {
                 )}
               </div>
 
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+                  <p className="text-caption text-muted-foreground">Commits</p>
+                  <p className="font-semibold">{project.commits_count ?? 'N/A'}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+                  <p className="text-caption text-muted-foreground">Repository Score</p>
+                  <p className="font-semibold">
+                    {evaluation?.repo_score !== undefined ? `${Math.round(evaluation.repo_score)}%` : 'N/A'}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+                  <p className="text-caption text-muted-foreground">Detected Type</p>
+                  <p className="font-semibold">{evaluation?.detected_project_type || 'N/A'}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+                  <p className="text-caption text-muted-foreground">Role Alignment</p>
+                  <p className="font-semibold">{evaluation?.primary_role_alignment || 'N/A'}</p>
+                </div>
+              </div>
+
               {evaluation && (
                 <div className="mt-6 space-y-4">
                   {(evaluation.contribution_percentage !== undefined || evaluation.contribution_level) && (

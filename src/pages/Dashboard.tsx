@@ -195,7 +195,7 @@ export default function Dashboard() {
   // derive published flag when developer data loads
   useEffect(() => {
     if (developer) {
-      const hasPublished = !!developer.is_published || !!developer.profile_complete;
+      const hasPublished = !!developer.is_published;
       setPublished(hasPublished);
     }
   }, [developer]);
@@ -529,6 +529,19 @@ export default function Dashboard() {
           </motion.div>
         )}
 
+        {developer.is_suspended && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 flex items-start gap-3 rounded-lg border border-destructive bg-destructive/5 p-4"
+          >
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+            <p className="text-sm text-destructive">
+              Your account has been suspended due to inactivity. Some features are disabled.
+            </p>
+          </motion.div>
+        )}
+
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {/* Profile Card */}
           <motion.div
@@ -593,7 +606,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              <div className="mt-4 grid grid-cols-1 gap-3 text-body-sm lg:grid-cols-2">
+              <div className="mt-4 grid grid-cols-2 gap-3 text-body-sm">
                 <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-caption uppercase tracking-wide text-muted-foreground">Experience</span>
                   <span className="font-medium text-foreground">{experienceValue}</span>
@@ -614,15 +627,17 @@ export default function Dashboard() {
 
               <p className="mt-4 text-body-sm text-muted-foreground">{developer.bio || 'N/A'}</p>
 
-              <a
-                href={`https://github.com/${developer.github_username}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-6 inline-flex items-center gap-2 text-primary hover:underline"
-              >
-                <Github className="h-4 w-4" />
-                View on GitHub
-              </a>
+              <div className="mt-6 flex justify-center">
+                <a
+                  href={`https://github.com/${developer.github_username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2 text-body-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                >
+                  <Github className="h-4 w-4" />
+                  View on GitHub
+                </a>
+              </div>
             </div>
           </motion.div>
 
@@ -651,7 +666,7 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-border bg-card p-4">
                   <p className="text-body-sm text-muted-foreground">Total Projects</p>
                   <p className="text-heading-md">{stats?.total_projects ?? projects.length ?? 'N/A'}</p>
@@ -672,7 +687,7 @@ export default function Dashboard() {
                         <span
                           key={tech}
                           className={`rounded-full px-2.5 py-1 text-caption font-medium ${getTechBadgeClass(tech)}`}
-                        >
+                         >
                           {tech}
                         </span>
                       ))
@@ -753,7 +768,7 @@ export default function Dashboard() {
                 className="mt-2 w-full"
                 disabled={publishing}
               >
-                {published ? 'Make Profile Private' : (publishing ? (published ? 'Unpublishing...' : 'Publishing...') : 'Publish Profile')}
+                {publishing ? (published ? 'Making Profile Private...' : 'Publishing Profile...') : (published ? 'Make Profile Private' : 'Publish Profile')}
               </Button>
             </div>
           </motion.div>
@@ -870,13 +885,7 @@ export default function Dashboard() {
                   Cancel
                 </Button>
                 <Button onClick={handleConfirmPublish} disabled={publishing} className="ml-2">
-                  {publishing
-                    ? lastPublishAction === 'unpublish'
-                      ? 'Unpublishing...'
-                      : 'Publishing...'
-                    : lastPublishAction === 'unpublish'
-                    ? 'Unpublish'
-                    : 'Publish'}
+                  {publishing ? (published ? 'Making Private...' : 'Publishing...') : (published ? 'Make Private' : 'Publish')}
                 </Button>
               </DialogFooter>
             </>

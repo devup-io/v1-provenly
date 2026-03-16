@@ -550,60 +550,56 @@ export default function Developers() {
                     alt={dev.name}
                     className="h-14 w-14 rounded-xl object-cover"
                   />
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="truncate font-semibold">{dev.name}</h3>
+                      <h3 className="truncate font-semibold">{dev.name || 'N/A'}</h3>
                       <Github className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                     </div>
                     <p className="truncate text-body-sm text-muted-foreground">
-                      @{dev.username}
+                      @{dev.username || 'unknown'}
                     </p>
                   </div>
                   <span
                     className={`flex-shrink-0 rounded-full px-2.5 py-1 text-caption font-bold ${
-                      complexityColors[dev.maxComplexity]
+                      complexityColors[dev.maxComplexity || ''] || 'bg-secondary text-secondary-foreground'
                     }`}
                   >
-                    {dev.maxComplexity}
+                    {dev.maxComplexity || 'N/A'}
                   </span>
                 </div>
 
-                {/* roles + experience */}
                 <div className="mb-4 flex flex-wrap gap-2">
-                  {dev.roles.map((r) => (
+                  {dev.roles.slice(0, 2).map((r) => (
                     <span key={r} className="rounded-full bg-primary/10 px-2 py-0.5 text-caption">
                       {r}
                     </span>
                   ))}
-                  {dev.experience_signal && (
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-caption">
-                      {dev.experience_signal}
-                    </span>
-                  )}
-                </div>
-
-                {/* badges row */}
-                <div className="mb-4 flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
-                  {dev.verified_projects !== undefined && (
-                    <span>✅ {dev.verified_projects} verified</span>
-                  )}
-                  {dev.contribution_breakdown && (
-                    <>
-                      <span className="text-muted-foreground">·</span>
-                      <span>
-                        {dev.contribution_breakdown['Primary Builder'] || 0} primary
-                      </span>
-                    </>
-                  )}
-                  <span
-                    className="ml-1 cursor-help text-muted-foreground"
-                    title="Verified: number of projects we confirmed you contributed to. Primary: projects where you were listed as the primary builder."
-                  >
-                    (i)
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-caption">
+                    {dev.experience_signal || 'N/A'}
                   </span>
                 </div>
 
-                {/* tech stack */}
+                <div className="mb-4 grid grid-cols-2 gap-2 text-caption">
+                  <div className="rounded-lg border border-border/60 bg-background/60 px-2 py-1.5 text-muted-foreground">
+                    ✅ {dev.verified_projects ?? 0} verified
+                  </div>
+                  <div className="rounded-lg border border-border/60 bg-background/60 px-2 py-1.5 text-muted-foreground">
+                    👥 {dev.contribution_breakdown?.['Primary Builder'] || 0} primary
+                  </div>
+                  <div className="rounded-lg border border-border/60 bg-background/60 px-2 py-1.5 text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5" />
+                      {dev.totalStars ?? 0} stars
+                    </span>
+                  </div>
+                  <div className="rounded-lg border border-border/60 bg-background/60 px-2 py-1.5 text-muted-foreground" title="Total imported projects (verified projects may be different)">
+                    <span className="inline-flex items-center gap-1">
+                      <GitBranch className="h-3.5 w-3.5" />
+                      {dev.projectCount ?? 0} projects
+                    </span>
+                  </div>
+                </div>
+
                 <div className="mb-4 flex flex-wrap gap-1">
                   {dev.techStack.slice(0, 5).map((tech) => (
                     <span
@@ -620,8 +616,7 @@ export default function Developers() {
                   )}
                 </div>
 
-                {/* complexity pills */}
-                <div className="mb-4 flex gap-2">
+                <div className="mb-2 flex flex-wrap gap-2">
                   {['L1', 'L2', 'L3'].map((level) => {
                     const count = dev.complexityCounts[level as keyof typeof dev.complexityCounts] || 0;
                     if (count === 0) return null;
@@ -634,24 +629,9 @@ export default function Developers() {
                       </span>
                     );
                   })}
-                </div>
-
-                {/* bottom stats with project tooltip */}
-                <div className="flex flex-wrap items-center gap-4 text-caption text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Star className="h-3.5 w-3.5" />
-                    {dev.totalStars} stars
+                  <span className="text-caption text-muted-foreground">
+                    {dev.average_confidence !== undefined ? `📊 ${Math.round(dev.average_confidence)}% confidence` : '📊 N/A confidence'}
                   </span>
-                  <span className="flex items-center gap-1" title="Total imported projects (verified projects may be different)">
-                    <GitBranch className="h-3.5 w-3.5" />
-                    {dev.projectCount} projects
-                  </span>
-                  {dev.average_confidence !== undefined && (
-                    <span className="flex itemscenter gap-1">
-                      📊
-                      {Math.round(dev.average_confidence)}% confidence
-                    </span>
-                  )}
                 </div>
               </div>
             </motion.div>
