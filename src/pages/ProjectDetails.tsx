@@ -245,181 +245,110 @@ export default function ProjectDetails() {
             </Button>
           </div>
 
-          <div className="flex items-start justify-between gap-6 mb-6">
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                <h1 className="text-display-sm">{project.name}</h1>
-                {evaluation?.difficulty_tier && (
-                  <span className="rounded-full bg-pastel-yellow px-3 py-1 text-body-sm font-semibold text-pastel-yellow-foreground">
-                    {evaluation.difficulty_tier}{
-                      evaluation.difficulty_tier === 'Beginner' ? ' (L1)' :
-                      evaluation.difficulty_tier === 'Intermediate' ? ' (L2)' :
-                      evaluation.difficulty_tier === 'Advanced' ? ' (L3)' :
-                      ''
-                    }
-                  </span>
-                )}
-                {project.evaluation_status && (
-                  <span className="rounded-full bg-secondary px-3 py-1 text-body-sm font-semibold text-secondary-foreground">
-                    {project.evaluation_status.replace(/_/g, ' ')}{project.evaluation_status === 'completed' ? ' project' : ''}
-                  </span>
-                )}
-                {(evaluation?.detected_project_type === 'Unsupported' || evaluation?.evaluation_profile === 'Unsupported') && (
-                  <div className="mt-2 rounded-md bg-destructive/10 p-2 text-destructive text-caption">
-                    This repository appears to be a type we do not currently support; the evaluation is generic and will not strengthen any profile role.
-                  </div>
-                )}
-                {evaluation?.detected_project_type && (
-                  <div className="mt-2 text-caption text-muted-foreground">Type: {evaluation.detected_project_type}</div>
-                )}
-                {evaluation?.evaluation_profile && (
-                  <div className="mt-1 text-caption text-muted-foreground">Profile: {evaluation.evaluation_profile}</div>
-                )}
-                {config.weights && Object.keys(config.weights).length > 0 && (
-                  <div
-                    className="ml-2 text-caption text-muted-foreground cursor-help"
-                    title={
-                      Object.entries(config.weights)
-                        .map(([k,v]) => `${k.replace('_score','')} ${Math.round(v*100)}%`)
-                        .join(', ')
-                    }
-                  >
-                    (weights)
-                  </div>
+          <div className="mb-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h1 className="text-display-sm">{project.name}</h1>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="gap-2"
+                >
+                  {refreshing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Refreshing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4" />
+                      Refresh
+                    </>
+                  )}
+                </Button>
+                {project.github_url && (
+                  <Button variant="outline" asChild className="gap-2">
+                    <a href={project.github_url} target="_blank" rel="noopener noreferrer">
+                      <Github className="h-4 w-4" />
+                      View on GitHub
+                    </a>
+                  </Button>
                 )}
               </div>
+            </div>
 
-              {project.description && (
-                <p className="text-body text-muted-foreground mb-6">{project.description}</p>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              {evaluation?.difficulty_tier && (
+                <span className="rounded-full bg-pastel-yellow px-3 py-1 text-body-sm font-semibold text-pastel-yellow-foreground">
+                  {evaluation.difficulty_tier}
+                  {evaluation.difficulty_tier === 'Beginner'
+                    ? ' (L1)'
+                    : evaluation.difficulty_tier === 'Intermediate'
+                    ? ' (L2)'
+                    : evaluation.difficulty_tier === 'Advanced'
+                    ? ' (L3)'
+                    : ''}
+                </span>
               )}
-
-              <div className="flex flex-wrap gap-6 text-body-sm text-muted-foreground">
-                {project.language && (
-                  <div className="flex items-center gap-2">
-                    <Code2 className="h-4 w-4" />
-                    <span>{project.language}</span>
-                  </div>
-                )}
-                {project.stars !== undefined && (
-                  <div className="flex items-center gap-2">
-                    <Star className="h-4 w-4" />
-                    <span>{project.stars} stars</span>
-                  </div>
-                )}
-                {project.forks !== undefined && (
-                  <div className="flex items-center gap-2">
-                    <GitBranch className="h-4 w-4" />
-                    <span>{project.forks} forks</span>
-                  </div>
-                )}
-                {project.last_updated && (
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    <span>Updated {new Date(project.last_updated).toLocaleDateString()}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-                  <p className="text-caption text-muted-foreground">Commits</p>
-                  <p className="font-semibold">{project.commits_count ?? 'N/A'}</p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-                  <p className="text-caption text-muted-foreground">Repository Score</p>
-                  <p className="font-semibold">
-                    {evaluation?.repo_score !== undefined ? `${Math.round(evaluation.repo_score)}%` : 'N/A'}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-                  <p className="text-caption text-muted-foreground">Detected Type</p>
-                  <p className="font-semibold">{evaluation?.detected_project_type || 'N/A'}</p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-                  <p className="text-caption text-muted-foreground">Role Alignment</p>
-                  <p className="font-semibold">{evaluation?.primary_role_alignment || 'N/A'}</p>
-                </div>
-              </div>
-
-              {evaluation && (
-                <div className="mt-6 space-y-4">
-                  {(evaluation.contribution_percentage !== undefined || evaluation.contribution_level) && (
-                    <div className="p-4 rounded-lg border border-border bg-card">
-                      <h4 className="font-semibold">Commit Metrics</h4>
-                      {evaluation.contribution_level && (
-                        <p className="text-body-sm">Level: {evaluation.contribution_level}</p>
-                      )}
-                      {evaluation.contribution_percentage !== undefined && (
-                        <p className="text-body-sm">
-                          {evaluation.contribution_percentage}% ({evaluation.developer_commit_count || 0}/{evaluation.total_repo_commits || 0} commits)
-                        </p>
-                      )}
-                      {evaluation.pr_count !== undefined && (
-                        <p className="text-body-sm">PRs: {evaluation.pr_count}</p>
-                      )}
-                    </div>
-                  )}
-
-                  {evaluation.confidence_level && (
-                    <div>
-                      <h4 className="font-semibold">Confidence Score</h4>
-                      <p className="text-body-sm">
-                        Level: {evaluation.confidence_level} {evaluation.confidence_score !== undefined && `(${evaluation.confidence_score})`}
-                      </p>
-                      <ul className="list-disc list-inside text-body-sm">
-                        {evaluation.commit_frequency_signal && <li>Frequency: {evaluation.commit_frequency_signal}</li>}
-                        {evaluation.commit_distribution_signal && <li>Distribution: {evaluation.commit_distribution_signal}</li>}
-                        {evaluation.development_timeline_signal && <li>Timeline: {evaluation.development_timeline_signal}</li>}
-                      </ul>
-                    </div>
-                  )}
-
-                  {evaluation.verified_badge && (
-                    <div className="text-green-500 font-semibold">
-                      ✅ Verified project
-                    </div>
-                  )}
-
-                  {evaluation.primary_role_alignment && (
-                    <div>
-                      <h4 className="font-semibold">Project Type</h4>
-                      <p className="text-body-sm flex items-center gap-1">
-                        {evaluation.primary_role_alignment}
-                        <span className="text-caption text-muted-foreground">project</span>
-                      </p>
-                    </div>
-                  )}
-
-                </div>
+              {project.evaluation_status && (
+                <span className="rounded-full bg-secondary px-3 py-1 text-body-sm font-semibold text-secondary-foreground">
+                  {project.evaluation_status.replace(/_/g, ' ')}
+                  {project.evaluation_status === 'completed' ? ' project' : ''}
+                </span>
               )}
             </div>
 
-            <div className="flex flex-col gap-3">
-              <Button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="gap-2"
-              >
-                {refreshing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Refreshing...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4" />
-                    Refresh
-                  </>
-                )}
-              </Button>
-              {project.github_url && (
-                <Button variant="outline" asChild className="gap-2">
-                  <a href={project.github_url} target="_blank" rel="noopener noreferrer">
-                    <Github className="h-4 w-4" />
-                    View on GitHub
-                  </a>
-                </Button>
-              )}
+            {project.description && (
+              <p className="mb-4 text-body text-muted-foreground">{project.description}</p>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 text-body-sm text-muted-foreground md:grid-cols-4">
+              <div className="rounded-xl border border-border/60 bg-background/60 px-4 py-3">
+                <p className="text-caption uppercase tracking-wide">Language</p>
+                <p className="font-medium text-foreground">{project.language || 'N/A'}</p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/60 px-4 py-3">
+                <p className="text-caption uppercase tracking-wide">Stars</p>
+                <p className="font-medium text-foreground">{project.stars ?? 0} stars</p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/60 px-4 py-3">
+                <p className="text-caption uppercase tracking-wide">Forks</p>
+                <p className="font-medium text-foreground">{project.forks ?? 0} forks</p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/60 px-4 py-3">
+                <p className="text-caption uppercase tracking-wide">Updated</p>
+                <p className="font-medium text-foreground">
+                  {project.last_updated ? new Date(project.last_updated).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+                <p className="text-caption text-muted-foreground">Commits</p>
+                <p className="font-semibold">{project.commits_count ?? 'N/A'}</p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+                <p className="text-caption text-muted-foreground">Repository Score</p>
+                <p className="font-semibold">
+                  {evaluation?.repo_score !== undefined ? `${Math.round(evaluation.repo_score)}%` : 'N/A'}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+                <p className="text-caption text-muted-foreground">Detected Type</p>
+                <p className="font-semibold">{evaluation?.detected_project_type || 'N/A'}</p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+                <p className="text-caption text-muted-foreground">Role Alignment</p>
+                <p className="font-semibold">{evaluation?.primary_role_alignment || 'N/A'}</p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
+              <p className="text-caption text-muted-foreground">Project Type</p>
+              <p className="text-body-sm font-medium text-foreground">
+                {evaluation?.primary_role_alignment || 'N/A'} project
+              </p>
             </div>
           </div>
 

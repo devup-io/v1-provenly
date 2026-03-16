@@ -26,6 +26,8 @@ import Settings from "./pages/Settings";
 import Analysis from "./pages/Analysis";
 import DebugAuth from "./pages/DebugAuth";
 import MockDashboard from "./pages/MockDashboard";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -83,6 +85,8 @@ function AppContent() {
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/profile-setup" element={<ProfileSetup />} />
       <Route path="/developers" element={<Developers />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/dev/:username" element={<DeveloperProfile />} />
       <Route path="/compare" element={<CompareDevelopers />} />
       <Route path="/debug/auth" element={<DebugAuth />} />

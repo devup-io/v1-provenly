@@ -5,24 +5,30 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings } from '@/contexts/SettingsContext';
+import type { UserSettings } from '@/types/api';
 
 export default function Settings() {
   const navigate = useNavigate();
   const { settings, updateSettings } = useSettings();
-  const [form, setForm] = useState(settings);
+  const [form, setForm] = useState<UserSettings>(settings);
   const [saving, setSaving] = useState(false);
 
   // sync form when settings change
   useEffect(() => {
-    setForm(settings);
+    setForm({
+      profile_visibility: 'private',
+      ...settings,
+    });
   }, [settings]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await updateSettings(form);
-    } catch (e) {
+    } catch {
+      return;
     } finally {
       setSaving(false);
     }
@@ -42,6 +48,144 @@ export default function Settings() {
           <h1 className="text-heading-md mb-6">Settings</h1>
 
           <div className="space-y-6">
+            <div>
+              <Checkbox
+                id="email_notifications"
+                checked={!!form.email_notifications}
+                onCheckedChange={(c) => setForm((prev) => ({ ...prev, email_notifications: c === true }))}
+              />
+              <Label htmlFor="email_notifications" className="ml-2">
+                Email notifications
+              </Label>
+              <p className="ml-7 text-caption text-muted-foreground">
+                Get important account and project updates.
+              </p>
+            </div>
+
+            <div>
+              <Checkbox
+                id="marketing_emails"
+                checked={!!form.marketing_emails}
+                onCheckedChange={(c) => setForm((prev) => ({ ...prev, marketing_emails: c === true }))}
+              />
+              <Label htmlFor="marketing_emails" className="ml-2">
+                Marketing emails
+              </Label>
+              <p className="ml-7 text-caption text-muted-foreground">
+                Receive product news, feature launches, and tips.
+              </p>
+            </div>
+
+            <div>
+              <Checkbox
+                id="weekly_digest"
+                checked={!!form.weekly_digest}
+                onCheckedChange={(c) => setForm((prev) => ({ ...prev, weekly_digest: c === true }))}
+              />
+              <Label htmlFor="weekly_digest" className="ml-2">
+                Weekly digest
+              </Label>
+              <p className="ml-7 text-caption text-muted-foreground">
+                Get a weekly summary of profile views, activity, and signals.
+              </p>
+            </div>
+
+            <div>
+              <Checkbox
+                id="security_alerts"
+                checked={!!form.security_alerts}
+                onCheckedChange={(c) => setForm((prev) => ({ ...prev, security_alerts: c === true }))}
+              />
+              <Label htmlFor="security_alerts" className="ml-2">
+                Security alerts
+              </Label>
+              <p className="ml-7 text-caption text-muted-foreground">
+                Receive alerts for important security events.
+              </p>
+            </div>
+
+            <div>
+              <Checkbox
+                id="allow_hire_requests"
+                checked={!!form.allow_hire_requests}
+                onCheckedChange={(c) => setForm((prev) => ({ ...prev, allow_hire_requests: c === true }))}
+              />
+              <Label htmlFor="allow_hire_requests" className="ml-2">
+                Allow hire requests
+              </Label>
+              <p className="ml-7 text-caption text-muted-foreground">
+                Let founders send you hiring inquiries.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="profile_visibility" className="mb-2 block text-body-sm font-medium">
+                Profile visibility (public / private)
+              </Label>
+              <Select
+                value={form.profile_visibility || 'private'}
+                onValueChange={(value: 'public' | 'private') => setForm((prev) => ({ ...prev, profile_visibility: value }))}
+              >
+                <SelectTrigger id="profile_visibility" className="w-full sm:w-52">
+                  <SelectValue placeholder="Choose visibility" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">Public</SelectItem>
+                  <SelectItem value="private">Private</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-caption text-muted-foreground">
+                Control who can view your profile.
+              </p>
+            </div>
+
+            <div>
+              <Checkbox
+                id="temporarily_close_account"
+                checked={!!form.temporarily_close_account}
+                onCheckedChange={(c) => setForm((prev) => ({ ...prev, temporarily_close_account: c === true }))}
+              />
+              <Label htmlFor="temporarily_close_account" className="ml-2">
+                Temporarily close account
+              </Label>
+              <p className="ml-7 text-caption text-muted-foreground">
+                Hide your profile and pause account activity for a period.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="temporary_close_reason" className="mb-2 block text-body-sm font-medium">
+                Temporary close reason
+              </Label>
+              <Input
+                id="temporary_close_reason"
+                value={form.temporary_close_reason || ''}
+                onChange={(e) => setForm((prev) => ({ ...prev, temporary_close_reason: e.target.value }))}
+                placeholder="Optional note for why your account is temporarily closed"
+              />
+              <p className="text-caption text-muted-foreground">
+                Optional note for why your account is temporarily closed.
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-border bg-muted/20 p-4">
+              <p className="mb-3 text-body-sm font-medium">Reopen account</p>
+              <p className="mb-3 text-caption text-muted-foreground">
+                Restore normal visibility and resume activity.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setForm((prev) => ({
+                  ...prev,
+                  temporarily_close_account: false,
+                  temporary_close_reason: '',
+                }))}
+              >
+                Reopen account
+              </Button>
+            </div>
+
             <div>
               <Checkbox
                 id="include_org_repos"

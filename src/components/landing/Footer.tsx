@@ -10,11 +10,11 @@ const footerLinks = {
     { label: "Enterprise", href: "#" },
   ],
   Company: [
-    { label: "About", href: "#" },
+    { label: "About", href: "/about" },
     { label: "Blog", href: "#" },
     { label: "Careers", href: "#" },
     { label: "Press", href: "#" },
-    { label: "Contact", href: "#" },
+    { label: "Contact", href: "/contact" },
   ],
   Resources: [
     { label: "Help Center", href: "#" },

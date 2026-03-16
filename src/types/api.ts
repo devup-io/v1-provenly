@@ -340,6 +340,14 @@ export interface UserSettings {
   import_queue_threshold?: number;
   run_ai_by_default?: boolean;
   auto_publish_on_complete?: boolean;
+  email_notifications?: boolean;
+  marketing_emails?: boolean;
+  weekly_digest?: boolean;
+  security_alerts?: boolean;
+  allow_hire_requests?: boolean;
+  profile_visibility?: 'public' | 'private';
+  temporarily_close_account?: boolean;
+  temporary_close_reason?: string;
 }
 
 export interface AggregateEvaluation {
