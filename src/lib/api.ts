@@ -296,15 +296,24 @@ type ApiRequestOptions = RequestInit & { expectJson?: boolean };
 export const apiRequest = async <T>(path: string, options: ApiRequestOptions = {}): Promise<T> => {
   const { headers, expectJson = true, ...rest } = options;
   const fullUrl = `${API_BASE_URL}${path}`;
-  
+
   if (process.env.NODE_ENV === 'development') {
     console.log(`[API] ${rest.method || 'GET'} ${path}`);
   }
-  
+
+  // If an access token is stored (sessionStorage preferred), use it for Authorization
+  const storedToken = typeof window !== 'undefined'
+    ? sessionStorage.getItem('v1_access_token') || localStorage.getItem('v1_access_token')
+    : null;
+
+  const authHeaders: Record<string, string> = storedToken
+    ? { Authorization: `Bearer ${storedToken}` }
+    : {};
+
   const res = await fetch(fullUrl, {
-    credentials: "include",
-    mode: "cors",
-    headers: { "Content-Type": "application/json", ...(headers || {}) },
+    credentials: 'include',
+    mode: 'cors',
+    headers: { "Content-Type": "application/json", ...(headers || {}), ...authHeaders },
     ...rest,
   });
 
@@ -318,9 +327,19 @@ export const apiRequest = async <T>(path: string, options: ApiRequestOptions = {
 
   if (!res.ok) {
     const text = await res.text();
+
     if (res.status === 401) {
-      console.warn('[API] Received 401 Unauthorized - check if session cookie is valid');
+      console.warn('[API] Received 401 Unauthorized - clearing local session and redirecting to login');
+      clearAuth();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/signup?error=session_expired';
+      }
     }
+
+    if (res.status === 503) {
+      console.warn('[API] Received 503 Service Unavailable - backend may be down or overloaded');
+    }
+
     throw new Error(text || `Request failed with status ${res.status}`);
   }
 
@@ -755,7 +774,7 @@ export async function fetchAvailableRepos(ownerLogin: string, limit = 100, inclu
   }
 }
 
-// supported developer types
+// supported developer types (legacy endpoint)
 export async function getSupportedDevTypes(): Promise<SupportedDevTypes> {
   try {
     const data = await apiRequest<SupportedDevTypes>("/api/v1/projects/supported-dev-types", {
@@ -766,6 +785,85 @@ export async function getSupportedDevTypes(): Promise<SupportedDevTypes> {
     console.warn('[API] Failed to fetch supported dev types', err);
     return [];
   }
+}
+
+// Modern dev-types + language selection endpoints
+export async function getDevTypes(): Promise<DevTypesResponse> {
+  return apiRequest<DevTypesResponse>("/api/v1/dev-types", {
+    method: "GET",
+  });
+}
+
+export async function getDevTypeLanguages(devTypes: string[]): Promise<DevTypesLanguagesResponse> {
+  const params = new URLSearchParams();
+  devTypes.forEach((type) => params.append('dev_types', type));
+  return apiRequest<DevTypesLanguagesResponse>(`/api/v1/dev-types/languages?${params.toString()}`, {
+    method: "GET",
+  });
+}
+
+// Profile CRUD
+export async function createOrReplaceProfile(profile: Partial<DeveloperProfile>): Promise<DeveloperProfile> {
+  return apiRequest<DeveloperProfile>('/api/v1/me', {
+    method: 'POST',
+    body: JSON.stringify(profile),
+  });
+}
+
+export async function patchProfile(profile: Partial<DeveloperProfile>): Promise<DeveloperProfile> {
+  return apiRequest<DeveloperProfile>('/api/v1/me', {
+    method: 'PATCH',
+    body: JSON.stringify(profile),
+  });
+}
+
+// Analyzer / chart endpoints
+export async function getDeveloperAnalyzer(developerId: string): Promise<unknown> {
+  return apiRequest<unknown>(`/api/v1/developers/${encodeURIComponent(developerId)}/analyzer`, {
+    method: 'GET',
+  });
+}
+
+export async function getDeveloperAnalyzerCharts(developerId: string): Promise<DeveloperAnalyzerChartsResponse> {
+  return apiRequest<DeveloperAnalyzerChartsResponse>(`/api/v1/developers/${encodeURIComponent(developerId)}/analyzer/charts`, {
+    method: 'GET',
+  });
+}
+
+export function subscribeToAnalyzerStream(
+  developerId: string,
+  handlers: {
+    onLog: (data: { step: string; status: string; detail?: string; elapsed_ms?: number }) => void;
+    onComplete: (data: unknown) => void;
+    onError: (err: unknown) => void;
+  }
+): EventSource {
+  const url = `${API_BASE_URL}/api/v1/developers/${encodeURIComponent(developerId)}/analyze-stream`;
+  const source = new EventSource(url, { withCredentials: true });
+
+  source.addEventListener('log', (event) => {
+    try {
+      const payload = JSON.parse((event as MessageEvent).data);
+      handlers.onLog(payload);
+    } catch (e) {
+      console.warn('Failed to parse log event', e);
+    }
+  });
+
+  source.addEventListener('complete', (event) => {
+    try {
+      const payload = JSON.parse((event as MessageEvent).data);
+      handlers.onComplete(payload);
+    } catch (e) {
+      console.warn('Failed to parse complete event', e);
+    }
+  });
+
+  source.addEventListener('error', (event) => {
+    handlers.onError(event);
+  });
+
+  return source;
 }
 
 // (placeholder functions were removed; real implementations below)

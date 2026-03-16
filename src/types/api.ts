@@ -143,6 +143,31 @@ export interface DeveloperFullDetailsResponse {
   summary?: DeveloperFullDetailsSummary;
 }
 
+export interface DevTypesResponse {
+  supported_dev_types: string[];
+  languages_by_dev_type: Record<string, string[]>;
+}
+
+export interface DevTypesLanguagesResponse {
+  selected_dev_types: string[];
+  available_languages: string[];
+  languages_by_dev_type: Record<string, string[]>;
+}
+
+export interface DeveloperAnalyzerChartsResponse {
+  project_complexity_bar?: unknown;
+  technology_usage_bar?: unknown;
+  contribution_pie?: unknown;
+  strengths_radar?: unknown;
+  credibility_gauge?: unknown;
+  system_complexity_gauge?: unknown;
+  activity_timeline?: unknown;
+  role_alignment?: unknown;
+  overview?: unknown;
+  developer?: unknown;
+  hiring_readiness?: unknown;
+}
+
 export interface ProjectEvaluationLog {
   id: string;
   project_id: string;
