@@ -11,6 +11,15 @@ export default function SignUp() {
   const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const errorParam = params.get('error');
+
+    // If we were explicitly redirected here due to session expiration, show the expired state.
+    if (errorParam === 'session_expired') {
+      setSessionExpired(true);
+      return;
+    }
+
     const checkSession = async () => {
       try {
         const dev = getDeveloper();
