@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDeveloper, clearAuth, apiRequest, isAuthError } from '@/lib/api';
 
@@ -44,10 +44,10 @@ export function useSessionCheck() {
   const navigate = useNavigate();
   const [isChecking, setIsChecking] = useState(true);
 
-  const redirectToSignIn = () => {
+  const redirectToSignIn = useCallback(() => {
     clearAuth();
     navigate('/signup?error=session_expired', { replace: true });
-  };
+  }, [navigate]);
 
   useEffect(() => {
     const validateSession = async () => {
@@ -88,7 +88,7 @@ export function useSessionCheck() {
         }
 
         // STEP 2: Always verify with backend (even if token is HttpOnly)
-        // Use apiRequest so it can include the access token header (if stored)
+        // Browser sends auth cookie automatically with credentials: 'include'
         try {
           await apiRequest('/api/v1/me', { method: 'GET' });
           setIsChecking(false);
@@ -116,7 +116,7 @@ export function useSessionCheck() {
     };
 
     validateSession();
-  }, [navigate]);
+  }, [redirectToSignIn]);
 
   return { isChecking };
 }

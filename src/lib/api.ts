@@ -372,19 +372,12 @@ export const apiRequest = async <T>(path: string, options: ApiRequestOptions = {
   const { headers, expectJson = true, ...rest } = options;
   const fullUrl = `${API_BASE_URL}${path}`;
 
-  // If an access token is available (from OAuth callback), send it as a Bearer header
-  // This supports devices/browsers where the cookie is not being stored/sent reliably.
-  const storedToken = typeof window !== 'undefined'
-    ? sessionStorage.getItem('v1_access_token') || localStorage.getItem('v1_access_token')
-    : null;
-  const authHeaders: Record<string, string> = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
-
   let res: Response;
   try {
     res = await fetch(fullUrl, {
       credentials: 'include',
       mode: 'cors',
-      headers: { "Content-Type": "application/json", ...(headers || {}), ...authHeaders },
+      headers: { "Content-Type": "application/json", ...(headers || {}) },
       ...rest,
     });
   } catch (error) {

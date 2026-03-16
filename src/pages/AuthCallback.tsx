@@ -14,7 +14,6 @@ export default function AuthCallback() {
         // Extract developer data from URL
         const params = new URLSearchParams(window.location.search);
         const encodedData = params.get('data');
-        const callbackState = params.get('state');
         const errorParam = params.get('error');
 
         // Debug logging
@@ -45,13 +44,6 @@ export default function AuthCallback() {
         // Immediately remove the token/data from the URL so it isn't stored in history
         // and keep it out of accidental logs, while still allowing router navigation.
         window.history.replaceState({}, document.title, '/dashboard');
-
-        // If we received an access token, store it in both sessionStorage and localStorage
-        // This helps survive cross-site redirects on some browsers/devices where sessionStorage may be cleared.
-        if (parsedData.access_token) {
-          sessionStorage.setItem('v1_access_token', parsedData.access_token);
-          localStorage.setItem('v1_access_token', parsedData.access_token);
-        }
 
         // Handle different backend response structures
         let developer: DeveloperProfile;
@@ -112,12 +104,6 @@ export default function AuthCallback() {
           navigate('/onboarding');
         }
       } catch (error) {
-        
-        // More detailed error logging
-        if (error instanceof SyntaxError) {
-        } else if (error instanceof Error) {
-        }
-        
         const message = error instanceof Error ? error.message : 'Failed to process authentication';
         setError(message);
         
