@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogD
 import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, GitCommit, Star, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { getDeveloper, getDeveloperProjects, getAggregateEvaluation, clearAuth, getCurrentDeveloper, getSupportedDevTypes, publishProfile, unpublishProfile } from '@/lib/api';
+import { getDeveloper, getDeveloperProjects, getAggregateEvaluation, clearAuth, getCurrentDeveloper, getSupportedDevTypes, publishProfile, unpublishProfile, getDeveloperAnalyzer } from '@/lib/api';
 import type { DeveloperProfile, Project, AggregateEvaluation, AIEvaluation } from '@/types/api';
 
 // configuration per detected project type for signal emphasis
@@ -186,8 +186,18 @@ export default function Dashboard() {
 
   // Auto-refresh every 30 seconds to get latest GitHub changes
   useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    let sessionExpired = false;
+
+    const stopAutoRefresh = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
     const refreshData = async () => {
-      if (!developer) return;
+      if (!developer || sessionExpired) return;
 
       try {
         console.log('[Dashboard] Auto-refreshing data (30s interval)...');
@@ -201,14 +211,25 @@ export default function Dashboard() {
         console.log('[Dashboard] Auto-refresh completed');
       } catch (err) {
         console.warn('[Dashboard] Auto-refresh failed:', err);
+
+        const message = err instanceof Error ? err.message : String(err);
+        if (message.includes('401') || message.includes('403') || message.toLowerCase().includes('unauthorized')) {
+          sessionExpired = true;
+          stopAutoRefresh();
+          clearAuth();
+          navigate('/signup?error=session_expired');
+        }
+
         // Don't show errors for auto-refresh, just log them
       }
     };
 
-    const intervalId = setInterval(refreshData, 30000); // 30 seconds
+    intervalId = setInterval(refreshData, 30000); // 30 seconds
 
-    return () => clearInterval(intervalId);
-  }, [developer, projects, stats]);
+    return () => {
+      stopAutoRefresh();
+    };
+  }, [developer, projects, stats, navigate]);
 
   const handleImportMore = () => {
     // Navigate to profile setup step 2 (same as ProfilePreview)
@@ -682,7 +703,20 @@ export default function Dashboard() {
                 Import More Repos
               </Button>
               <Button
-                onClick={() => navigate(`/analysis?dev=${developer?.id}`)}
+                onClick={async () => {
+                  if (!developer) return;
+                  setImporting(true);
+                  try {
+                    // Trigger backend analysis and then navigate to the analysis page
+                    await getDeveloperAnalyzer(developer.id);
+                  } catch (err) {
+                    console.error('[Dashboard] Failed to trigger analysis', err);
+                    toast({ title: 'Analysis failed', description: 'Unable to start analysis. Please try again.', variant: 'destructive' });
+                  } finally {
+                    setImporting(false);
+                    navigate(`/analysis?dev=${developer?.id}`);
+                  }
+                }}
                 disabled={importing}
                 variant="outline"
                 className="w-full gap-2"
