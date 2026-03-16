@@ -34,7 +34,6 @@ export default function SignUp() {
           navigate('/welcome');
         } catch (err) {
           // Session invalid - stay on login/signup and mark expired
-          console.warn('Session expired, showing login');
           setSessionExpired(true);
         }
       } catch (e) {
@@ -57,12 +56,10 @@ export default function SignUp() {
       localStorage.removeItem('v1_developer');
       saveOAuthState(state);
       
-      console.log('[OAuth] Starting GitHub OAuth flow with state:', state);
       
       // Redirect to GitHub authorization page
       window.location.href = authorization_url;
     } catch (err) {
-      console.error("Error initiating GitHub OAuth:", err);
       setIsConnecting(false);
       
       // Show error in alert

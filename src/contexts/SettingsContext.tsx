@@ -19,7 +19,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       const data = await getUserSettings();
       setSettings(data);
     } catch (e) {
-      console.warn('[Settings] failed to load', e);
     }
   };
 
@@ -28,7 +27,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       const newSettings = await patchUserSettings(updates);
       setSettings(newSettings);
     } catch (e) {
-      console.warn('[Settings] failed to update', e);
       throw e;
     }
   };

@@ -22,20 +22,16 @@ export default function Analysis() {
     if (devId) {
       getDeveloperSummary(devId)
         .then((data) => {
-          console.log('[Analysis] developer summary', data);
           setSummary(data);
         })
         .catch((err) => {
-          console.error('[Analysis] failed to load summary', err);
         });
 
       getDeveloperAnalyzerCharts(devId)
         .then((data) => {
-          console.log('[Analysis] analyzer charts data', data);
           setCharts(data);
         })
         .catch((err) => {
-          console.error('[Analysis] failed to load charts', err);
         });
     }
   }, [devId]);
@@ -75,7 +71,6 @@ export default function Analysis() {
         toast({ title: 'Analysis complete', description: 'Charts and summary are refreshed.', });
       },
       onError: (err) => {
-        console.error('[Analysis] SSE error', err);
         appendLog('Analysis stream error — please try again.');
         setRunning(false);
         toast({ title: 'Analysis stream error', description: 'Unable to receive live updates.', variant: 'destructive' });
@@ -94,7 +89,6 @@ export default function Analysis() {
       appendLog('Analysis triggered. Waiting for updates...');
       startStream(devId);
     } catch (err) {
-      console.error('[Analysis] failed to run analysis', err);
       toast({ title: 'Analysis failed', description: 'Unable to run analysis, please try again.', variant: 'destructive' });
       setRunning(false);
     }

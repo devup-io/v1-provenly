@@ -15,7 +15,6 @@ export default function Welcome() {
       if (dev) {
         // If user already has a completed profile, redirect to dashboard
         if (dev.profile_complete) {
-          console.log('[Welcome] User already has completed profile, redirecting to dashboard');
           navigate('/dashboard');
           return;
         }

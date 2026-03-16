@@ -84,7 +84,7 @@ export default function Onboarding() {
   useEffect(() => {
     getSupportedDevTypes().then((list) => {
       setSupportedRoles(list);
-    }).catch(console.warn);
+    }).catch(() => undefined);
   }, []);
 
   if (!developer) {
@@ -129,14 +129,12 @@ export default function Onboarding() {
           const names = saved ? JSON.parse(saved) as string[] : undefined;
           await importAllProjects(state, names);
         } catch (err) {
-          console.warn('Failed to trigger import-all:', err);
         }
       }
 
       // Navigate to dashboard
       navigate('/dashboard');
     } catch (err) {
-      console.error('Failed to complete onboarding:', err);
       alert(err instanceof Error ? err.message : 'Failed to complete onboarding');
     } finally {
       setLoading(false);

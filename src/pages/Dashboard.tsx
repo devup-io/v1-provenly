@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogD
 import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, Check, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { ErrorScreen } from '@/components/ErrorScreen';
 import { Header } from '@/components/landing/Header';
 import { useToast } from '@/hooks/use-toast';
-import { getDeveloper, getDeveloperProjects, getAggregateEvaluation, clearAuth, getCurrentDeveloper, getSupportedDevTypes, publishProfile, unpublishProfile, getDeveloperAnalyzer } from '@/lib/api';
+import { getDeveloper, getDeveloperProjects, getAggregateEvaluation, clearAuth, getCurrentDeveloper, getSupportedDevTypes, publishProfile, unpublishProfile, getDeveloperAnalyzer, isAuthError, isRateLimitError, isServiceUnavailableError } from '@/lib/api';
 import type { DeveloperProfile, Project, AggregateEvaluation, AIEvaluation } from '@/types/api';
 
 // configuration per detected project type for signal emphasis
@@ -122,6 +123,7 @@ export default function Dashboard() {
   const [importing, setImporting] = useState(false);
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
+  const [errorStatusCode, setErrorStatusCode] = useState<string>('503');
   const [supportedRoles, setSupportedRoles] = useState<string[]>([]);
 
   // publish modal state
@@ -133,7 +135,7 @@ export default function Dashboard() {
 
   // load supported roles
   useEffect(() => {
-    getSupportedDevTypes().then(setSupportedRoles).catch((e) => console.warn('[Dashboard] failed to load supported roles', e));
+    getSupportedDevTypes().then(setSupportedRoles).catch(() => setSupportedRoles([]));
   }, []);
 
   // Initial data load
@@ -143,24 +145,20 @@ export default function Dashboard() {
         // Get current developer from localStorage and server to ensure signals are fresh
         const localDev = getDeveloper();
         if (!localDev) {
-          console.warn('[Dashboard] No developer found in localStorage');
-          navigate('/signup');
+          navigate('/signup', { replace: true });
           return;
         }
 
         let serverDev: DeveloperProfile;
         try {
           serverDev = await getCurrentDeveloper();
-        } catch (err) {
-          console.warn('[Dashboard] failed to fetch current developer, using cached', err);
+        } catch {
           serverDev = localDev;
         }
 
-        console.log('[Dashboard] Loading data for developer:', serverDev.id);
         setDeveloper(serverDev);
 
         // Fetch projects and stats. Let errors bubble instead of swallowing them.
-        console.log('[Dashboard] Fetching projects and stats for developer:', serverDev.id);
         const projectsData = await getDeveloperProjects(serverDev.id);
         const statsData = await getAggregateEvaluation(serverDev.id);
 
@@ -170,19 +168,12 @@ export default function Dashboard() {
         // show tip after first stats load
         toast({ title: 'Tip', description: 'You can publish your profile using the button in the actions panel.', });
       } catch (err) {
-        console.error('Failed to load dashboard data:', err);
-        let message = err instanceof Error ? err.message : 'Failed to load data';
-        // If the backend is down/DB error, don't expose raw message
-        if (message.includes('500') || message.toLowerCase().includes('database')) {
-          // show generic 503 message
-          message = 'Service unavailable (503). Please try again later.';
-        }
-        
-        // Check for session expiration (401/403 errors)
-        if (message.includes('401') || message.includes('403') || message.includes('Unauthorized')) {
+        if (isAuthError(err)) {
           clearAuth();
-          navigate('/signup?error=session_expired');
+          navigate('/signup?error=session_expired', { replace: true });
         } else {
+          const message = err instanceof Error ? err.message : 'Failed to load data';
+          setErrorStatusCode(isRateLimitError(err) ? '429' : isServiceUnavailableError(err) ? '503' : '500');
           setError(message);
           setLoading(false);
         }
@@ -216,7 +207,6 @@ export default function Dashboard() {
       if (!developer || sessionExpired) return;
 
       try {
-        console.log('[Dashboard] Auto-refreshing data (30s interval)...');
         const [projectsData, statsData] = await Promise.all([
           getDeveloperProjects(developer.id).catch(() => projects), // Keep old data on error
           getAggregateEvaluation(developer.id).catch(() => stats),
@@ -224,19 +214,13 @@ export default function Dashboard() {
 
         setProjects(projectsData || []);
         setStats(statsData);
-        console.log('[Dashboard] Auto-refresh completed');
       } catch (err) {
-        console.warn('[Dashboard] Auto-refresh failed:', err);
-
-        const message = err instanceof Error ? err.message : String(err);
-        if (message.includes('401') || message.includes('403') || message.toLowerCase().includes('unauthorized')) {
+        if (isAuthError(err)) {
           sessionExpired = true;
           stopAutoRefresh();
           clearAuth();
-          navigate('/signup?error=session_expired');
+          navigate('/signup?error=session_expired', { replace: true });
         }
-
-        // Don't show errors for auto-refresh, just log them
       }
     };
 
@@ -277,7 +261,6 @@ export default function Dashboard() {
         setLastPublishAction(null);
       }, 2000);
     } catch (err) {
-      console.error('[Dashboard] publish toggle failed', err);
       toast({ title: published ? 'Unpublish failed' : 'Publish failed', description: err instanceof Error ? err.message : 'Unable to update your profile visibility.' });
     } finally {
       setPublishing(false);
@@ -296,8 +279,8 @@ export default function Dashboard() {
         setProjects(updatedProjects || []);
       }
     } catch (err) {
-      console.error('Failed to refresh evaluations:', err);
       setError(err instanceof Error ? err.message : 'Failed to refresh evaluations');
+      setErrorStatusCode('500');
     } finally {
       setImporting(false);
     }
@@ -450,22 +433,22 @@ export default function Dashboard() {
 
   // If an error occurred (e.g. database is down), show only the error page
   if (error) {
+    const isRateLimited = errorStatusCode === '429';
+    const safeErrorMessage = isRateLimited
+      ? 'Please wait briefly before trying again.'
+      : 'Please try again shortly. If this continues, contact support.';
+
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-hero p-4">
-        <div className="text-center max-w-md space-y-6">
-          <h1 className="text-display-sm font-bold text-destructive">503</h1>
-          <p className="mt-2 text-xl font-semibold text-destructive">Service Unavailable</p>
-          <p className="mt-4 text-body text-muted-foreground">{error}</p>
-          <Button
-            variant="outline"
-            onClick={() => window.location.reload()}
-            className="mx-auto mt-4 flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Retry
-          </Button>
-        </div>
-      </div>
+      <ErrorScreen
+        statusCode={errorStatusCode}
+        title={isRateLimited ? 'Too many requests' : 'We could not load your dashboard'}
+        subtitle={isRateLimited ? 'You made too many requests in a short period.' : 'The dashboard is temporarily unavailable right now.'}
+        message={safeErrorMessage}
+        onRetry={() => window.location.reload()}
+        primaryActionLabel="Retry"
+        onSecondaryAction={() => navigate('/signup')}
+        secondaryActionLabel="Go to sign in"
+      />
     );
   }
 
@@ -733,8 +716,7 @@ export default function Dashboard() {
                   try {
                     // Trigger backend analysis and then navigate to the analysis page
                     await getDeveloperAnalyzer(developer.id);
-                  } catch (err) {
-                    console.error('[Dashboard] Failed to trigger analysis', err);
+                  } catch {
                     toast({ title: 'Analysis failed', description: 'Unable to start analysis. Please try again.', variant: 'destructive' });
                   } finally {
                     setImporting(false);
@@ -858,6 +840,19 @@ export default function Dashboard() {
                       <p className="text-body-sm text-muted-foreground">
                         {project.description || 'N/A'}
                       </p>
+
+                      <div className="mt-4 flex justify-start">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/dashboard/projects/${project.id}`);
+                          }}
+                        >
+                          View more about project
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>

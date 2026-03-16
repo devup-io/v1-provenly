@@ -35,7 +35,6 @@ export default function ProjectDetails() {
   useEffect(() => {
     const loadProject = async () => {
       try {
-        console.log('[ProjectDetails] Loading project:', projectId);
         const projects = await getDeveloperProjects();
         const found = projects.find(p => p.id === projectId);
 
@@ -45,14 +44,9 @@ export default function ProjectDetails() {
           return;
         }
 
-        console.log('[ProjectDetails] Project loaded:', found.name);
-        console.log('[ProjectDetails] Full project data:', found);
-        console.log('[ProjectDetails] Commits count:', found.commits_count);
-        console.log('[ProjectDetails] All project properties:', Object.keys(found));
         setProject(found);
         setLoading(false);
       } catch (err) {
-        console.error('[ProjectDetails] Error loading project:', err);
         const message = err instanceof Error ? err.message : 'Failed to load project';
         setError(message);
         setLoading(false);
@@ -68,8 +62,8 @@ export default function ProjectDetails() {
     try {
       const logs = await getProjectEvaluationLogs(projectId);
       setRefreshLogs(logs);
-    } catch (err) {
-      console.warn('[ProjectDetails] Failed to load evaluation logs:', err);
+    } catch {
+      setRefreshLogs([]);
     }
   };
 
@@ -84,9 +78,7 @@ export default function ProjectDetails() {
         await loadRefreshLogs(project.id);
       }
 
-      console.log('[ProjectDetails] Refreshing project data:', project.id);
       const refreshed = await refreshProjectData(project.id);
-      console.log('[ProjectDetails] Project refreshed successfully');
       setProject(refreshed);
 
       if (refreshMode === 'manual') {
@@ -95,7 +87,6 @@ export default function ProjectDetails() {
 
       setRefreshing(false);
     } catch (err) {
-      console.error('[ProjectDetails] Failed to refresh project:', err);
       const message = err instanceof Error ? err.message : 'Failed to refresh project';
       setError(message);
       setRefreshing(false);

@@ -248,7 +248,6 @@ export default function Developers() {
       // check cache first
       if (cacheRef.current.has(cacheKey)) {
         const cached = cacheRef.current.get(cacheKey)!;
-        console.log('[Developers] using cached results for', filters);
         setDevelopers(cached.developers);
         setTotalCount(cached.totalCount);
         setTotalPages(cached.totalPages);
@@ -256,13 +255,10 @@ export default function Developers() {
       } else {
         try {
           const resp = await searchDevelopers(filters);
-          console.log('[Developers] raw response', resp, 'filters', filters);
           setTotalPages(resp.total_pages || 1);
           setTotalCount(resp.total_count || 0);
           const items = Array.isArray(resp.developers) ? resp.developers : [];
-          console.log('[Developers] items array length', items.length);
           const mapped = items.map(mapBackendDev);
-          console.log('[Developers] mapped developers', mapped);
           setDevelopers(mapped);
           cacheRef.current.set(cacheKey, { developers: mapped, totalCount: resp.total_count || 0, totalPages: resp.total_pages || 1 });
         } finally {
@@ -270,7 +266,6 @@ export default function Developers() {
         }
       }
     } catch (err) {
-      console.error('Developer search failed', err);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
@@ -537,7 +532,6 @@ export default function Developers() {
                 onClick={() => {
                   const target = dev.username || dev.id;
                   if (!target) {
-                    console.warn('[Developers] cannot navigate to developer, missing username/id', dev);
                     return;
                   }
                   navigate(`/dev/${target}`);

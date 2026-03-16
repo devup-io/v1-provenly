@@ -4,18 +4,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { ThemeProvider } from "next-themes";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { useBackendReadiness } from "./hooks/use-backend-readiness";
 import { useSessionCheck } from "./hooks/use-session-check";
-// enhanced error components
-import ServerIllustration from "@/components/error-components/ServerIllustration";
-import StatusPill from "@/components/error-components/StatusPill";
-import LoadingDots from "@/components/error-components/LoadingDots";
-import CountdownTimer from "@/components/error-components/CountdownTimer";
-import ActionButtons from "@/components/error-components/ActionButtons";
+import { ErrorScreen } from "@/components/ErrorScreen";
 import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import OAuthLoading from "./pages/OAuthLoading";
@@ -50,48 +44,17 @@ function AppContent() {
   }
 
   if (!isReady && !bypassBackendCheck) {
-    // enhanced 503 page using custom illustrations and components
     return (
-      <div className="relative min-h-screen flex items-center justify-center bg-gradient-hero p-4">
-        <div className="relative z-10 w-full max-w-md text-center rounded-3xl bg-card p-8 shadow-card">
-          <div className="mb-8">
-            <ServerIllustration />
-          </div>
-          <div className="mb-5 flex justify-center">
-            <StatusPill status="offline" />
-          </div>
-          <div className="gradient-text font-display font-extrabold leading-none mb-2 text-[clamp(3rem,10vw,4rem)] tracking-tight">
-            503
-          </div>
-          <h1 className="font-display font-bold text-xl leading-snug mb-4">
-            Service Temporarily Unavailable
-          </h1>
-          <p className="text-sm font-light leading-relaxed mb-7">
-            We're performing quick maintenance or our server is currently under heavy load. Everything will be back online shortly — thanks for your patience.
-          </p>
-          <div className="mb-6">
-            <LoadingDots />
-          </div>
-          <div className="mb-6">
-            <ActionButtons onRetry={() => void retry()} />
-          </div>
-          <div className="mb-2">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setBypassBackendCheck(true)}
-            >
-              Continue without backend (dev mode)
-            </Button>
-          </div>
-          <p className="mt-6 text-xs">
-            Need urgent help?{' '}
-            <a href="mailto:support@yourapp.com" className="hover:underline">
-              Contact support →
-            </a>
-          </p>
-        </div>
-      </div>
+      <ErrorScreen
+        statusCode="503"
+        title="Service temporarily unavailable"
+        subtitle="We are reconnecting things behind the scenes."
+        message="Our servers are temporarily unavailable. Please try again in a few moments."
+        onRetry={() => void retry()}
+        primaryActionLabel="Try again"
+        onSecondaryAction={import.meta.env.DEV ? () => setBypassBackendCheck(true) : undefined}
+        secondaryActionLabel={import.meta.env.DEV ? "Continue in dev mode" : undefined}
+      />
     );
   }
 

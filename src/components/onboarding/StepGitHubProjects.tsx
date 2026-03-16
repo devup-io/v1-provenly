@@ -74,8 +74,8 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
       try {
         const orgs = await fetchGitHubOrganizations();
         setOrganizations(orgs);
-      } catch (err) {
-        console.warn("[StepGitHubProjects] Failed to fetch organizations:", err);
+      } catch {
+        setOrganizations([]);
       }
     };
 
@@ -133,7 +133,6 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
       setCurrentPage(1);
       onUpdate({ repos: formattedRepos });
     } catch (e) {
-      console.error("Error loading repos", e);
       setRepoError("Failed to load repositories. Please try again.");
     } finally {
       setLoadingRepos(false);
@@ -207,7 +206,6 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
         const importedCount = Array.isArray(result.imported_projects)
           ? result.imported_projects.length
           : selectedRepoFullNames.size;
-        console.log('[StepGitHubProjects] import result', result, 'computed count', importedCount);
         setModalMessage(`${importedCount} repos imported`);
         // refresh available list after a short pause
         setTimeout(() => {
@@ -233,8 +231,8 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
               onNext();
               return;
             }
-          } catch (e) {
-            console.warn('poll error', e);
+          } catch {
+            // keep polling while backend finalizes import
           }
           setTimeout(poll, 3000);
         };
@@ -249,7 +247,6 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
     } catch (err) {
       setModalOpen(false);
       toast({ title: "Import failed", description: "Please try again.", variant: "destructive" });
-      console.error(err);
     } finally {
       setIsImporting(false);
     }

@@ -50,7 +50,6 @@ export default function ProfileSetup() {
         // Allow access only if importing more repos (step=2)
         const isImportingMore = requestedStep === 2;
         if (!isImportingMore) {
-          console.log('[ProfileSetup] User already has completed profile, redirecting to dashboard');
           navigate('/dashboard');
         }
       }
@@ -92,7 +91,6 @@ export default function ProfileSetup() {
       try {
         await importAllProjects(state, selectedRepoNames);
       } catch (err) {
-        console.warn("[ProfileSetup] importAllProjects failed after selection:", err);
       }
     }
 

@@ -97,7 +97,7 @@ export default function ProfilePreview() {
 
   // load supported roles once
   useEffect(() => {
-    getSupportedDevTypes().then(setSupportedRoles).catch(console.warn);
+    getSupportedDevTypes().then(setSupportedRoles).catch(() => undefined);
   }, []);
 
   // validate role when changed
@@ -118,26 +118,21 @@ export default function ProfilePreview() {
   useEffect(() => {
     const loadProfileData = async () => {
       try {
-        console.log('[ProfilePreview] Loading profile preview data...');
 
         // attempt preview endpoint first (may contain publish flag)
         let devData: DeveloperProfile;
         try {
           devData = await getProfilePreview();
-          console.log('[ProfilePreview] preview developer data:', devData);
         } catch (previewErr) {
-          console.warn('[ProfilePreview] preview API failed, falling back to /me', previewErr);
           devData = await getCurrentDeveloper();
         }
 
         // fetch projects and stats
         const [projectsData, statsData] = await Promise.all([
           getDeveloperProjects(devData.id).catch(err => {
-            console.error('[ProfilePreview] Failed to fetch projects:', err);
             return [];
           }),
           getAggregateEvaluation(devData.id).catch(err => {
-            console.error('[ProfilePreview] Failed to fetch stats:', err);
             return null;
           }),
         ]);
@@ -155,7 +150,6 @@ export default function ProfilePreview() {
               if (selected.length > 0) orderedProjects = [...selected, ...remaining];
             }
           } catch (parseErr) {
-            console.warn('[ProfilePreview] Failed to parse selected repo names:', parseErr);
           }
         }
 
@@ -167,7 +161,6 @@ export default function ProfilePreview() {
         if (published) setHasEverPublished(true);
         setLoading(false);
       } catch (err) {
-        console.error('[ProfilePreview] Error loading profile data:', err);
         const message = err instanceof Error ? err.message : 'Failed to load profile data';
         setError(message);
         setLoading(false);
@@ -223,7 +216,6 @@ export default function ProfilePreview() {
       if (developer?.profile_complete) setHasEverPublished(true);
       setIsEditing(false);
     } catch (err) {
-      console.error('[ProfilePreview] Error saving profile:', err);
       setError(err instanceof Error ? err.message : 'Failed to save profile');
     } finally {
       setIsSaving(false);
@@ -260,7 +252,6 @@ export default function ProfilePreview() {
       setIsPublished(true);
       setHasEverPublished(true);
     } catch (err) {
-      console.error('[ProfilePreview] Publish failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to publish profile');
     } finally {
       setIsPublishing(false);

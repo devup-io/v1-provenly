@@ -28,7 +28,6 @@ export default function CompareDevelopers() {
   const navigate = useNavigate();
   const incoming: CompareDeveloper[] = location.state?.developers || [];
   // log raw incoming data for debugging
-  console.log("[CompareDevelopers] incoming developers:", incoming);
   // ensure complexityCounts object always has L1/L2/L3 keys to avoid runtime errors
   const developers: CompareDeveloper[] = incoming.map((d) => ({
     ...d,

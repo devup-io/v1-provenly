@@ -23,7 +23,6 @@ export default function Settings() {
     try {
       await updateSettings(form);
     } catch (e) {
-      console.error('Failed to save settings', e);
     } finally {
       setSaving(false);
     }

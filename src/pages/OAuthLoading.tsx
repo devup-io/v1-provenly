@@ -102,7 +102,6 @@ export default function OAuthLoading() {
           toast({ title: 'OAuth Error', description: msg, variant: 'destructive' });
         }
       } catch (err) {
-        console.error("Error polling status:", err);
         toast({ title: 'Network error', description: 'Unable to poll status. Retrying...', variant: 'destructive' });
         // Don't stop polling on network errors, might be temporary
       }
@@ -143,7 +142,6 @@ export default function OAuthLoading() {
           // Users will select their organization and repos to import
         } catch (err) {
           cleanup();
-          console.error("Error during OAuth callback:", err);
           const msg = err instanceof Error ? err.message : String(err);
           setError(msg || "Failed to connect with GitHub. Please try again.");
           toast({ title: 'OAuth Callback Error', description: msg || 'Failed to connect with GitHub.', variant: 'destructive' });
@@ -158,7 +156,6 @@ export default function OAuthLoading() {
           await startPolling(storedState);
         } catch (err) {
           cleanup();
-          console.error("Error polling status:", err);
           setError("Failed to check connection status. Please try again.");
         }
         return;

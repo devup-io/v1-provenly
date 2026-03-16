@@ -205,7 +205,6 @@ export default function DeveloperProfile() {
           setLoading(false);
         }
       } catch (e) {
-        console.error('Failed to load developer full details', e);
         if (!cancelled) {
           setDeveloper(null);
           setProjects([]);
