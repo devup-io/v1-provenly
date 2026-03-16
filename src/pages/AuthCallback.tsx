@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import type { DeveloperProfile } from '@/types/api';
-import { saveDeveloper, getCurrentDeveloper, clearOAuthState, refreshAuthSession, isAuthError } from '@/lib/api';
+import { saveDeveloper, getCurrentDeveloper, clearOAuthState, refreshAuthSession, isAuthError, clearLegacyAuthStorageKeysOnce } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 
 export default function AuthCallback() {
@@ -77,6 +77,7 @@ export default function AuthCallback() {
   }, [navigate]);
 
   useEffect(() => {
+    clearLegacyAuthStorageKeysOnce();
     void processCallback();
   }, [processCallback]);
 

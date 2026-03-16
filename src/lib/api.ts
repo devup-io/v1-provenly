@@ -4,6 +4,16 @@ import type { DeveloperSearchResponse, DeveloperSearchFilters } from "@/types/de
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const DEVELOPER_KEY = "v1_developer";
 const OAUTH_STATE_KEY = "v1_oauth_state";
+const LEGACY_AUTH_STORAGE_KEYS = [
+  'v1_access_token',
+  'access_token',
+  'auth_token',
+  'token',
+  'jwt',
+  'bearer_token',
+];
+
+let hasClearedLegacyAuthStorage = false;
 
 export class ApiError extends Error {
   status: number;
@@ -524,6 +534,22 @@ export function clearOAuthState() {
   try {
     localStorage.removeItem(OAUTH_STATE_KEY);
   } catch (e) {
+    // ignore
+  }
+}
+
+export function clearLegacyAuthStorageKeysOnce() {
+  if (hasClearedLegacyAuthStorage) return;
+  hasClearedLegacyAuthStorage = true;
+
+  if (typeof window === 'undefined') return;
+
+  try {
+    for (const key of LEGACY_AUTH_STORAGE_KEYS) {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    }
+  } catch {
     // ignore
   }
 }
