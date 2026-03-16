@@ -17,6 +17,8 @@ export default function SignUp() {
     // If we were explicitly redirected here due to session expiration, show the expired state.
     if (errorParam === 'session_expired') {
       setSessionExpired(true);
+      // Remove the query param so the page can be refreshed without re-triggering the expired state
+      window.history.replaceState({}, document.title, window.location.pathname);
       return;
     }
 
