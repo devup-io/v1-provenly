@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'react-router-dom';
-import { getDeveloperAnalyzer, getDeveloperAnalyzerCharts, getDeveloperSummary, subscribeToAnalyzerStream } from '@/lib/api';
+import { getDeveloperAnalyzer, getDeveloperAnalyzerCharts, subscribeToAnalyzerStream } from '@/lib/api';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
 
@@ -75,7 +75,6 @@ const EmptyState = () => <p className="text-caption text-muted-foreground">{NO_D
 
 export default function Analysis() {
   const [running, setRunning] = useState(false);
-  const [summary, setSummary] = useState<unknown>(null);
   const [charts, setCharts] = useState<unknown>(null);
   const [logLines, setLogLines] = useState<string[]>([]);
   const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
@@ -114,13 +113,6 @@ export default function Analysis() {
 
   useEffect(() => {
     if (devId) {
-      getDeveloperSummary(devId)
-        .then((data) => {
-          setSummary(data);
-        })
-        .catch((err) => {
-        });
-
       getDeveloperAnalyzerCharts(devId)
         .then((data) => {
           setCharts(data);
@@ -424,14 +416,6 @@ export default function Analysis() {
               </div>
             </div>
 
-            {summary && (
-              <div className="mt-2 p-4 rounded-lg border border-border bg-card">
-                <h3 className="text-heading-sm mb-2">Developer Summary Data</h3>
-                <pre className="text-xs overflow-x-auto">
-                  {JSON.stringify(summary, null, 2)}
-                </pre>
-              </div>
-            )}
           </div>
         </div>
       )}

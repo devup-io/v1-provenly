@@ -89,7 +89,15 @@ const handleGlobalAuthFailure = (): void => {
     currentPath.startsWith('/auth/callback') ||
     currentPath.startsWith('/oauth-loading');
 
-  if (!authRelatedPath) {
+  const protectedPath =
+    currentPath.startsWith('/dashboard') ||
+    currentPath.startsWith('/settings') ||
+    currentPath.startsWith('/analysis') ||
+    currentPath.startsWith('/welcome') ||
+    currentPath.startsWith('/onboarding') ||
+    currentPath.startsWith('/profile-setup');
+
+  if (!authRelatedPath && protectedPath) {
     window.location.replace('/signup?error=session_expired');
   }
 };

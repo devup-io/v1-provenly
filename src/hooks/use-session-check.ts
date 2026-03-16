@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getDeveloper, clearAuth, apiRequest, isAuthError } from '@/lib/api';
 
 /**
@@ -42,6 +42,7 @@ function getJWTToken(): string | null {
  */
 export function useSessionCheck() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
 
   const redirectToSignIn = useCallback(() => {
@@ -50,6 +51,20 @@ export function useSessionCheck() {
   }, [navigate]);
 
   useEffect(() => {
+    const path = location.pathname;
+    const isProtectedPath =
+      path.startsWith('/dashboard') ||
+      path.startsWith('/settings') ||
+      path.startsWith('/analysis') ||
+      path.startsWith('/welcome') ||
+      path.startsWith('/onboarding') ||
+      path.startsWith('/profile-setup');
+
+    if (!isProtectedPath) {
+      setIsChecking(false);
+      return;
+    }
+
     const validateSession = async () => {
       try {
         const developer = getDeveloper();
@@ -116,7 +131,7 @@ export function useSessionCheck() {
     };
 
     validateSession();
-  }, [redirectToSignIn]);
+  }, [location.pathname, redirectToSignIn]);
 
   return { isChecking };
 }
