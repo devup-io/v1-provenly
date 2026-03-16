@@ -1,4 +1,4 @@
-import type { V1AuthToken, DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload } from "@/types/api";
+import type { V1AuthToken, DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse } from "@/types/api";
 import type { DeveloperSearchResponse, DeveloperSearchFilters } from "@/types/developer";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
