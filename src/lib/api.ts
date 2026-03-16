@@ -1,4 +1,4 @@
-import type { V1AuthToken, DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse } from "@/types/api";
+import type { DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse } from "@/types/api";
 import type { DeveloperSearchResponse, DeveloperSearchFilters } from "@/types/developer";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -554,14 +554,12 @@ export function clearLegacyAuthStorageKeysOnce() {
   }
 }
 
-export async function postGitHubCallback(code: string, state: string): Promise<V1AuthToken> {
-  const data = await apiRequest<V1AuthToken>("/api/v1/auth/github/callback", {
+export async function postGitHubCallback(code: string, state: string): Promise<void> {
+  await apiRequest<void>("/api/v1/auth/github/callback", {
     method: "POST",
     body: JSON.stringify({ code, state }),
+    expectJson: false,
   });
-
-  if (data?.developer) saveDeveloper(data.developer);
-  return data as V1AuthToken;
 }
 
 export function saveDeveloper(dev: DeveloperProfile) {

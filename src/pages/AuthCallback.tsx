@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import type { DeveloperProfile } from '@/types/api';
-import { saveDeveloper, getCurrentDeveloper, clearOAuthState, refreshAuthSession, isAuthError, clearLegacyAuthStorageKeysOnce } from '@/lib/api';
+import { saveDeveloper, getCurrentDeveloper, clearOAuthState, refreshAuthSession, isAuthError, clearLegacyAuthStorageKeysOnce, postGitHubCallback } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 
 export default function AuthCallback() {
@@ -19,6 +19,8 @@ export default function AuthCallback() {
       const params = new URLSearchParams(window.location.search);
       const errorParam = params.get('error');
       const errorDescription = params.get('error_description');
+      const code = params.get('code');
+      const state = params.get('state');
 
       // Remove query/hash from URL immediately to avoid leaking callback params
       window.history.replaceState({}, document.title, currentPath);
@@ -27,6 +29,16 @@ export default function AuthCallback() {
         setError(errorDescription || 'Authentication failed. Please try again.');
         setLoading(false);
         return;
+      }
+
+      // If provider redirected with code/state, finalize exchange on backend to set auth cookies.
+      if (code && state) {
+        try {
+          await postGitHubCallback(code, state);
+        } catch {
+          // Some deployments finalize callback server-side and only redirect here.
+          // Continue with /me checks to support both modes.
+        }
       }
 
       clearOAuthState();
@@ -54,7 +66,7 @@ export default function AuthCallback() {
       }
 
       if (!accurateDeveloper) {
-        throw new Error("Sign-in session could not be established yet. Please try again.");
+        throw new Error('Sign-in session could not be established. Please try again.');
       }
 
       saveDeveloper(accurateDeveloper);
