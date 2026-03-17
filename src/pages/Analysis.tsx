@@ -85,6 +85,8 @@ export default function Analysis() {
   const { toast } = useToast();
   const location = useLocation();
   const eventSourceRef = useRef<EventSource | null>(null);
+  const streamCompletedRef = useRef(false);
+  const hasAnalyzerDataRef = useRef(false);
 
   const params = new URLSearchParams(location.search);
   const devId = params.get('dev');
@@ -93,6 +95,17 @@ export default function Analysis() {
   const payload = (charts || {}) as AnalyzerPayload;
   const overview = ((payload.overview as Record<string, unknown>) || {}) as Record<string, unknown>;
   const notes = readNotes(overview);
+
+  const normalizeAnalyzerPayload = (value: unknown): AnalyzerPayload | null => {
+    if (!value || typeof value !== 'object') return null;
+
+    const record = value as Record<string, unknown>;
+    if (record.data && typeof record.data === 'object') {
+      return record.data as AnalyzerPayload;
+    }
+
+    return record as AnalyzerPayload;
+  };
 
   const complexityBreakdown = normalizeChartItems(payload.complexity_breakdown);
   const technologyUsage = normalizeChartItems(payload.technology_usage);
@@ -176,6 +189,14 @@ export default function Analysis() {
   const needsAiEval = !readinessChecks[6].pass;
 
   useEffect(() => {
+    hasAnalyzerDataRef.current = !!(
+      charts &&
+      typeof charts === 'object' &&
+      Object.keys(charts as Record<string, unknown>).length > 0
+    );
+  }, [charts]);
+
+  useEffect(() => {
     if (effectiveDevId) {
       getDeveloperAnalyzerCharts(effectiveDevId)
         .then((data) => {
@@ -218,6 +239,8 @@ export default function Analysis() {
   };
 
   const startStream = (id: string) => {
+    streamCompletedRef.current = false;
+
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
@@ -228,20 +251,48 @@ export default function Analysis() {
         appendLog(text);
         setAnalysisStatus(data.status);
       },
-      onComplete: async () => {
+      onComplete: async (data) => {
+        streamCompletedRef.current = true;
         appendLog('Analysis complete — refreshing charts...');
         setAnalysisStatus('complete');
-        if (devId) {
-          const freshCharts = await getDeveloperAnalyzerCharts(devId);
-          setCharts(freshCharts);
+
+        const streamPayload = normalizeAnalyzerPayload(data);
+        if (streamPayload && Object.keys(streamPayload).length > 0) {
+          setCharts(streamPayload);
         }
+
+        try {
+          const freshCharts = await getDeveloperAnalyzerCharts(id);
+          setCharts(freshCharts);
+        } catch {
+          if (!streamPayload) {
+            appendLog('Analysis completed, but final chart refresh failed.');
+          }
+        }
+
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
+        }
+
         setRunning(false);
         toast({ title: 'Analysis complete', description: 'Charts and summary are refreshed.', });
       },
-      onError: (err) => {
-        appendLog('Analysis stream error — please try again.');
+      onError: () => {
+        if (streamCompletedRef.current) {
+          if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+          }
+          return;
+        }
+
+        appendLog('Analysis stream disconnected before completion.');
         setRunning(false);
-        toast({ title: 'Analysis stream error', description: 'Unable to receive live updates.', variant: 'destructive' });
+
+        if (!hasAnalyzerDataRef.current) {
+          toast({ title: 'Analysis stream error', description: 'Unable to receive live updates.', variant: 'destructive' });
+        }
       },
     });
   };
@@ -367,25 +418,6 @@ export default function Analysis() {
         <div className="container mt-12 max-w-6xl px-4 sm:px-6">
           <h2 className="text-heading-md mb-4">Recent Analysis</h2>
           <div className="grid grid-cols-1 gap-6">
-            <div className="rounded-lg border border-border bg-card p-6">
-              <p className="text-body-sm text-muted-foreground mb-2">Live analyzer status</p>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="text-body-sm">Status: <span className="font-medium">{analysisStatus || 'idle'}</span></span>
-                {running && <span className="text-body-sm text-muted-foreground">Updating in real-time...</span>}
-              </div>
-              <div className="mt-4 max-h-40 overflow-y-auto rounded-lg bg-muted/10 p-3 text-xs">
-                {logLines.length === 0 ? (
-                  <p className="text-muted-foreground">No log output yet.</p>
-                ) : (
-                  <ul className="space-y-1">
-                    {logLines.map((line, idx) => (
-                      <li key={idx} className="break-words">{line}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               <div className="rounded-lg border border-border bg-card p-6">
                 <TooltipLabel
@@ -580,6 +612,27 @@ export default function Analysis() {
                   </div>
                 ) : (
                   <EmptyState />
+                )}
+              </div>
+            </div>
+
+            <div className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-body-sm font-medium text-foreground">Live analyzer status</p>
+                <span className="text-caption text-muted-foreground">
+                  Status: <span className="font-medium">{analysisStatus || 'idle'}</span>
+                </span>
+              </div>
+
+              <div className="max-h-28 overflow-y-auto rounded-xl bg-muted/10 p-3 text-xs sm:max-h-32">
+                {logLines.length === 0 ? (
+                  <p className="text-muted-foreground">No log output yet.</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {logLines.map((line, idx) => (
+                      <li key={idx} className="break-words">{line}</li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>
