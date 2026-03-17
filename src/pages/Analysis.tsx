@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -234,9 +234,15 @@ export default function Analysis() {
     };
   }, []);
 
-  const appendLog = (line: string) => {
-    setLogLines((prev) => [...prev, line].slice(-50));
-  };
+  const logEndRef = useRef<HTMLLIElement | null>(null);
+
+  const appendLog = useCallback((line: string) => {
+    setLogLines((prev) => [...prev, line].slice(-200));
+  }, []);
+
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [logLines]);
 
   const startStream = (id: string) => {
     streamCompletedRef.current = false;
@@ -412,6 +418,39 @@ export default function Analysis() {
           </div>
         </details>
       </div>
+
+      {/* Live log panel — always visible while running or after logs exist */}
+      {(running || logLines.length > 0) && (
+        <div className="container mt-6 max-w-2xl px-4 sm:px-6">
+          <div className="mx-auto w-full rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-body-sm font-medium text-foreground">Live analyzer log</p>
+              <span className="text-caption text-muted-foreground">
+                Status: <span className={`font-medium ${
+                  analysisStatus === 'complete' ? 'text-green-600' :
+                  running ? 'text-primary' :
+                  'text-muted-foreground'
+                }`}>{analysisStatus || 'idle'}</span>
+              </span>
+            </div>
+            <div className="h-52 overflow-y-auto rounded-xl bg-muted/10 p-3 text-xs font-mono">
+              {logLines.length === 0 ? (
+                <p className="text-muted-foreground">Starting analysis…</p>
+              ) : (
+                <ul className="space-y-1">
+                  {logLines.map((line, idx) => (
+                    <li key={idx} className="break-words leading-relaxed">
+                      <span className="mr-2 select-none text-muted-foreground/40">{String(idx + 1).padStart(2, '0')}</span>
+                      {line}
+                    </li>
+                  ))}
+                  <li ref={logEndRef} />
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Results area */}
       {!running && (
@@ -612,27 +651,6 @@ export default function Analysis() {
                   </div>
                 ) : (
                   <EmptyState />
-                )}
-              </div>
-            </div>
-
-            <div className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-body-sm font-medium text-foreground">Live analyzer status</p>
-                <span className="text-caption text-muted-foreground">
-                  Status: <span className="font-medium">{analysisStatus || 'idle'}</span>
-                </span>
-              </div>
-
-              <div className="max-h-28 overflow-y-auto rounded-xl bg-muted/10 p-3 text-xs sm:max-h-32">
-                {logLines.length === 0 ? (
-                  <p className="text-muted-foreground">No log output yet.</p>
-                ) : (
-                  <ul className="space-y-1">
-                    {logLines.map((line, idx) => (
-                      <li key={idx} className="break-words">{line}</li>
-                    ))}
-                  </ul>
                 )}
               </div>
             </div>

@@ -52,6 +52,7 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
   const [queuedNotice, setQueuedNotice] = useState(false);
   const [skippedRepos, setSkippedRepos] = useState<Array<{ repo: string; reason: string }>>([]);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
 
   // when user confirms warning once, we don't show again this session
   const [confirmedAlignment, setConfirmedAlignment] = useState(false);
@@ -208,10 +209,15 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
           : selectedRepoFullNames.size;
         setModalMessage(`${importedCount} repos imported`);
         // refresh available list after a short pause
+        const wasSkipped = !!(result.skipped && result.skipped.length > 0);
         setTimeout(() => {
           setModalOpen(false);
           loadRepos();
-          onNext();
+          if (wasSkipped) {
+            setShowRejectionModal(true);
+          } else {
+            onNext();
+          }
         }, 2000);
       } else if (result.status === 'queued') {
         const threshold = result.queue_threshold || 'unknown';
@@ -574,5 +580,60 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Rejection reason modal — shown when skipped repos need explanation */}
+    <Dialog open={showRejectionModal} onOpenChange={setShowRejectionModal}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <div className="mb-2 flex items-center gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/40">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <DialogTitle className="text-heading-sm">Some projects weren’t imported</DialogTitle>
+          </div>
+          <DialogDescription className="text-left text-body-sm">
+            The following repositories were skipped because they don’t meet Provenly’s import requirements.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Skipped repos list */}
+        {skippedRepos.length > 0 && (
+          <div className="my-2 max-h-36 overflow-y-auto space-y-2">
+            {skippedRepos.map((s) => (
+              <div key={s.repo} className="flex items-start gap-2 rounded-lg bg-destructive/5 border border-destructive/20 px-3 py-2 text-body-sm">
+                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+                <div>
+                  <p className="font-medium">{s.repo}</p>
+                  <p className="text-caption text-muted-foreground">{s.reason}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Rules */}
+        <div className="rounded-lg border border-border bg-muted/30 p-4">
+          <p className="mb-2 text-body-sm font-semibold">Platform import rules</p>
+          <ul className="space-y-1.5 text-caption text-muted-foreground">
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> Projects must align with your declared developer role (e.g. Frontend, Backend, Mobile).</li>
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> The primary language / tech stack must match your stated specialisation.</li>
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> Repositories evaluated as <strong>Unsupported</strong> type receive only a generic score and won’t strengthen your profile for any role.</li>
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> Importing role-mismatched repos repeatedly lowers your visibility score and may trigger an account review.</li>
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> Org-owned repos must reflect your actual contribution level (Primary Builder or Major Contributor).</li>
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> Archived or private repos are not imported unless explicitly enabled in your settings.</li>
+          </ul>
+        </div>
+
+        <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={() => setShowRejectionModal(false)}>
+            Stay &amp; Review Selection
+          </Button>
+          <Button onClick={() => { setShowRejectionModal(false); onNext(); }}>
+            Continue to Dashboard
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </div>
-  );}
+  );
+}

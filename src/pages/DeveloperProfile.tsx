@@ -14,8 +14,7 @@ import {
   Code2,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ErrorScreen } from "@/components/ErrorScreen";
+import { Button } from "@/components/ui/button";import { Progress } from '@/components/ui/progress';import { ErrorScreen } from "@/components/ErrorScreen";
 import { Header } from "@/components/landing/Header";
 import { HireModal } from "@/components/HireModal";
 import { getDeveloper, getDeveloperById, getDeveloperByUsername, getDeveloperFullDetails, submitHireRequest, isRateLimitError, isServiceUnavailableError } from "@/lib/api";
@@ -416,9 +415,9 @@ export default function DeveloperProfile() {
         {/* Projects */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <h2 className="mb-6 text-display-sm">Projects ({developerProjects.length})</h2>
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {developerProjects.map((project: Project, index: number) => (
-              <motion.div key={project.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + index * 0.05 }} className="rounded-2xl border border-border bg-card p-6 shadow-card md:p-8">
+              <motion.div key={project.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + index * 0.05 }} className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-card">
                 {project.warnings && project.warnings.length > 0 && (
                   <div className="mb-2 text-caption text-yellow-800">
                     ⚠️ {project.warnings.join(', ')}
@@ -456,19 +455,48 @@ export default function DeveloperProfile() {
                   </Button>
                 </div>
 
-                <div className="mb-6 flex flex-wrap items-center gap-4 text-body-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><Star className="h-4 w-4" /> {project.stars} stars</span>
-                  <span className="flex items-center gap-1.5"><GitBranch className="h-4 w-4" /> {project.forks} forks</span>
+                <div className="mb-6 grid grid-cols-2 gap-2 text-body-sm sm:grid-cols-4">
+                  <div className="rounded-xl border border-border/50 bg-background/50 px-3 py-2 text-center">
+                    <p className="text-caption text-muted-foreground">Stars</p>
+                    <p className="font-semibold">{project.stars ?? 0}</p>
+                  </div>
+                  <div className="rounded-xl border border-border/50 bg-background/50 px-3 py-2 text-center">
+                    <p className="text-caption text-muted-foreground">Forks</p>
+                    <p className="font-semibold">{project.forks ?? 0}</p>
+                  </div>
                   {project.ai_evaluation?.repo_score != null && (
-                    <span className="flex items-center gap-1.5">📈 {project.ai_evaluation.repo_score} score</span>
+                    <div className="rounded-xl border border-border/50 bg-background/50 px-3 py-2 text-center">
+                      <p className="text-caption text-muted-foreground">Score</p>
+                      <p className="font-semibold">{project.ai_evaluation.repo_score}</p>
+                    </div>
                   )}
                   {project.ai_evaluation?.confidence_score != null && (
-                    <span className="flex items-center gap-1.5">🔒 {project.ai_evaluation.confidence_score}% confidence</span>
-                  )}
-                  {project.ai_evaluation?.contribution_percentage != null && (
-                    <span className="flex items-center gap-1.5">👥 {project.ai_evaluation.contribution_percentage}% contribution</span>
+                    <div className="rounded-xl border border-border/50 bg-background/50 px-3 py-2 text-center">
+                      <p className="text-caption text-muted-foreground">Confidence</p>
+                      <p className="font-semibold">{project.ai_evaluation.confidence_score}%</p>
+                    </div>
                   )}
                 </div>
+
+                {project.ai_evaluation?.confidence_score != null && (
+                  <div className="mb-4">
+                    <div className="mb-1 flex items-center justify-between text-caption text-muted-foreground">
+                      <span>Confidence</span>
+                      <span className="font-medium">{project.ai_evaluation.confidence_score}%</span>
+                    </div>
+                    <Progress value={project.ai_evaluation.confidence_score} className="h-1.5" />
+                  </div>
+                )}
+
+                {project.ai_evaluation?.contribution_percentage != null && (
+                  <div className="mb-4">
+                    <div className="mb-1 flex items-center justify-between text-caption text-muted-foreground">
+                      <span>Contribution</span>
+                      <span className="font-medium">{project.ai_evaluation.contribution_percentage}%</span>
+                    </div>
+                    <Progress value={project.ai_evaluation.contribution_percentage} className="h-1.5 [&>div]:bg-emerald-500" />
+                  </div>
+                )}
 
                 {/* AI evaluation summary */}
                 {project.ai_evaluation && (
