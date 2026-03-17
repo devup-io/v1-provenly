@@ -490,7 +490,7 @@ export default function Dashboard() {
 
           <Button
             variant="outline"
-            onClick={() => navigate('/profile-setup')}
+            onClick={() => navigate('/profile/edit')}
             className="w-full lg:w-auto gap-2"
           >
             Edit Profile
@@ -732,7 +732,7 @@ export default function Dashboard() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => navigate('/profile-setup')}
+                onClick={() => navigate('/profile/edit')}
                 className="mt-2 w-full"
               >
                 Edit Profile

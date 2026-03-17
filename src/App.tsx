@@ -18,6 +18,7 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Welcome from "./pages/Welcome";
 import ProfileSetup from "./pages/ProfileSetup";
+import EditProfile from "./pages/EditProfile";
 import ProjectDetails from "./pages/ProjectDetails";
 import Developers from "./pages/Developers";
 import DeveloperProfile from "./pages/DeveloperProfile";
@@ -84,6 +85,7 @@ function AppContent() {
       <Route path="/analysis" element={<Analysis />} />
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/profile-setup" element={<ProfileSetup />} />
+      <Route path="/profile/edit" element={<EditProfile />} />
       <Route path="/developers" element={<Developers />} />
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />

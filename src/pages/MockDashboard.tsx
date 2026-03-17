@@ -339,7 +339,7 @@ export default function MockDashboard() {
                 <RefreshCw className="h-4 w-4" />
                 Run Analysis
               </Button>
-              <Button variant="outline" onClick={() => navigate('/profile-setup')} className="mt-2 w-full">
+              <Button variant="outline" onClick={() => navigate('/profile/edit')} className="mt-2 w-full">
                 Edit Profile
               </Button>
               <Button variant="outline" onClick={() => navigate('/settings')} className="mt-2 w-full">

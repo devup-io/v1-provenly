@@ -63,6 +63,8 @@ const ROLE_OPTIONS = [
 ];
 
 export default function Onboarding() {
+  const BIO_MIN = 200;
+  const BIO_MAX = 1000;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedStep = Number(searchParams.get('step'));
@@ -73,6 +75,7 @@ export default function Onboarding() {
   const { settings } = useSettings();
   const [step, setStep] = useState(initialStep);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [profileData, setProfileData] = useState({
     name: developer?.name || '',
     primary_role: developer?.primary_role || '',
@@ -95,19 +98,25 @@ export default function Onboarding() {
   const handleNext = async () => {
     if (step === 1) {
       if (!profileData.name.trim()) {
-        alert('Please enter your name');
+        setFormError('Please enter your name.');
         return;
       }
+      setFormError(null);
       setStep(2);
     } else if (step === 2) {
       if (!profileData.primary_role) {
-        alert('Please select a primary role');
+        setFormError('Please select a primary role.');
         return;
       }
       if (supportedRoles.length > 0 && !supportedRoles.includes(profileData.primary_role)) {
-        alert(`Role '${profileData.primary_role}' is not currently supported`);
+        setFormError(`Role '${profileData.primary_role}' is not currently supported.`);
         return;
       }
+      if (profileData.primary_stack.length === 0) {
+        setFormError('Please select at least one technology.');
+        return;
+      }
+      setFormError(null);
       setStep(3);
     } else if (step === 3) {
       await handleComplete();
@@ -116,7 +125,14 @@ export default function Onboarding() {
 
   const handleComplete = async () => {
     try {
+      const bioLength = profileData.bio.trim().length;
+      if (bioLength < BIO_MIN || bioLength > BIO_MAX) {
+        setFormError(`Bio must be between ${BIO_MIN} and ${BIO_MAX} characters.`);
+        return;
+      }
+
       setLoading(true);
+      setFormError(null);
 
       // Update developer profile (include current settings)
       await updateDeveloperProfile(developer.id, profileData, settings);
@@ -128,14 +144,15 @@ export default function Onboarding() {
           const saved = localStorage.getItem('v1_selected_repo_names');
           const names = saved ? JSON.parse(saved) as string[] : undefined;
           await importAllProjects(state, names);
-        } catch (err) {
+        } catch {
+          setFormError('Profile saved, but repository import could not start. You can import repositories from the dashboard.');
         }
       }
 
       // Navigate to dashboard
       navigate('/dashboard');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to complete onboarding');
+      setFormError(err instanceof Error ? err.message : 'Failed to complete onboarding.');
     } finally {
       setLoading(false);
     }
@@ -307,9 +324,14 @@ export default function Onboarding() {
             <h2 className="mb-6 text-heading-md">Tell Us About Yourself</h2>
 
             <div className="space-y-5">
+              {formError && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                  {formError}
+                </div>
+              )}
               <div>
                 <Label htmlFor="bio" className="mb-2 block text-body-sm font-medium">
-                  Bio (Optional)
+                  Bio
                 </Label>
                 <Textarea
                   id="bio"
@@ -321,8 +343,8 @@ export default function Onboarding() {
                   rows={4}
                   className="bg-background resize-none"
                 />
-                <p className="mt-1 text-caption text-muted-foreground">
-                  {profileData.bio.length}/500 characters
+                <p className={`mt-1 text-caption ${profileData.bio.trim().length < BIO_MIN || profileData.bio.trim().length > BIO_MAX ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {profileData.bio.trim().length}/{BIO_MAX} characters (required: {BIO_MIN}–{BIO_MAX})
                 </p>
               </div>
 
@@ -337,7 +359,14 @@ export default function Onboarding() {
               <Button variant="outline" onClick={() => setStep(2)} disabled={loading}>
                 Back
               </Button>
-              <Button onClick={handleComplete} disabled={loading}>
+              <Button
+                onClick={handleComplete}
+                disabled={
+                  loading ||
+                  profileData.bio.trim().length < BIO_MIN ||
+                  profileData.bio.trim().length > BIO_MAX
+                }
+              >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
