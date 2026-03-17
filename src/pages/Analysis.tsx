@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useLocation } from 'react-router-dom';
-import { getDeveloperAnalyzer, getDeveloperAnalyzerCharts, subscribeToAnalyzerStream } from '@/lib/api';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { getDeveloperAnalyzer, getDeveloperAnalyzerCharts, subscribeToAnalyzerStream, getCurrentDeveloper, getDeveloperProjects } from '@/lib/api';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
+import type { DeveloperProfile, Project } from '@/types/api';
 
 type AnalyzerPayload = Record<string, unknown>;
 
@@ -74,10 +75,13 @@ const TooltipLabel = ({ text, tip }: { text: string; tip: string }) => (
 const EmptyState = () => <p className="text-caption text-muted-foreground">{NO_DATA_TEXT}</p>;
 
 export default function Analysis() {
+  const navigate = useNavigate();
   const [running, setRunning] = useState(false);
   const [charts, setCharts] = useState<unknown>(null);
   const [logLines, setLogLines] = useState<string[]>([]);
   const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
+  const [developer, setDeveloper] = useState<DeveloperProfile | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
   const { toast } = useToast();
   const location = useLocation();
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -111,6 +115,65 @@ export default function Analysis() {
   const verifiedProjects = Number(overview.verified_projects_count ?? overview.verified_projects ?? 0);
   const systemComplexityScore = Number(payload.system_complexity_score ?? payload.system_complexity_gauge ?? 0);
 
+  const nonArchivedProjects = projects.filter((project) => {
+    const metadata = project.github_metadata as Record<string, unknown> | undefined;
+    return metadata?.archived !== true;
+  });
+  const analyzedProjects = projects.filter((project) => {
+    return !!project.ai_evaluation || project.evaluation_status === 'completed';
+  });
+
+  const bioLength = (developer?.bio || '').trim().length;
+  const stackCount = Array.isArray(developer?.primary_stack) ? developer.primary_stack.length : 0;
+  const readinessChecks = [
+    {
+      label: 'Name is set',
+      pass: !!developer?.name?.trim(),
+      fix: 'Add your full name in Edit Profile.',
+    },
+    {
+      label: 'Primary role is set',
+      pass: !!developer?.primary_role?.trim(),
+      fix: 'Choose a primary role in Edit Profile.',
+    },
+    {
+      label: 'Primary stack has at least 1 item',
+      pass: stackCount >= 1,
+      fix: 'Add at least one technology in Edit Profile.',
+    },
+    {
+      label: 'Bio is between 200 and 1000 characters',
+      pass: bioLength >= 200 && bioLength <= 1000,
+      fix: `Update your bio length (${bioLength}/1000).`,
+    },
+    {
+      label: 'At least 2 non-archived imported projects',
+      pass: nonArchivedProjects.length >= 2,
+      fix: 'Import more repositories (minimum 2 non-archived).',
+    },
+    {
+      label: 'Profile is published/public',
+      pass: developer?.is_published === true,
+      fix: 'Publish your profile from the Dashboard action panel.',
+    },
+    {
+      label: 'At least 1 project has AI evaluation',
+      pass: analyzedProjects.length >= 1,
+      fix: 'Run analysis/evaluate AI so at least one project has ai_evaluation.',
+    },
+  ];
+
+  const missingReadinessItems = readinessChecks.filter((item) => !item.pass);
+  const readinessComplete = missingReadinessItems.length === 0;
+  const needsProfileFix =
+    !readinessChecks[0].pass ||
+    !readinessChecks[1].pass ||
+    !readinessChecks[2].pass ||
+    !readinessChecks[3].pass;
+  const needsMoreProjects = !readinessChecks[4].pass;
+  const needsPublish = !readinessChecks[5].pass;
+  const needsAiEval = !readinessChecks[6].pass;
+
   useEffect(() => {
     if (devId) {
       getDeveloperAnalyzerCharts(devId)
@@ -121,6 +184,25 @@ export default function Analysis() {
         });
     }
   }, [devId]);
+
+  useEffect(() => {
+    const loadReadiness = async () => {
+      if (!devId) return;
+
+      try {
+        const [dev, projectList] = await Promise.all([
+          getCurrentDeveloper(),
+          getDeveloperProjects(devId),
+        ]);
+        setDeveloper(dev);
+        setProjects(projectList || []);
+      } catch {
+        // keep panel resilient even if readiness fetch fails
+      }
+    };
+
+    void loadReadiness();
+  }, [devId, charts]);
 
   useEffect(() => {
     return () => {
@@ -182,21 +264,81 @@ export default function Analysis() {
 
   return (
     <div className="min-h-screen bg-gradient-hero py-8">
-      <div className="container max-w-2xl text-center">
+      <div className="container max-w-2xl px-4 text-center sm:px-6">
         <h1 className="text-display-sm mb-6">Profile Analyzer</h1>
         <p className="text-body mb-4">Run thorough AI evaluations across your imported repos.</p>
-        <Button onClick={run} disabled={running} className="gap-2">
+        <Button onClick={run} disabled={running} className="w-full gap-2 sm:w-auto">
           {running && <Loader2 className="h-4 w-4 animate-spin" />}
           {running ? 'Analyzing...' : 'Start Analysis'}
         </Button>
         <div className="mt-8">
-          <Button variant="outline" onClick={() => window.history.back()}>Back to Dashboard</Button>
+          <Button variant="outline" onClick={() => window.history.back()} className="w-full sm:w-auto">Back to Dashboard</Button>
         </div>
+      </div>
+
+      <div className="container mt-6 max-w-4xl px-4 sm:px-6">
+        <details open={!readinessComplete} className="rounded-lg border border-border bg-card p-4">
+          <summary className="cursor-pointer list-none text-left">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-body-sm font-semibold">Analyzer readiness</p>
+              <span className={`rounded-full px-2 py-1 text-caption ${readinessComplete ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}`}>
+                {readinessComplete ? 'Ready' : `${missingReadinessItems.length} missing requirement${missingReadinessItems.length === 1 ? '' : 's'}`}
+              </span>
+            </div>
+          </summary>
+
+          <div className="mt-3 space-y-3 text-left">
+            <p className="text-body-sm text-muted-foreground">
+              If you keep seeing “Not enough analyzed projects yet”, the most common cause is that imported projects exist but none has `ai_evaluation` yet.
+            </p>
+
+            <div className="space-y-2">
+              {readinessChecks.map((item) => (
+                <div key={item.label} className="flex flex-col gap-2 rounded-md border border-border/70 px-3 py-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-body-sm">{item.label}</p>
+                    {!item.pass && <p className="text-caption text-muted-foreground">{item.fix}</p>}
+                  </div>
+                  <span className={`text-caption font-medium ${item.pass ? 'text-green-600' : 'text-yellow-600'}`}>
+                    {item.pass ? 'OK' : 'Missing'}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-md bg-muted/30 p-3 text-caption text-muted-foreground">
+              Stream state: {analysisStatus || 'idle'}. If it stays `idle`, the page is not currently consuming live updates from `/api/v1/developers/{'{id}'}/analyze-stream`.
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2 lg:grid-cols-4">
+              {needsProfileFix && (
+                <Button size="sm" variant="outline" onClick={() => navigate('/profile/edit')} className="w-full">
+                  Fix Profile
+                </Button>
+              )}
+              {needsMoreProjects && (
+                <Button size="sm" variant="outline" onClick={() => navigate('/profile-setup?step=2')} className="w-full">
+                  Import More Repos
+                </Button>
+              )}
+              {needsPublish && (
+                <Button size="sm" variant="outline" onClick={() => navigate('/dashboard')} className="w-full">
+                  Go Publish Profile
+                </Button>
+              )}
+              {needsAiEval && (
+                <Button size="sm" onClick={run} disabled={running || !devId} className="w-full">
+                  {running ? 'Analyzing...' : 'Run Analysis Now'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </details>
       </div>
 
       {/* Results area */}
       {!running && (
-        <div className="container mt-12 max-w-6xl">
+        <div className="container mt-12 max-w-6xl px-4 sm:px-6">
           <h2 className="text-heading-md mb-4">Recent Analysis</h2>
           <div className="grid grid-cols-1 gap-6">
             <div className="rounded-lg border border-border bg-card p-6">
