@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Filter, Github, Star, GitBranch, ChevronDown, X, Check, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input"; // still needed for numeric filters
 import { Button } from "@/components/ui/button";
+import { ErrorScreen } from "@/components/ErrorScreen";
 import { Header } from "@/components/landing/Header";
 import { useNavigate } from "react-router-dom";
 import { CompareDrawer, type CompareDeveloper } from "@/components/CompareDrawer";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Developer, DeveloperSearchResponse, DeveloperSearchFilters } from "@/types/developer";
-import { searchDevelopers } from "@/lib/api";
+import { searchDevelopers, isRateLimitError, isServiceUnavailableError } from "@/lib/api";
 type Dev = {
   id: string;
   name: string;
@@ -126,6 +127,7 @@ export default function Developers() {
   // only one complexity level may be selected at a time
   const [selectedComplexity, setSelectedComplexity] = useState<string | null>(null);
   const [minProjectsAtLevel, setMinProjectsAtLevel] = useState<number>(0);
+  const [customMinProjectsInput, setCustomMinProjectsInput] = useState<string>("");
   const [minVerified, setMinVerified] = useState<number>(0);
   const [contributionLevel, setContributionLevel] = useState<
     "Primary Builder" | "Major Contributor" | "Minor Contributor" | null
@@ -137,6 +139,7 @@ export default function Developers() {
   const cacheRef = useRef<Map<string, { developers: Dev[]; totalCount: number; totalPages: number }>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorStatusCode, setErrorStatusCode] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -164,6 +167,7 @@ export default function Developers() {
     setSelectedTech([]);
     setSelectedComplexity(null);
     setMinProjectsAtLevel(0);
+    setCustomMinProjectsInput("");
     setMinVerified(0);
     setContributionLevel(null);
   };
@@ -215,11 +219,14 @@ export default function Developers() {
       setDevelopers([]);
       setTotalCount(0);
       setTotalPages(1);
+      setError(null);
+      setErrorStatusCode(null);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setErrorStatusCode(null);
     try {
       const filters: DeveloperSearchFilters = {
         page,
@@ -266,7 +273,16 @@ export default function Developers() {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      const isUnavailable = isServiceUnavailableError(err);
+      const isRateLimited = isRateLimitError(err);
+      setErrorStatusCode(isUnavailable ? '503' : isRateLimited ? '429' : '500');
+      setError(
+        isUnavailable
+          ? 'Search is temporarily unavailable.'
+          : isRateLimited
+          ? 'Too many requests. Please wait briefly and try again.'
+          : 'Unable to load developers right now. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -284,6 +300,19 @@ export default function Developers() {
   useEffect(() => {
     setPage(1);
   }, [selectedRoles, selectedTech, selectedComplexity, minProjectsAtLevel, minVerified, contributionLevel]);
+
+  if (errorStatusCode === '503') {
+    return (
+      <ErrorScreen
+        statusCode="503"
+        title="Developer search is temporarily unavailable"
+        subtitle="Our data services are currently unavailable."
+        message="Please try again in a few moments."
+        onRetry={() => void loadDevelopers()}
+        primaryActionLabel="Retry"
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -441,9 +470,11 @@ export default function Developers() {
                       {projectCountOptions.map((option) => (
                         <button
                           key={option.value}
-                          onClick={() => setMinProjectsAtLevel(
-                            minProjectsAtLevel === option.value ? 0 : option.value
-                          )}
+                          onClick={() => {
+                            const nextValue = minProjectsAtLevel === option.value ? 0 : option.value;
+                            setMinProjectsAtLevel(nextValue);
+                            setCustomMinProjectsInput(nextValue > 0 ? String(nextValue) : '');
+                          }}
                           className={`rounded-full px-3 py-1.5 text-body-sm transition-all ${
                             minProjectsAtLevel === option.value
                               ? "bg-primary text-primary-foreground"
@@ -453,6 +484,24 @@ export default function Developers() {
                           {option.label}
                         </button>
                       ))}
+                    </div>
+                    <div className="mt-3">
+                      <p className="mb-2 text-body-sm font-medium">Custom minimum (founder input)</p>
+                      <Input
+                        type="number"
+                        min={1}
+                        step={1}
+                        inputMode="numeric"
+                        placeholder="Enter custom minimum projects"
+                        value={customMinProjectsInput}
+                        onChange={(e) => {
+                          const nextRaw = e.target.value;
+                          setCustomMinProjectsInput(nextRaw);
+                          const parsed = Number(nextRaw);
+                          setMinProjectsAtLevel(Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0);
+                        }}
+                        className="w-full sm:w-64"
+                      />
                     </div>
                     <p className="mt-2 text-caption text-muted-foreground">
                       Filter by developers who have completed multiple projects at your selected complexity level

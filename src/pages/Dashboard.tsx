@@ -469,6 +469,9 @@ export default function Dashboard() {
   const contributionValue = developer.contribution_breakdown
     ? `Primary ${developer.contribution_breakdown['Primary Builder'] || 0} | Major ${developer.contribution_breakdown['Major Contributor'] || 0} | Minor ${developer.contribution_breakdown['Minor Contributor'] || 0}`
     : 'N/A';
+  const publicProfileUrl = developer
+    ? `${window.location.origin}/dev/${developer.github_username || developer.id}`
+    : '';
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -891,6 +894,26 @@ export default function Dashboard() {
                 <p className="text-lg font-semibold">
                   {lastPublishAction === 'unpublish' ? 'Your profile is now private' : 'Your profile is now public!'}
                 </p>
+                {lastPublishAction === 'publish' && publicProfileUrl && (
+                  <>
+                    <p className="text-center text-body-sm text-muted-foreground">
+                      Share your public developer profile using this link:
+                    </p>
+                    <a
+                      href={publicProfileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-body-sm text-primary hover:bg-primary/5"
+                    >
+                      {publicProfileUrl}
+                    </a>
+                  </>
+                )}
+                {lastPublishAction === 'unpublish' && publicProfileUrl && (
+                  <p className="text-center text-body-sm text-muted-foreground">
+                    The public link is now disabled while your profile is private: {publicProfileUrl}
+                  </p>
+                )}
               </div>
             </motion.div>
           )}

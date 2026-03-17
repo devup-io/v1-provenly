@@ -82,6 +82,9 @@ export default function Onboarding() {
     primary_stack: developer?.primary_stack || [],
     bio: developer?.bio || '',
   });
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(
+    developer?.primary_role ? [developer.primary_role] : []
+  );
   const [supportedRoles, setSupportedRoles] = useState<string[]>([]);
 
   useEffect(() => {
@@ -101,6 +104,25 @@ export default function Onboarding() {
         setFormError('Please enter your name.');
         return;
       }
+
+      if (selectedRoles.length === 0) {
+        setFormError('Please select at least one role.');
+        return;
+      }
+
+      if (supportedRoles.length > 0) {
+        const unsupported = selectedRoles.filter((role) => !supportedRoles.includes(role));
+        if (unsupported.length > 0) {
+          setFormError(`Unsupported role(s): ${unsupported.join(', ')}`);
+          return;
+        }
+      }
+
+      setProfileData((prev) => ({
+        ...prev,
+        primary_role: selectedRoles[0] || prev.primary_role,
+      }));
+
       setFormError(null);
       setStep(2);
     } else if (step === 2) {
@@ -167,6 +189,25 @@ export default function Onboarding() {
     }));
   };
 
+  const toggleRole = (role: string) => {
+    setSelectedRoles((prev) => {
+      const next = prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role];
+      setProfileData((current) => ({
+        ...current,
+        primary_role: next[0] || '',
+      }));
+      return next;
+    });
+  };
+
+  const techOptions = selectedRoles.length > 0
+    ? Array.from(
+        new Set(
+          selectedRoles.flatMap((role) => ROLE_TECH_MAP[role] || TECH_STACK_OPTIONS)
+        )
+      )
+    : TECH_STACK_OPTIONS;
+
   const progress = (step / 3) * 100;
 
   return (
@@ -226,17 +267,15 @@ export default function Onboarding() {
 
               <div>
                 <Label className="mb-3 block text-body-sm font-medium">
-                  Primary Role
+                  Role(s)
                 </Label>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {(supportedRoles.length > 0 ? supportedRoles : ROLE_OPTIONS).map((role) => (
                     <button
                       key={role}
-                      onClick={() =>
-                        setProfileData({ ...profileData, primary_role: role })
-                      }
+                      onClick={() => toggleRole(role)}
                       className={`rounded-lg border-2 px-4 py-3 text-left text-body-sm font-medium transition ${
-                        profileData.primary_role === role
+                        selectedRoles.includes(role)
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border bg-background hover:border-primary/50'
                       }`}
@@ -245,6 +284,9 @@ export default function Onboarding() {
                     </button>
                   ))}
                 </div>
+                <p className="mt-2 text-caption text-muted-foreground">
+                  You can select multiple roles. The first selected role is used as your primary role.
+                </p>
                 {supportedRoles.length > 0 && (
                   <p className="mt-2 text-caption text-muted-foreground">
                     Supported: {supportedRoles.join(', ')}. Provenly currently evaluates the following project domains: Backend, Frontend, Full-stack, Mobile, DevOps, AI/ML, Blockchain, Data, Security; repos outside these domains will be marked “Unsupported”.
@@ -281,7 +323,7 @@ export default function Onboarding() {
                 Select the technologies you're most proficient with (select at least 1)
               </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {(ROLE_TECH_MAP[profileData.primary_role] || TECH_STACK_OPTIONS).map((tech) => (
+                {techOptions.map((tech) => (
                   <button
                     key={tech}
                     onClick={() => toggleTech(tech)}

@@ -15,9 +15,10 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorScreen } from "@/components/ErrorScreen";
 import { Header } from "@/components/landing/Header";
 import { HireModal } from "@/components/HireModal";
-import { getDeveloper, getDeveloperById, getDeveloperByUsername, getDeveloperFullDetails, submitHireRequest } from "@/lib/api";
+import { getDeveloper, getDeveloperById, getDeveloperByUsername, getDeveloperFullDetails, submitHireRequest, isRateLimitError, isServiceUnavailableError } from "@/lib/api";
 import type { AIEvaluation, DeveloperProfile, Project as ApiProject, DeveloperFullDetailsProject } from "@/types/api";
 
 // extend the API project type with any local extras we display
@@ -140,6 +141,7 @@ export default function DeveloperProfile() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorStatusCode, setErrorStatusCode] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -148,6 +150,7 @@ export default function DeveloperProfile() {
         if (!username) {
           if (!cancelled) {
             setError('Invalid developer identifier');
+            setErrorStatusCode('404');
             setLoading(false);
           }
           return;
@@ -155,6 +158,7 @@ export default function DeveloperProfile() {
 
         setLoading(true);
         setError(null);
+        setErrorStatusCode(null);
 
         const local = getDeveloper();
         let resolvedDeveloper: DeveloperProfile | null = null;
@@ -206,9 +210,18 @@ export default function DeveloperProfile() {
         }
       } catch (e) {
         if (!cancelled) {
+          const isUnavailable = isServiceUnavailableError(e);
+          const isRateLimited = isRateLimitError(e);
           setDeveloper(null);
           setProjects([]);
-          setError(e instanceof Error ? e.message : 'Failed to load developer');
+          setErrorStatusCode(isUnavailable ? '503' : isRateLimited ? '429' : '500');
+          setError(
+            isUnavailable
+              ? 'Developer profiles are temporarily unavailable.'
+              : isRateLimited
+              ? 'Too many requests. Please wait briefly and retry.'
+              : 'Failed to load developer profile.'
+          );
           setLoading(false);
         }
       }
@@ -232,6 +245,19 @@ export default function DeveloperProfile() {
   }
 
   if (error) {
+    if (errorStatusCode === '503') {
+      return (
+        <ErrorScreen
+          statusCode="503"
+          title="Developer profile is temporarily unavailable"
+          subtitle="Our profile data services are currently unavailable."
+          message="Please try again in a few moments."
+          onRetry={() => window.location.reload()}
+          primaryActionLabel="Retry"
+        />
+      );
+    }
+
     return (
       <div className="min-h-screen bg-background">
         <Header />

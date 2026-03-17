@@ -977,31 +977,23 @@ export async function searchDevelopers(
   if (filters.page) params.append('page', String(filters.page));
   if (filters.limit) params.append('limit', String(filters.limit));
 
-  // endpoint changed from developers/search to search/founders
-  const url = `${API_BASE_URL}/api/v1/search/founders?${params.toString()}`;
-  const res = await fetch(url, {
+  const query = params.toString();
+  const path = query ? `/api/v1/search/founders?${query}` : '/api/v1/search/founders';
+  const dataRaw = await apiRequest<Record<string, unknown>>(path, {
     method: 'GET',
-    credentials: 'include',
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Founder search failed: ${res.status}${text ? ` - ${text}` : ''}`);
-  }
-  const dataRaw = await res.json();
-  // backend may return developers under `results` property
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data: any = dataRaw;
-  // some endpoints may use `results` or `founders` as the payload key
-  if (data.results) {
-    data.developers = Array.isArray(data.results) ? data.results : [];
-  }
-  if (data.founders) {
-    data.developers = Array.isArray(data.founders) ? data.founders : [];
-  }
-  if (!data.developers) {
-    data.developers = [];
-  }
-  return data as DeveloperSearchResponse;
+
+  const data = dataRaw || {};
+  const results = Array.isArray(data.results) ? data.results : [];
+  const founders = Array.isArray(data.founders) ? data.founders : [];
+  const developers = Array.isArray(data.developers)
+    ? data.developers
+    : (results.length > 0 ? results : founders);
+
+  return {
+    ...data,
+    developers,
+  } as DeveloperSearchResponse;
 }
 
 export async function getProjectEvaluation(projectId: string): Promise<AIEvaluation> {
