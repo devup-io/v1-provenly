@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getDeveloperAnalyzer, getDeveloperAnalyzerCharts, subscribeToAnalyzerStream, getCurrentDeveloper, getDeveloperProjects } from '@/lib/api';
+import { getDeveloperAnalyzer, getDeveloperAnalyzerCharts, subscribeToAnalyzerStream, getCurrentDeveloper, getDeveloperProjects, evaluateProjectAI } from '@/lib/api';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
 import type { DeveloperProfile, Project } from '@/types/api';
@@ -88,6 +88,7 @@ export default function Analysis() {
 
   const params = new URLSearchParams(location.search);
   const devId = params.get('dev');
+  const effectiveDevId = devId || developer?.id || null;
 
   const payload = (charts || {}) as AnalyzerPayload;
   const overview = ((payload.overview as Record<string, unknown>) || {}) as Record<string, unknown>;
@@ -175,26 +176,25 @@ export default function Analysis() {
   const needsAiEval = !readinessChecks[6].pass;
 
   useEffect(() => {
-    if (devId) {
-      getDeveloperAnalyzerCharts(devId)
+    if (effectiveDevId) {
+      getDeveloperAnalyzerCharts(effectiveDevId)
         .then((data) => {
           setCharts(data);
         })
         .catch((err) => {
         });
     }
-  }, [devId]);
+  }, [effectiveDevId]);
 
   useEffect(() => {
     const loadReadiness = async () => {
-      if (!devId) return;
+      const resolvedDev = await getCurrentDeveloper();
+      setDeveloper(resolvedDev);
+
+      const analysisTargetId = devId || resolvedDev.id;
 
       try {
-        const [dev, projectList] = await Promise.all([
-          getCurrentDeveloper(),
-          getDeveloperProjects(devId),
-        ]);
-        setDeveloper(dev);
+        const projectList = await getDeveloperProjects(analysisTargetId);
         setProjects(projectList || []);
       } catch {
         // keep panel resilient even if readiness fetch fails
@@ -247,15 +247,41 @@ export default function Analysis() {
   };
 
   const run = async () => {
-    if (!devId) return;
+    if (!effectiveDevId) {
+      toast({ title: 'Missing developer context', description: 'Open analysis from dashboard so we can target the right profile.', variant: 'destructive' });
+      return;
+    }
+
     setRunning(true);
     setLogLines([]);
     setAnalysisStatus('starting');
 
     try {
-      await getDeveloperAnalyzer(devId);
-      appendLog('Analysis triggered. Waiting for updates...');
-      startStream(devId);
+      let triggered = false;
+
+      try {
+        await getDeveloperAnalyzer(effectiveDevId);
+        appendLog('Developer-level analysis triggered. Waiting for updates...');
+        triggered = true;
+      } catch {
+        appendLog('Developer-level trigger failed, attempting per-project AI evaluation fallback...');
+      }
+
+      if (!triggered && projects.length > 0) {
+        const results = await Promise.allSettled(projects.map((project) => evaluateProjectAI(project.id)));
+        const successCount = results.filter((result) => result.status === 'fulfilled').length;
+
+        if (successCount > 0) {
+          appendLog(`Triggered AI evaluation for ${successCount} project(s).`);
+          triggered = true;
+        }
+      }
+
+      if (!triggered) {
+        throw new Error('No analysis trigger succeeded.');
+      }
+
+      startStream(effectiveDevId);
     } catch (err) {
       toast({ title: 'Analysis failed', description: 'Unable to run analysis, please try again.', variant: 'destructive' });
       setRunning(false);
@@ -327,7 +353,7 @@ export default function Analysis() {
                 </Button>
               )}
               {needsAiEval && (
-                <Button size="sm" onClick={run} disabled={running || !devId} className="w-full">
+                <Button size="sm" onClick={run} disabled={running || !effectiveDevId} className="w-full">
                   {running ? 'Analyzing...' : 'Run Analysis Now'}
                 </Button>
               )}

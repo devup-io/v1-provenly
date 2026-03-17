@@ -842,8 +842,26 @@ export async function patchProfile(profile: Partial<DeveloperProfile>): Promise<
 
 // Analyzer / chart endpoints
 export async function getDeveloperAnalyzer(developerId: string): Promise<unknown> {
-  return apiRequest<unknown>(`/api/v1/developers/${encodeURIComponent(developerId)}/analyzer`, {
-    method: 'GET',
+  const path = `/api/v1/developers/${encodeURIComponent(developerId)}/analyzer`;
+
+  try {
+    return await apiRequest<unknown>(path, {
+      method: 'POST',
+    });
+  } catch (error) {
+    if (error instanceof ApiError && [404, 405].includes(error.status)) {
+      return apiRequest<unknown>(path, {
+        method: 'GET',
+      });
+    }
+    throw error;
+  }
+}
+
+export async function evaluateProjectAI(projectId: string): Promise<void> {
+  await apiRequest<void>(`/api/v1/projects/${encodeURIComponent(projectId)}/evaluate-ai`, {
+    method: 'POST',
+    expectJson: false,
   });
 }
 
