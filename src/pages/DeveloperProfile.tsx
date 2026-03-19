@@ -13,9 +13,12 @@ import {
   Calendar,
   Code2,
   Loader2,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";import { Progress } from '@/components/ui/progress';import { ErrorScreen } from "@/components/ErrorScreen";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Header } from "@/components/landing/Header";
 import { HireModal } from "@/components/HireModal";
 import { getDeveloper, getDeveloperById, getDeveloperByUsername, getDeveloperFullDetails, submitHireRequest, isRateLimitError, isServiceUnavailableError } from "@/lib/api";
@@ -72,6 +75,52 @@ function formatDate(value?: string | Date): string | undefined {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return undefined;
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+interface AISignalDescription {
+  title: string;
+  tooltip: string;
+  explanation: string;
+  interpretation: (value: number) => string;
+}
+
+const getAISignalDescription = (type: 'confidence' | 'contribution' | 'repo_score'): AISignalDescription => {
+  const signals: Record<string, AISignalDescription> = {
+    confidence: {
+      title: 'Confidence Score',
+      tooltip: 'How confident the AI is in evaluating this project based on available data.',
+      explanation: 'The Confidence Score represents how reliably the AI model can evaluate this repository. Higher scores indicate the project has clearer signals (good documentation, standard structure, recent activity).',
+      interpretation: (value) => {
+        if (value >= 80) return 'Very High Confidence - Excellent evaluation signals';
+        if (value >= 60) return 'High Confidence - Good evaluation signals';
+        if (value >= 40) return 'Medium Confidence - Moderate evaluation signals';
+        return 'Low Confidence - Limited evaluation signals';
+      }
+    },
+    contribution: {
+      title: 'Contribution Level',
+      tooltip: 'The developer\'s level of contribution to this project.',
+      explanation: 'Contribution Level shows what percentage of the project\'s work appears to have been done by this developer. This is determined by analyzing commits, PR activity, and code patterns.',
+      interpretation: (value) => {
+        if (value >= 80) return 'Primary Builder - Led the majority of this project';
+        if (value >= 50) return 'Major Contributor - Significant contributions';
+        if (value >= 20) return 'Minor Contributor - Helped with specific features';
+        return 'Minimal Involvement - Limited participation';
+      }
+    },
+    repo_score: {
+      title: 'Repository Score',
+      tooltip: 'Overall quality and characteristics of the repository.',
+      explanation: 'The Repository Score is an overall assessment of the repository\'s quality, focusing on code structure, activity level, community engagement, and maintenance status.',
+      interpretation: (value) => {
+        if (value >= 80) return 'Excellent - Well-maintained, active project with good practices';
+        if (value >= 60) return 'Good - Solid project with decent maintenance';
+        if (value >= 40) return 'Fair - Project with some maintenance or activity gaps';
+        return 'Needs Improvement - Minimal maintenance or outdated';
+      }
+    }
+  };
+  return signals[type] || signals.confidence;
+};
 }
 
 function mapFullDetailsProject(raw: DeveloperFullDetailsProject, developerId: string): Project {
@@ -142,6 +191,7 @@ export default function DeveloperProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorStatusCode, setErrorStatusCode] = useState<string | null>(null);
+  const [aiSignalModal, setAiSignalModal] = useState<{ type: 'confidence' | 'contribution' | 'repo_score'; project: string; value: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -556,6 +606,32 @@ export default function DeveloperProfile() {
                       <span className="font-medium">{project.ai_evaluation.confidence_score}%</span>
                     </div>
                     <Progress value={project.ai_evaluation.confidence_score} className="h-1.5" />
+
+                                  {project.ai_evaluation?.confidence_score != null && (
+                                    <div className="mb-4">
+                                      <div className="mb-1 flex items-center justify-between text-caption text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                          <span>Confidence</span>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <button type="button" className="text-muted-foreground hover:text-foreground">
+                                                <Info className="h-3.5 w-3.5" />
+                                              </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-sm">{getAISignalDescription('confidence').tooltip}</TooltipContent>
+                                          </Tooltip>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => setAiSignalModal({ type: 'confidence', project: project.name || 'Unknown', value: project.ai_evaluation.confidence_score || 0 })}
+                                          className="font-medium text-primary hover:underline"
+                                        >
+                                          {project.ai_evaluation.confidence_score}%
+                                        </button>
+                                      </div>
+                                      <Progress value={project.ai_evaluation.confidence_score} className="h-1.5" />
+                                    </div>
+                                  )}
                   </div>
                 )}
 
@@ -566,6 +642,32 @@ export default function DeveloperProfile() {
                       <span className="font-medium">{project.ai_evaluation.contribution_percentage}%</span>
                     </div>
                     <Progress value={project.ai_evaluation.contribution_percentage} className="h-1.5 [&>div]:bg-emerald-500" />
+
+                                  {project.ai_evaluation?.contribution_percentage != null && (
+                                    <div className="mb-4">
+                                      <div className="mb-1 flex items-center justify-between text-caption text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                          <span>Contribution</span>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <button type="button" className="text-muted-foreground hover:text-foreground">
+                                                <Info className="h-3.5 w-3.5" />
+                                              </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-sm">{getAISignalDescription('contribution').tooltip}</TooltipContent>
+                                          </Tooltip>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => setAiSignalModal({ type: 'contribution', project: project.name || 'Unknown', value: project.ai_evaluation.contribution_percentage || 0 })}
+                                          className="font-medium text-primary hover:underline"
+                                        >
+                                          {project.ai_evaluation.contribution_percentage}%
+                                        </button>
+                                      </div>
+                                      <Progress value={project.ai_evaluation.contribution_percentage} className="h-1.5 [&>div]:bg-emerald-500" />
+                                    </div>
+                                  )}
                   </div>
                 )}
 
@@ -643,6 +745,45 @@ export default function DeveloperProfile() {
           await submitHireRequest(developer.id, payload);
         }}
       />
+
+        {/* AI Signal Modal */}
+        <Dialog open={!!aiSignalModal} onOpenChange={(open) => {if (!open) setAiSignalModal(null);}}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{aiSignalModal ? getAISignalDescription(aiSignalModal.type).title : 'Signal'}</DialogTitle>
+              <DialogDescription className="text-base">
+                From: <span className="font-semibold">{aiSignalModal?.project}</span>
+              </DialogDescription>
+            </DialogHeader>
+            {aiSignalModal && (
+              <div className="space-y-4 py-4">
+                <div className="rounded-lg bg-muted/30 p-4">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-2">Current Value</p>
+                    <p className="text-4xl font-bold text-primary">{aiSignalModal.value}%</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-semibold mb-2">What This Means</p>
+                    <p className="text-sm text-muted-foreground">
+                      {getAISignalDescription(aiSignalModal.type).explanation}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-semibold mb-2">Interpretation</p>
+                    <p className="text-sm">
+                      {getAISignalDescription(aiSignalModal.type).interpretation(aiSignalModal.value)}
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={() => setAiSignalModal(null)} className="w-full">
+                  OK, Got It
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }
