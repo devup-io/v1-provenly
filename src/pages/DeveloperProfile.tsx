@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";import { Progress } from '@/components/ui/progress';import { ErrorScreen } from "@/components/ErrorScreen";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Header } from "@/components/landing/Header";
 import { HireModal } from "@/components/HireModal";
 import { getDeveloper, getDeveloperById, getDeveloperByUsername, getDeveloperFullDetails, submitHireRequest, isRateLimitError, isServiceUnavailableError } from "@/lib/api";
@@ -234,10 +235,65 @@ export default function DeveloperProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-body text-muted-foreground">Loading developer profile...</p>
+      <div className="min-h-screen bg-gradient-hero">
+        <Header />
+        <div className="container max-w-4xl px-4 py-8 sm:px-6">
+          {/* Back button skeleton */}
+          <div className="mb-6">
+            <Skeleton className="h-10 w-32" />
+          </div>
+
+          {/* Header section skeleton */}
+          <div className="mb-8 flex flex-col gap-6 sm:flex-row">
+            <Skeleton className="h-32 w-32 rounded-full flex-shrink-0" />
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-6 w-48" />
+              <div className="flex gap-2">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+            </div>
+            <Skeleton className="h-12 w-40 flex-shrink-0" />
+          </div>
+
+          {/* Bio section skeleton */}
+          <div className="mb-8 space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+
+          {/* Tech stack skeleton */}
+          <div className="mb-8">
+            <Skeleton className="mb-3 h-6 w-40" />
+            <div className="flex flex-wrap gap-2">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-8 w-24 rounded-full" />
+              ))}
+            </div>
+          </div>
+
+          {/* Projects section skeleton */}
+          <div className="mb-8">
+            <Skeleton className="mb-4 h-8 w-48" />
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="rounded-lg border border-border bg-card p-4">
+                  <Skeleton className="mb-3 h-6 w-64" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Skeleton className="h-8 w-20" />
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
