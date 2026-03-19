@@ -1,4 +1,4 @@
-import type { DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse, NotificationItem, NotificationsResponse } from "@/types/api";
+import type { DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, SupportedDevTypesResponse, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse, NotificationItem, NotificationsResponse } from "@/types/api";
 import type { DeveloperSearchResponse, DeveloperSearchFilters } from "@/types/developer";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://api.provenly.live";
@@ -801,13 +801,45 @@ export async function fetchAvailableRepos(ownerLogin: string, limit = 100, inclu
 // supported developer types (legacy endpoint)
 export async function getSupportedDevTypes(): Promise<SupportedDevTypes> {
   try {
-    const data = await apiRequest<SupportedDevTypes>("/api/v1/projects/supported-dev-types", {
-      method: "GET",
-    });
-    return data;
+    const data = await getSupportedDevTypesConfig();
+    return data.supported_dev_types || [];
   } catch {
     return [];
   }
+}
+
+export async function getSupportedDevTypesConfig(): Promise<SupportedDevTypesResponse> {
+  const raw = await apiRequest<unknown>("/api/v1/projects/supported-dev-types", {
+    method: "GET",
+  });
+
+  if (Array.isArray(raw)) {
+    return {
+      supported_dev_types: raw.filter((item): item is string => typeof item === 'string'),
+      signal_order: ["repo_score", "architecture_score", "code_quality_score", "engineering_depth_score"],
+      project_type_config: {},
+      tech_stack_by_dev_type: {},
+    };
+  }
+
+  const record = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+
+  return {
+    supported_dev_types: Array.isArray(record.supported_dev_types)
+      ? record.supported_dev_types.filter((item): item is string => typeof item === 'string')
+      : [],
+    signal_order: Array.isArray(record.signal_order)
+      ? record.signal_order.filter((item): item is SupportedDevTypesResponse['signal_order'][number] => typeof item === 'string')
+      : ["repo_score", "architecture_score", "code_quality_score", "engineering_depth_score"],
+    project_type_config:
+      record.project_type_config && typeof record.project_type_config === 'object'
+        ? (record.project_type_config as SupportedDevTypesResponse['project_type_config'])
+        : {},
+    tech_stack_by_dev_type:
+      record.tech_stack_by_dev_type && typeof record.tech_stack_by_dev_type === 'object'
+        ? (record.tech_stack_by_dev_type as SupportedDevTypesResponse['tech_stack_by_dev_type'])
+        : {},
+  };
 }
 
 // Modern dev-types + language selection endpoints

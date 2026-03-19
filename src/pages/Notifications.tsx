@@ -122,13 +122,13 @@ export default function Notifications() {
           </div>
         </div>
 
-        <div className="mb-4 rounded-xl border border-border bg-card px-4 py-3 text-body-sm text-muted-foreground shadow-sm">
+        <div className="mb-4 rounded-2xl border border-border bg-card px-4 py-3 text-body-sm text-muted-foreground shadow-card">
           <span className="font-medium text-foreground">Unread:</span> {unreadCount}
           <span className="mx-2 text-border">•</span>
           <span className="font-medium text-foreground">Total:</span> {notifications.length}
         </div>
 
-        <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+        <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-card">
           {loading && notifications.length === 0 ? (
             <div className="flex items-center justify-center gap-2 p-8 text-body-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -142,7 +142,7 @@ export default function Notifications() {
           ) : (
             <ul className="divide-y divide-border">
               {notifications.map((notification) => (
-                <li key={notification.id} className={`px-4 py-4 transition-colors ${notification.is_read ? 'bg-card' : 'bg-primary/5'}`}>
+                <li key={notification.id} className={`px-4 py-4 transition-colors hover:bg-muted/30 ${notification.is_read ? 'bg-card' : 'bg-primary/5'}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-body-sm font-semibold text-foreground">

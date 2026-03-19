@@ -43,6 +43,9 @@ type Project = ApiProject & {
   evaluation_profile?: string;
   role_mismatch?: boolean;
   role_mismatch_note?: string;
+  max_complexity?: string;
+  highest_complexity?: string;
+  dominant_complexity?: string;
 };
 
 type DevFull = DeveloperProfile & {
@@ -76,6 +79,15 @@ function formatDate(value?: string | Date): string | undefined {
   if (Number.isNaN(date.getTime())) return undefined;
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
+
+const getComplexityPair = (project: { highest_complexity?: string; dominant_complexity?: string; max_complexity?: string; complexity?: unknown }) => {
+  const legacy = typeof project.complexity === 'string' ? project.complexity : undefined;
+  const fallback = project.max_complexity ?? legacy ?? 'Unknown';
+  return {
+    highest: project.highest_complexity ?? fallback,
+    dominant: project.dominant_complexity ?? fallback,
+  };
+};
 
 interface AISignalDescription {
   title: string;
@@ -548,7 +560,19 @@ export default function DeveloperProfile() {
                   <div>
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                       <h3 className="text-heading">{project.name}</h3>
-                      <span className={`rounded-lg px-2.5 py-1 text-caption font-bold ${complexityColors[String(project.complexity)] || ''}`}>{String(project.complexity)}</span>
+                      {(() => {
+                        const pair = getComplexityPair(project);
+                        return (
+                          <>
+                            <span className="rounded-lg bg-secondary px-2.5 py-1 text-caption font-semibold text-secondary-foreground">
+                              Highest: {pair.highest}
+                            </span>
+                            <span className="rounded-lg bg-secondary px-2.5 py-1 text-caption font-semibold text-secondary-foreground">
+                              Dominant: {pair.dominant}
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                     {project.repo_full_name && (
                       <div className="mb-2 text-caption text-muted-foreground">{project.repo_full_name}</div>
@@ -579,7 +603,7 @@ export default function DeveloperProfile() {
                       variant="outline"
                       size="sm"
                       className="gap-2"
-                      onClick={() => navigate(`/dashboard/projects/${project.id}`)}
+                      onClick={() => navigate(`/dashboard/projects/${project.id}?from=developers`)}
                     >
                       <Code2 className="h-4 w-4" />
                       See more project

@@ -11,50 +11,22 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ErrorScreen } from '@/components/ErrorScreen';
 import { Header } from '@/components/landing/Header';
 import { useToast } from '@/hooks/use-toast';
-import { getDeveloper, getDeveloperProjects, getAggregateEvaluation, clearAuth, getCurrentDeveloper, getSupportedDevTypes, publishProfile, unpublishProfile, getDeveloperAnalyzer, isAuthError, isRateLimitError, isServiceUnavailableError } from '@/lib/api';
-import type { DeveloperProfile, Project, AggregateEvaluation, AIEvaluation } from '@/types/api';
+import { getDeveloper, getDeveloperProjects, getAggregateEvaluation, clearAuth, getCurrentDeveloper, getSupportedDevTypesConfig, publishProfile, unpublishProfile, getDeveloperAnalyzer, isAuthError, isRateLimitError, isServiceUnavailableError } from '@/lib/api';
+import type { DeveloperProfile, Project, AggregateEvaluation, SupportedDevTypesResponse } from '@/types/api';
 
-// configuration per detected project type for signal emphasis
-const PROJECT_TYPE_CONFIG: Record<string, { badge: string; weights: Record<string, number> }> = {
-  Frontend: {
-    badge: 'frontend-aligned',
-    weights: { code_quality: 30, architecture_quality: 25, engineering_depth: 20, commit_quality: 15, production_readiness: 10 },
-  },
-  Backend: {
-    badge: 'backend-aligned',
-    weights: { engineering_depth: 30, architecture_quality: 25, production_readiness: 20, code_quality: 15, commit_quality: 10 },
-  },
-  'Full-stack': {
-    badge: 'fullstack',
-    weights: { engineering_depth: 22, architecture_quality: 22, code_quality: 22, commit_quality: 22, production_readiness: 12 },
-  },
-  Mobile: {
-    badge: 'mobile',
-    weights: { code_quality: 30, architecture_quality: 25, engineering_depth: 20, commit_quality: 15, production_readiness: 10 },
-  },
-  DevOps: {
-    badge: 'devops',
-    weights: { production_readiness: 35, engineering_depth: 25, architecture_quality: 20, code_quality: 10, commit_quality: 10 },
-  },
-  'AI/ML': {
-    badge: 'ai-ml',
-    weights: { engineering_depth: 25, commit_quality: 20, production_readiness: 20, architecture_quality: 20, code_quality: 15 },
-  },
-  'Blockchain / Web3': {
-    badge: 'blockchain',
-    weights: { engineering_depth: 25, commit_quality: 20, production_readiness: 20, architecture_quality: 20, code_quality: 15 },
-  },
-  Data: {
-    badge: 'data',
-    weights: { architecture_quality: 25, production_readiness: 20, commit_quality: 20, engineering_depth: 20, code_quality: 15 },
-  },
-  Security: {
-    badge: 'security',
-    weights: { engineering_depth: 30, production_readiness: 25, architecture_quality: 20, commit_quality: 15, code_quality: 10 },
-  },
+type ProjectCardShape = {
+  highest_complexity?: string;
+  dominant_complexity?: string;
+  max_complexity?: string;
 };
 
-const signalOrder = ['code_quality','architecture_quality','engineering_depth','commit_quality','production_readiness'];
+const getLanguageCatalog = (cfg: SupportedDevTypesResponse) =>
+  [...new Set(Object.values(cfg.tech_stack_by_dev_type).flat())].sort((a, b) => a.localeCompare(b));
+
+const getComplexityPair = (p: ProjectCardShape) => ({
+  highest: p.highest_complexity ?? p.max_complexity ?? 'Unknown',
+  dominant: p.dominant_complexity ?? p.max_complexity ?? 'Unknown',
+});
 
 const techBadgeClasses: Record<string, string> = {
   React: 'border border-cyan-500/30 bg-cyan-500/15 text-cyan-700 dark:text-cyan-300',
@@ -70,53 +42,6 @@ const techBadgeClasses: Record<string, string> = {
 const getTechBadgeClass = (tech: string) =>
   techBadgeClasses[tech] || 'border border-border bg-secondary text-secondary-foreground';
 
-function renderSignals(evaluation: AIEvaluation, detectedType?: string) {
-  const config = detectedType ? PROJECT_TYPE_CONFIG[detectedType] : undefined;
-  let primarySignal: string | null = null;
-  if (config) {
-    const entries = Object.entries(config.weights);
-    entries.sort((a,b)=>b[1]-a[1]);
-    primarySignal = entries[0][0];
-  }
-  return (
-    <div className="space-y-1 text-caption">
-      {signalOrder.map((sig) => {
-        const score =
-          sig === 'code_quality'
-            ? evaluation.code_quality_score
-            : sig === 'architecture_quality'
-            ? evaluation.architecture_score
-            : sig === 'engineering_depth'
-            ? evaluation.engineering_depth_score
-            : sig === 'commit_quality'
-            ? evaluation.commit_quality_score
-            : sig === 'production_readiness'
-            ? evaluation.production_readiness_score
-            : undefined;
-        if (score === undefined) return null;
-        const isPrimary = sig === primarySignal;
-        return (
-          <div key={sig} className="flex items-center gap-2">
-            <span className={`${isPrimary ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
-              {sig.replace(/_/g,' ')}:
-            </span>
-            <div className="flex-1 bg-muted/20 rounded-full h-2">
-              <div className={`bg-primary h-2 rounded-full w-[${Math.round(score)}%]`} />
-            </div>
-            <span>{Math.round(score)}</span>
-          </div>
-        );
-      })}
-      {evaluation.production_readiness_score !== undefined && evaluation.production_readiness_score >= 70 && (
-        <div className="mt-1 text-green-600 flex items-center gap-1">
-          <span>Deployed</span>
-          <Check className="h-3 w-3" />
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function Dashboard() {
   const navigate = useNavigate();
   const [developer, setDeveloper] = useState<DeveloperProfile | null>(null);
@@ -128,6 +53,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [errorStatusCode, setErrorStatusCode] = useState<string>('503');
   const [supportedRoles, setSupportedRoles] = useState<string[]>([]);
+  const [supportedDevConfig, setSupportedDevConfig] = useState<SupportedDevTypesResponse | null>(null);
 
   // publish modal state
   const [publishModal, setPublishModal] = useState(false);
@@ -176,7 +102,15 @@ export default function Dashboard() {
 
   // load supported roles
   useEffect(() => {
-    getSupportedDevTypes().then(setSupportedRoles).catch(() => setSupportedRoles([]));
+    getSupportedDevTypesConfig()
+      .then((config) => {
+        setSupportedDevConfig(config);
+        setSupportedRoles(config.supported_dev_types || []);
+      })
+      .catch(() => {
+        setSupportedDevConfig(null);
+        setSupportedRoles([]);
+      });
   }, []);
 
   // Initial data load
@@ -521,10 +455,12 @@ export default function Dashboard() {
   }
 
   const primaryStack = normalizeTechStack(developer.primary_stack).slice(0, 5);
-  const topTechnologies =
-    stats?.primary_technologies?.length
-      ? stats.primary_technologies.slice(0, 5)
-      : Array.from(new Set(projects.map((project) => project.language).filter(Boolean) as string[])).slice(0, 5);
+  const topTechnologies = (() => {
+    const fromConfig = supportedDevConfig ? getLanguageCatalog(supportedDevConfig) : [];
+    if (fromConfig.length > 0) return fromConfig.slice(0, 5);
+    if (stats?.primary_technologies?.length) return stats.primary_technologies.slice(0, 5);
+    return Array.from(new Set(projects.map((project) => project.language).filter(Boolean) as string[])).slice(0, 5);
+  })();
   const totalCommits = stats?.total_commits ?? projects.reduce((sum, project) => sum + (project.commits_count || 0), 0);
   const repoCountLabel = `${projects.length} ${projects.length === 1 ? 'repository' : 'repositories'}`;
   const experienceValue = developer.experience_signal || 'N/A';
@@ -888,6 +824,26 @@ export default function Dashboard() {
                       className="group cursor-pointer rounded-[24px] bg-gradient-to-br from-card to-card/80 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
                     >
                       {(() => {
+                        const metadataWarnings = Array.isArray((project.github_metadata as Record<string, unknown> | undefined)?.warnings)
+                          ? ((project.github_metadata as Record<string, unknown>).warnings as string[])
+                          : [];
+                        const allWarnings = Array.from(new Set([...(project.warnings || []), ...metadataWarnings].filter(Boolean)));
+
+                        if (allWarnings.length === 0) return null;
+
+                        return (
+                          <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
+                            <p className="font-semibold">Advisory warnings</p>
+                            <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                              {allWarnings.slice(0, 3).map((warning) => (
+                                <li key={`${project.id}-${warning}`}>{warning}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })()}
+
+                      {(() => {
                         const projectUrl = project.github_url || project.url;
                         const owner = projectUrl
                           ? projectUrl.replace(/^https?:\/\/github\.com\//i, '').split('/')[0]?.toLowerCase()
@@ -905,17 +861,6 @@ export default function Dashboard() {
                         );
                       })()}
 
-                      {project.warnings && project.warnings.length > 0 && (
-                        <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
-                          <p className="font-semibold">Advisory warnings</p>
-                          <ul className="mt-1 list-disc space-y-0.5 pl-4">
-                            {Array.from(new Set(project.warnings)).slice(0, 3).map((warning) => (
-                              <li key={`${project.id}-${warning}`}>{warning}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
                       <div className="grid grid-cols-1 gap-4">
                         <div>
                           <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
@@ -925,6 +870,19 @@ export default function Dashboard() {
                                 <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-body-sm font-semibold text-white shadow-sm">
                                   {(project.ai_evaluation?.difficulty_tier || 'N/A').replace(/\s*complexity\s*/gi, '').trim()} complexity
                                 </span>
+                                {(() => {
+                                  const { highest, dominant } = getComplexityPair(project);
+                                  return (
+                                    <>
+                                      <span className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-body-sm font-medium text-secondary-foreground">
+                                        Highest: {highest}
+                                      </span>
+                                      <span className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-body-sm font-medium text-secondary-foreground">
+                                        Dominant: {dominant}
+                                      </span>
+                                    </>
+                                  );
+                                })()}
                                 {project.language && (
                                   <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-medium bg-secondary text-secondary-foreground">
                                     {project.language}

@@ -97,19 +97,19 @@ export function NotificationBell({ enabled }: { enabled: boolean }) {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative rounded-full" aria-label="Notifications">
+        <Button variant="ghost" size="icon" className="relative rounded-full border border-transparent hover:border-border/60 hover:bg-card/80" aria-label="Notifications">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+            <span className="absolute -right-0.5 -top-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground shadow-md">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-[22rem] p-0">
-        <div className="flex items-center justify-between p-3">
-          <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="w-[24rem] overflow-hidden rounded-2xl border border-border/80 p-0 shadow-xl">
+        <div className="flex items-center justify-between bg-muted/30 p-3">
+          <DropdownMenuLabel className="p-0 text-body-sm font-semibold">Notifications</DropdownMenuLabel>
           <Button
             variant="ghost"
             size="sm"

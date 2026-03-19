@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Github,
   Star,
@@ -8,7 +8,6 @@ import {
   Code2,
   Globe,
   TrendingUp,
-  RefreshCw,
   Loader2,
   AlertCircle,
   BarChart3,
@@ -16,24 +15,23 @@ import {
   CheckCircle2,
   Info,
 } from 'lucide-react';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { getDeveloperProjects, refreshProjectData, getProjectEvaluationLogs } from '@/lib/api';
-import type { Project, AIEvaluation, ProjectEvaluationLog } from '@/types/api';
+import { getDeveloperProjects } from '@/lib/api';
+import type { Project, AIEvaluation } from '@/types/api';
 
 export default function ProjectDetails() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [refreshMode, setRefreshMode] = useState<'manual' | 'latest' | 'auto'>('manual');
-  const [logsVisible, setLogsVisible] = useState(false);
-  const [refreshLogs, setRefreshLogs] = useState<ProjectEvaluationLog[]>([]);
+  const openedFromDevelopers = new URLSearchParams(location.search).get('from') === 'developers';
+  const backPath = openedFromDevelopers ? '/developers' : '/dashboard';
+  const backLabel = openedFromDevelopers ? '← Back to Developers' : '← Back to Dashboard';
   const [aiSignalModal, setAiSignalModal] = useState<{
     type: 'repo_score' | 'confidence_score' | 'contribution_percentage';
     value: number;
@@ -98,41 +96,6 @@ export default function ProjectDetails() {
     }
   }, [projectId]);
 
-  const loadRefreshLogs = async (projectId: string) => {
-    try {
-      const logs = await getProjectEvaluationLogs(projectId);
-      setRefreshLogs(logs);
-    } catch {
-      setRefreshLogs([]);
-    }
-  };
-
-  const handleRefresh = async () => {
-    if (!project) return;
-
-    try {
-      setRefreshing(true);
-
-      if (refreshMode === 'manual') {
-        setLogsVisible(true);
-        await loadRefreshLogs(project.id);
-      }
-
-      const refreshed = await refreshProjectData(project.id);
-      setProject(refreshed);
-
-      if (refreshMode === 'manual') {
-        await loadRefreshLogs(project.id);
-      }
-
-      setRefreshing(false);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to refresh project';
-      setError(message);
-      setRefreshing(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
@@ -148,8 +111,8 @@ export default function ProjectDetails() {
     return (
       <div className="min-h-screen bg-gradient-hero py-8">
         <div className="container max-w-4xl">
-          <Button variant="outline" onClick={() => navigate('/dashboard')} className="mb-6">
-            ← Back to Dashboard
+          <Button variant="outline" onClick={() => navigate(backPath)} className="mb-6">
+            {backLabel}
           </Button>
           <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-6">
             <div className="flex items-start gap-4">
@@ -280,8 +243,8 @@ export default function ProjectDetails() {
           className="mb-8 rounded-[32px] border border-border bg-card p-8 shadow-lg hover:shadow-xl transition-shadow"
         >
           <div className="mb-8">
-            <Button variant="outline" onClick={() => navigate('/dashboard')}>
-              ← Back to Dashboard
+            <Button variant="outline" onClick={() => navigate(backPath)}>
+              {backLabel}
             </Button>
           </div>
 
@@ -289,23 +252,6 @@ export default function ProjectDetails() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h1 className="text-display-sm">{project.name}</h1>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="gap-2"
-                >
-                  {refreshing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Refreshing...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4" />
-                      Refresh
-                    </>
-                  )}
-                </Button>
                 {project.github_url && (
                   <Button variant="outline" asChild className="gap-2">
                     <a href={project.github_url} target="_blank" rel="noopener noreferrer">
@@ -391,63 +337,6 @@ export default function ProjectDetails() {
               </p>
             </div>
           </div>
-
-          {/* Refresh controls at the end of the card */}
-          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
-            <Select value={refreshMode} onValueChange={(v: string) => setRefreshMode(v as 'manual' | 'latest' | 'auto')}>
-              <SelectTrigger className="w-52">
-                <SelectValue placeholder="Refresh mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="manual">Manual refresh</SelectItem>
-                <SelectItem value="latest">Refresh on latest commit</SelectItem>
-                <SelectItem value="auto">Automatic refresh</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                setLogsVisible(true);
-                await loadRefreshLogs(project.id);
-              }}
-            >
-              View refresh logs
-            </Button>
-          </div>
-
-          <AnimatePresence>
-            {logsVisible && (
-              <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ duration: 0.3 }}
-                className="fixed inset-y-0 right-0 w-full md:w-1/2 bg-background shadow-xl p-6 overflow-auto z-50"
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold">Refresh Logs</h2>
-                  <Button variant="ghost" onClick={() => setLogsVisible(false)}>Close</Button>
-                </div>
-                {refreshLogs.length === 0 ? (
-                  <p className="text-caption text-muted-foreground py-1">No evaluation logs available yet.</p>
-                ) : (
-                  refreshLogs.map((log) => (
-                    <div key={log.id} className="mb-3 rounded-md border border-border p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-body-sm font-semibold capitalize">{log.status}</p>
-                        <p className="text-caption text-muted-foreground">{new Date(log.created_at).toLocaleString()}</p>
-                      </div>
-                      <p className="text-caption text-muted-foreground mt-1">
-                        Trigger: {log.trigger || 'unknown'} • Source: {log.source || 'unknown'}
-                      </p>
-                      {log.detail && <p className="text-body-sm mt-2">{log.detail}</p>}
-                    </div>
-                  ))
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
 
         {/* AI Evaluation Card */}
@@ -466,12 +355,42 @@ export default function ProjectDetails() {
             {/* Check if scores are available */}
             {evaluation.repo_score !== undefined && evaluation.repo_score > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-                <ScoreCard label="Overall Score" score={evaluation.repo_score} />
-                <ScoreCard label="Engineering Depth" score={evaluation.engineering_depth_score ?? 0} />
-                <ScoreCard label="Architecture Quality" score={evaluation.architecture_score ?? 0} />
-                <ScoreCard label="Code Quality" score={evaluation.code_quality_score ?? 0} />
-                <ScoreCard label="Production Readiness" score={evaluation.production_readiness_score ?? 0} />
-                <ScoreCard label="Commit Quality" score={evaluation.commit_quality_score ?? 0} />
+                <ScoreCard
+                  label="Overall Score"
+                  score={evaluation.repo_score}
+                  tooltip={signalInfo.repo_score.tooltip}
+                  onViewMore={() => setAiSignalModal({ type: 'repo_score', value: Number(evaluation.repo_score) })}
+                />
+                <ScoreCard
+                  label="Engineering Depth"
+                  score={evaluation.engineering_depth_score ?? 0}
+                  tooltip="Depth of implementation complexity and engineering sophistication."
+                  onViewMore={() => setAiSignalModal({ type: 'repo_score', value: Number(evaluation.engineering_depth_score ?? 0) })}
+                />
+                <ScoreCard
+                  label="Architecture Quality"
+                  score={evaluation.architecture_score ?? 0}
+                  tooltip="How well the project structure and system design are organized."
+                  onViewMore={() => setAiSignalModal({ type: 'repo_score', value: Number(evaluation.architecture_score ?? 0) })}
+                />
+                <ScoreCard
+                  label="Code Quality"
+                  score={evaluation.code_quality_score ?? 0}
+                  tooltip="Readability, maintainability, and quality of source code implementation."
+                  onViewMore={() => setAiSignalModal({ type: 'repo_score', value: Number(evaluation.code_quality_score ?? 0) })}
+                />
+                <ScoreCard
+                  label="Production Readiness"
+                  score={evaluation.production_readiness_score ?? 0}
+                  tooltip="Readiness for deployment and operating in real production environments."
+                  onViewMore={() => setAiSignalModal({ type: 'repo_score', value: Number(evaluation.production_readiness_score ?? 0) })}
+                />
+                <ScoreCard
+                  label="Commit Quality"
+                  score={evaluation.commit_quality_score ?? 0}
+                  tooltip="Quality and consistency of commit history and development workflow."
+                  onViewMore={() => setAiSignalModal({ type: 'repo_score', value: Number(evaluation.commit_quality_score ?? 0) })}
+                />
               </div>
             ) : (
               <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 p-4 border border-amber-200 dark:border-amber-900 mb-6">
@@ -494,71 +413,6 @@ export default function ProjectDetails() {
                 <p className="text-body-sm">{evaluation.summary}</p>
               </div>
             )}
-
-            <div className="mb-4 rounded-lg border border-border bg-background/60 p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-body-sm font-semibold">
-                  <Info className="h-4 w-4 text-primary" />
-                  AI signals
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {evaluation.repo_score !== undefined && (
-                  <button
-                    type="button"
-                    className="rounded-md border border-border px-3 py-2 text-left hover:bg-muted/30"
-                    onClick={() => setAiSignalModal({ type: 'repo_score', value: Number(evaluation.repo_score) })}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-caption text-muted-foreground">Repo score</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-muted-foreground"><Info className="h-3.5 w-3.5" /></span>
-                        </TooltipTrigger>
-                        <TooltipContent>{signalInfo.repo_score.tooltip}</TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <p className="text-body-sm font-semibold">{Math.round(evaluation.repo_score)}% • View more</p>
-                  </button>
-                )}
-                {evaluation.confidence_score !== undefined && (
-                  <button
-                    type="button"
-                    className="rounded-md border border-border px-3 py-2 text-left hover:bg-muted/30"
-                    onClick={() => setAiSignalModal({ type: 'confidence_score', value: Number(evaluation.confidence_score) })}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-caption text-muted-foreground">Confidence</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-muted-foreground"><Info className="h-3.5 w-3.5" /></span>
-                        </TooltipTrigger>
-                        <TooltipContent>{signalInfo.confidence_score.tooltip}</TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <p className="text-body-sm font-semibold">{Math.round(evaluation.confidence_score)}% • View more</p>
-                  </button>
-                )}
-                {evaluation.contribution_percentage !== undefined && (
-                  <button
-                    type="button"
-                    className="rounded-md border border-border px-3 py-2 text-left hover:bg-muted/30"
-                    onClick={() => setAiSignalModal({ type: 'contribution_percentage', value: Number(evaluation.contribution_percentage) })}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-caption text-muted-foreground">Contribution</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-muted-foreground"><Info className="h-3.5 w-3.5" /></span>
-                        </TooltipTrigger>
-                        <TooltipContent>{signalInfo.contribution_percentage.tooltip}</TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <p className="text-body-sm font-semibold">{Math.round(evaluation.contribution_percentage)}% • View more</p>
-                  </button>
-                )}
-              </div>
-            </div>
 
             {evaluation.strengths && evaluation.strengths.length > 0 && (
               <div className="rounded-lg bg-green-50 dark:bg-green-950/20 p-4 border border-green-200 dark:border-green-900 mb-4">
@@ -764,9 +618,11 @@ export default function ProjectDetails() {
 interface ScoreCardProps {
   label: string;
   score: number;
+  tooltip?: string;
+  onViewMore?: () => void;
 }
 
-function ScoreCard({ label, score }: ScoreCardProps) {
+function ScoreCard({ label, score, tooltip, onViewMore }: ScoreCardProps) {
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'text-green-600';
     if (score >= 70) return 'text-blue-600';
@@ -786,8 +642,25 @@ function ScoreCard({ label, score }: ScoreCardProps) {
       whileHover={{ y: -4 }}
       className={`rounded-[24px] border-2 p-6 shadow-md hover:shadow-lg transition-all ${getScoreBg(score)}`}
     >
-      <p className="text-caption font-medium text-muted-foreground mb-2">{label}</p>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-caption font-medium text-muted-foreground">{label}</p>
+        {tooltip && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" className="text-muted-foreground hover:text-foreground" aria-label={`About ${label}`}>
+                <Info className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">{tooltip}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
       <p className={`text-display-xs font-bold ${getScoreColor(score)}`}>{score}</p>
+      {onViewMore && (
+        <button type="button" className="mt-2 text-caption font-medium text-primary hover:underline" onClick={onViewMore}>
+          View more
+        </button>
+      )}
     </motion.div>
   );
 }

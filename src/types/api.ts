@@ -157,6 +157,28 @@ export interface DevTypesLanguagesResponse {
   languages_by_dev_type: Record<string, string[]>;
 }
 
+export type SignalKey = "repo_score" | "architecture_score" | "code_quality_score" | "engineering_depth_score";
+
+export type ProjectTypeConfigEntry = {
+  badge: string;
+  weights: Partial<Record<SignalKey, number>>;
+};
+
+export type SupportedDevTypesResponse = {
+  supported_dev_types: string[];
+  signal_order: SignalKey[];
+  project_type_config: Record<string, ProjectTypeConfigEntry>;
+  tech_stack_by_dev_type: Record<string, string[]>;
+};
+
+export type RepoAvailableItem = {
+  repo_name: string;
+  status: "available" | "already_imported";
+  repo_id: string;
+  warnings: string[];
+  metadata: { language?: string; full_name?: string; url?: string };
+};
+
 export interface DeveloperAnalyzerChartsResponse {
   project_complexity_bar?: unknown;
   technology_usage_bar?: unknown;
@@ -349,6 +371,11 @@ export interface Project {
 
   // warnings generated during import/refresh
   warnings?: string[];
+
+  // complexity signals
+  max_complexity?: string;
+  highest_complexity?: string;
+  dominant_complexity?: string;
 
   // engineering signals for additional insights
   engineering_signals?: Record<string, unknown>;
