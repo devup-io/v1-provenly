@@ -44,21 +44,33 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
 
     try {
       if (onSubmit) {
-        await onSubmit({
+        // Build payload with only required fields to avoid 422 errors
+        // Backend uses extra="forbid" so only send what's needed
+        const payload: HireDeveloperPayload = {
           founder_name: formData.founder_name,
           founder_email: formData.founder_email,
-          name: formData.founder_name,
-          email: formData.founder_email,
-          company: formData.company || undefined,
           role_type: formData.role_type,
-          charges_per: formData.role_type === 'paid' ? formData.charges_per : undefined,
-          compensation_amount:
-            formData.role_type === 'paid' && formData.compensation_amount.trim() !== ''
-              ? Number(formData.compensation_amount)
-              : undefined,
-          compensation_currency: formData.role_type === 'paid' ? formData.compensation_currency || undefined : undefined,
           message: formData.message,
-        });
+        };
+
+        // Add optional fields only if they have values
+        if (formData.company.trim()) {
+          payload.company = formData.company;
+        }
+
+        if (formData.role_type === 'paid') {
+          payload.charges_per = formData.charges_per;
+          
+          if (formData.compensation_amount.trim()) {
+            payload.compensation_amount = Number(formData.compensation_amount);
+          }
+          
+          if (formData.compensation_currency.trim()) {
+            payload.compensation_currency = formData.compensation_currency;
+          }
+        }
+
+        await onSubmit(payload);
       } else {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
@@ -242,10 +254,7 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
              )}
 
              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-               <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto">
-                 Cancel
-               </Button>
-               <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto gap-2">
+               <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto gap-2 sm:order-first">
                  {isSubmitting ? (
                    "Sending..."
                  ) : (
@@ -254,6 +263,9 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
                      Send Message
                    </>
                  )}
+               </Button>
+               <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto sm:order-last">
+                 Cancel
                </Button>
              </div>
            </form>
