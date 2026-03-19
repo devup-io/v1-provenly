@@ -44,8 +44,29 @@ export default function SignUp() {
     checkSession();
   }, [navigate]);
 
+  useEffect(() => {
+    const handlePageShow = () => {
+      setIsConnecting(false);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setIsConnecting(false);
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const handleGitHubSignUp = async () => {
     try {
+      if (isConnecting) return;
       setIsConnecting(true);
       
       // Get authorization URL and state from backend
@@ -55,6 +76,7 @@ export default function SignUp() {
       // Clear any existing developer data to ensure clean slate
       localStorage.removeItem('v1_developer');
       saveOAuthState(state);
+      localStorage.setItem('v1_intro_auto_start', '1');
       
       
       // Redirect to GitHub authorization page
@@ -64,7 +86,7 @@ export default function SignUp() {
       
       // Show error in alert
       const errorMessage = err instanceof Error ? err.message : "Failed to connect to backend";
-      alert(`Error: ${errorMessage}\n\nPlease make sure:\n1. Backend is running at http://localhost:8000\n2. CORS is configured to allow requests from this origin`);
+      alert(`Error: ${errorMessage}\n\nPlease make sure:\n1. Backend is running at https://api.provenly.live\n2. CORS is configured to allow requests from this origin`);
     }
   };
 

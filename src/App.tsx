@@ -10,6 +10,7 @@ import { SettingsProvider } from "@/contexts/SettingsContext";
 import { useBackendReadiness } from "./hooks/use-backend-readiness";
 import { useSessionCheck } from "./hooks/use-session-check";
 import { ErrorScreen } from "@/components/ErrorScreen";
+import { GuidedTour } from "@/components/GuidedTour";
 import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import OAuthLoading from "./pages/OAuthLoading";
@@ -72,29 +73,32 @@ function AppContent() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/signup" element={<SignUp />} />
-      <Route path="/oauth-loading" element={<OAuthLoading />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/mock-dashboard" element={<MockDashboard />} />
-      <Route path="/dashboard/projects/:projectId" element={<ProjectDetails />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/analysis" element={<Analysis />} />
-      <Route path="/welcome" element={<Welcome />} />
-      <Route path="/profile-setup" element={<ProfileSetup />} />
-      <Route path="/profile/edit" element={<EditProfile />} />
-      <Route path="/developers" element={<Developers />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/contact" element={<Contact />} />
-      <Route path="/dev/:username" element={<DeveloperProfile />} />
-      <Route path="/compare" element={<CompareDevelopers />} />
-      <Route path="/debug/auth" element={<DebugAuth />} />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/oauth-loading" element={<OAuthLoading />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/mock-dashboard" element={<MockDashboard />} />
+        <Route path="/dashboard/projects/:projectId" element={<ProjectDetails />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/analysis" element={<Analysis />} />
+        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/profile-setup" element={<ProfileSetup />} />
+        <Route path="/profile/edit" element={<EditProfile />} />
+        <Route path="/developers" element={<Developers />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/dev/:username" element={<DeveloperProfile />} />
+        <Route path="/compare" element={<CompareDevelopers />} />
+        <Route path="/debug/auth" element={<DebugAuth />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <GuidedTour />
+    </>
   );
 }
 

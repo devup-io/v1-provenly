@@ -71,7 +71,7 @@ export function StepRoleBasics({ data, onUpdate, onNext }: Props) {
   const canContinue = data.roles.length > 0 && data.techStack.length > 0;
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-8 shadow-card">
+    <div className="rounded-3xl border border-border bg-card p-8 shadow-card" data-tour="role-step">
       <div className="mb-8">
         <h2 className="mb-2 text-display-sm">Tell us about yourself</h2>
         <p className="text-body text-muted-foreground">

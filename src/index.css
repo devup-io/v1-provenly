@@ -192,4 +192,14 @@
   .bg-gradient-hero {
     background: var(--gradient-hero);
   }
+
+  .provenly-tour-target {
+    position: relative;
+    z-index: 1250;
+  }
+
+  .provenly-tour-target-active {
+    border-radius: 0.75rem;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.6), 0 0 0 7px hsl(0 0% 100% / 0.15);
+  }
 }

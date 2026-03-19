@@ -1,7 +1,7 @@
 import type { DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse, NotificationItem, NotificationsResponse } from "@/types/api";
 import type { DeveloperSearchResponse, DeveloperSearchFilters } from "@/types/developer";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://api.provenly.live";
 const DEVELOPER_KEY = "v1_developer";
 const OAUTH_STATE_KEY = "v1_oauth_state";
 const LEGACY_AUTH_STORAGE_KEYS = [
@@ -432,7 +432,7 @@ export async function getGitHubAuthorize(): Promise<GitHubAuthorizeResponse> {
     });
   } catch (err) {
     if (err instanceof TypeError && err.message.includes('fetch')) {
-      throw new Error('Cannot connect to backend. Make sure the backend server is running at http://localhost:8000 and CORS is configured.');
+      throw new Error('Cannot connect to backend. Make sure the backend server is running at https://api.provenly.live and CORS is configured.');
     }
     throw err;
   }

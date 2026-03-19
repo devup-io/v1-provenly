@@ -418,6 +418,21 @@ export default function DeveloperProfile() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {developerProjects.map((project: Project, index: number) => (
               <motion.div key={project.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + index * 0.05 }} className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-card">
+                {(() => {
+                  const owner = project.repo_full_name?.split('/')[0]?.toLowerCase();
+                  const username = developer.github_username?.toLowerCase();
+                  const isOrganizationRepo = Boolean(owner && username && owner !== username);
+                  const hasVeryLowContribution = isOrganizationRepo && (project.commits_count ?? 0) <= 2;
+
+                  if (!hasVeryLowContribution) return null;
+
+                  return (
+                    <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
+                      Basic contribution detected on this organization repository: visible commit activity appears very limited.
+                    </div>
+                  );
+                })()}
+
                 {project.warnings && project.warnings.length > 0 && (
                   <div className="mb-2 text-caption text-yellow-800">
                     ⚠️ {project.warnings.join(', ')}

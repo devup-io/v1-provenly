@@ -30,6 +30,8 @@ jobs:
         run: bun run test
 
       - name: Build
+        env:
+          VITE_API_URL: https://api.provenly.live
         run: bun run build
 
       - name: Upload build artifact
@@ -58,13 +60,18 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build project
+        env:
+          VITE_API_URL: https://api.provenly.live
         run: bun run build
 
       - name: Deploy to Vercel
-        # Skip gracefully when secrets are not configured
-        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "Skipping Vercel deploy: required secrets are not configured."
+            exit 0
+          fi
+          npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"

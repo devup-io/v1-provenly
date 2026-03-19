@@ -69,6 +69,7 @@ export default function Welcome() {
         className="w-full max-w-lg"
       >
         <div className="rounded-3xl border border-border bg-card p-8 shadow-card">
+        <div className="rounded-3xl border border-border bg-card p-8 shadow-card" data-tour="welcome-card">
           {/* Header with Avatar */}
           <div className="mb-8 flex items-center gap-4">
             <motion.div

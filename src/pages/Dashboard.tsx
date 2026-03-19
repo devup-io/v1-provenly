@@ -535,6 +535,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             whileHover={{ y: -4 }}
+            data-tour="profile-overview"
             className="rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
           >
             <div className="flex flex-col gap-4">
@@ -701,6 +702,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             whileHover={{ y: -4 }}
+            data-tour="actions-card"
             className="rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-lg transition-all hover:shadow-xl sm:col-span-2 sm:p-6 xl:col-span-1"
           >
             <h3 className="mb-4 text-heading-sm">Actions</h3>
@@ -708,6 +710,7 @@ export default function Dashboard() {
               <Button
                 onClick={handleImportMore}
                 className="w-full gap-2"
+                data-tour="add-repo-btn"
               >
                 <Plus className="h-4 w-4" />
                 Import More Repos
@@ -729,9 +732,25 @@ export default function Dashboard() {
                 disabled={importing}
                 variant="outline"
                 className="w-full gap-2"
+                data-tour="run-analysis-btn"
               >
                 {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Run Analysis
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  try {
+                    localStorage.removeItem('v1_intro_completed');
+                    localStorage.setItem('v1_intro_requested', '1');
+                  } catch {
+                    // ignore localStorage errors
+                  }
+                  window.dispatchEvent(new Event('provenly:start-tour'));
+                }}
+                className="mt-2 w-full"
+              >
+                Replay Intro
               </Button>
               <Button
                 variant="outline"
@@ -797,6 +816,24 @@ export default function Dashboard() {
                   onClick={() => navigate(`/dashboard/projects/${project.id}`)}
                   className="group cursor-pointer rounded-[24px] bg-gradient-to-br from-card to-card/80 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
                 >
+                  {(() => {
+                    const projectUrl = project.github_url || project.url;
+                    const owner = projectUrl
+                      ? projectUrl.replace(/^https?:\/\/github\.com\//i, '').split('/')[0]?.toLowerCase()
+                      : undefined;
+                    const username = developer.github_username?.toLowerCase();
+                    const isOrganizationRepo = Boolean(owner && username && owner !== username);
+                    const hasVeryLowContribution = isOrganizationRepo && (project.commits_count ?? 0) <= 2;
+
+                    if (!hasVeryLowContribution) return null;
+
+                    return (
+                      <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
+                        Basic contribution detected: this is an organization repository and your visible commit history appears very limited for this project.
+                      </div>
+                    );
+                  })()}
+
                   <div className="grid grid-cols-1 gap-4">
                     <div>
                       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
