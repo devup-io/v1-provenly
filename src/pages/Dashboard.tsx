@@ -765,7 +765,8 @@ export default function Dashboard() {
                   try {
                     localStorage.removeItem('v1_intro_completed');
                     localStorage.setItem('v1_intro_requested', '1');
-                  } catch {
+                  } catch (error) {
+                    void error;
                   }
                   window.dispatchEvent(new Event('provenly:start-tour'));
                 }}

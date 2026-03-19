@@ -75,6 +75,7 @@ function formatDate(value?: string | Date): string | undefined {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return undefined;
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 interface AISignalDescription {
   title: string;
@@ -121,7 +122,6 @@ const getAISignalDescription = (type: 'confidence' | 'contribution' | 'repo_scor
   };
   return signals[type] || signals.confidence;
 };
-}
 
 function mapFullDetailsProject(raw: DeveloperFullDetailsProject, developerId: string): Project {
   const normalizedComplexity = normalizeComplexityLevel(raw.complexity) || 'L1';
@@ -614,7 +614,12 @@ export default function DeveloperProfile() {
                                           <span>Confidence</span>
                                           <Tooltip>
                                             <TooltipTrigger asChild>
-                                              <button type="button" className="text-muted-foreground hover:text-foreground">
+                                              <button
+                                                type="button"
+                                                className="text-muted-foreground hover:text-foreground"
+                                                aria-label="Learn more about confidence score"
+                                                title="Learn more about confidence score"
+                                              >
                                                 <Info className="h-3.5 w-3.5" />
                                               </button>
                                             </TooltipTrigger>
@@ -650,7 +655,12 @@ export default function DeveloperProfile() {
                                           <span>Contribution</span>
                                           <Tooltip>
                                             <TooltipTrigger asChild>
-                                              <button type="button" className="text-muted-foreground hover:text-foreground">
+                                              <button
+                                                type="button"
+                                                className="text-muted-foreground hover:text-foreground"
+                                                aria-label="Learn more about contribution level"
+                                                title="Learn more about contribution level"
+                                              >
                                                 <Info className="h-3.5 w-3.5" />
                                               </button>
                                             </TooltipTrigger>
