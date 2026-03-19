@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, Check, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -708,19 +709,10 @@ export default function Dashboard() {
             <h3 className="mb-4 text-heading-sm">Actions</h3>
             <div className="space-y-3">
               <Button
-                onClick={handleImportMore}
-                className="w-full gap-2"
-                data-tour="add-repo-btn"
-              >
-                <Plus className="h-4 w-4" />
-                Import More Repos
-              </Button>
-              <Button
                 onClick={async () => {
                   if (!developer) return;
                   setImporting(true);
                   try {
-                    // Trigger backend analysis and then navigate to the analysis page
                     await getDeveloperAnalyzer(developer.id);
                   } catch {
                     toast({ title: 'Analysis failed', description: 'Unable to start analysis. Please try again.', variant: 'destructive' });
@@ -730,12 +722,42 @@ export default function Dashboard() {
                   }
                 }}
                 disabled={importing}
-                variant="outline"
                 className="w-full gap-2"
                 data-tour="run-analysis-btn"
               >
                 {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Run Analysis
+              </Button>
+              <Button
+                onClick={handleImportMore}
+                variant="outline"
+                className="w-full gap-2"
+                data-tour="add-repo-btn"
+              >
+                <Plus className="h-4 w-4" />
+                Import More Repos
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/profile/edit')}
+                className="w-full"
+              >
+                Edit Profile
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setPublishModal(true)}
+                className="w-full"
+                disabled={publishing}
+              >
+                {publishing ? (published ? 'Making Profile Private...' : 'Publishing Profile...') : (published ? 'Make Profile Private' : 'Publish Profile')}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/settings')}
+                className="w-full"
+              >
+                Go to Settings
               </Button>
               <Button
                 variant="outline"
@@ -744,35 +766,12 @@ export default function Dashboard() {
                     localStorage.removeItem('v1_intro_completed');
                     localStorage.setItem('v1_intro_requested', '1');
                   } catch {
-                    // ignore localStorage errors
                   }
                   window.dispatchEvent(new Event('provenly:start-tour'));
                 }}
-                className="mt-2 w-full"
+                className="w-full"
               >
                 Replay Intro
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/profile/edit')}
-                className="mt-2 w-full"
-              >
-                Edit Profile
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/settings')}
-                className="mt-2 w-full"
-              >
-                Go to Settings
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setPublishModal(true)}
-                className="mt-2 w-full"
-                disabled={publishing}
-              >
-                {publishing ? (published ? 'Making Profile Private...' : 'Publishing Profile...') : (published ? 'Make Profile Private' : 'Publish Profile')}
               </Button>
             </div>
           </motion.div>
@@ -792,124 +791,148 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {projects.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-border bg-card/50 p-8 text-center">
-              <GitBranch className="mx-auto mb-4 h-8 w-8 text-muted-foreground" />
-              <h3 className="mb-2 text-heading-sm">No repositories imported yet</h3>
-              <p className="mb-6 text-body text-muted-foreground">
-                Import your GitHub repositories to see them here with AI-powered evaluations
-              </p>
-              <Button onClick={handleImportMore}>
-                <Plus className="mr-2 h-4 w-4" />
-                Import Your Repositories
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {projects.map((project, index) => (
-                <motion.div
-                  key={project.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + (index * 0.05) }}
-                  whileHover={{ y: -4 }}
-                  onClick={() => navigate(`/dashboard/projects/${project.id}`)}
-                  className="group cursor-pointer rounded-[24px] bg-gradient-to-br from-card to-card/80 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
-                >
-                  {(() => {
-                    const projectUrl = project.github_url || project.url;
-                    const owner = projectUrl
-                      ? projectUrl.replace(/^https?:\/\/github\.com\//i, '').split('/')[0]?.toLowerCase()
-                      : undefined;
-                    const username = developer.github_username?.toLowerCase();
-                    const isOrganizationRepo = Boolean(owner && username && owner !== username);
-                    const hasVeryLowContribution = isOrganizationRepo && (project.commits_count ?? 0) <= 2;
+          <Tabs defaultValue="projects" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+              <TabsTrigger value="projects">Projects</TabsTrigger>
+              <TabsTrigger value="education">Education</TabsTrigger>
+              <TabsTrigger value="experience">Experience</TabsTrigger>
+            </TabsList>
 
-                    if (!hasVeryLowContribution) return null;
+            <TabsContent value="projects" className="space-y-4">
+              {projects.length === 0 ? (
+                <div className="rounded-[24px] border border-dashed border-border bg-card/50 p-8 text-center">
+                  <GitBranch className="mx-auto mb-4 h-8 w-8 text-muted-foreground" />
+                  <h3 className="mb-2 text-heading-sm">No repositories imported yet</h3>
+                  <p className="mb-6 text-body text-muted-foreground">
+                    Import your GitHub repositories to see them here with AI-powered evaluations
+                  </p>
+                  <Button onClick={handleImportMore}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Import Your Repositories
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  {projects.map((project, index) => (
+                    <motion.div
+                      key={project.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 + (index * 0.05) }}
+                      whileHover={{ y: -4 }}
+                      onClick={() => navigate(`/dashboard/projects/${project.id}`)}
+                      className="group cursor-pointer rounded-[24px] bg-gradient-to-br from-card to-card/80 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
+                    >
+                      {(() => {
+                        const projectUrl = project.github_url || project.url;
+                        const owner = projectUrl
+                          ? projectUrl.replace(/^https?:\/\/github\.com\//i, '').split('/')[0]?.toLowerCase()
+                          : undefined;
+                        const username = developer.github_username?.toLowerCase();
+                        const isOrganizationRepo = Boolean(owner && username && owner !== username);
+                        const hasVeryLowContribution = isOrganizationRepo && (project.commits_count ?? 0) <= 2;
 
-                    return (
-                      <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
-                        Basic contribution detected: this is an organization repository and your visible commit history appears very limited for this project.
-                      </div>
-                    );
-                  })()}
+                        if (!hasVeryLowContribution) return null;
 
-                  {project.warnings && project.warnings.length > 0 && (
-                    <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
-                      <p className="font-semibold">Advisory warnings</p>
-                      <ul className="mt-1 list-disc space-y-0.5 pl-4">
-                        {Array.from(new Set(project.warnings)).slice(0, 3).map((warning) => (
-                          <li key={`${project.id}-${warning}`}>{warning}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="mb-2 break-words text-heading-sm">{project.name || 'N/A'}</h3>
-                          <div className="mb-2 flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-body-sm font-semibold text-white shadow-sm">
-                              {(project.ai_evaluation?.difficulty_tier || 'N/A').replace(/\s*complexity\s*/gi, '').trim()} complexity
-                            </span>
-                            {project.language && (
-                              <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-medium bg-secondary text-secondary-foreground">
-                                {project.language}
-                              </span>
-                            )}
+                        return (
+                          <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
+                            Basic contribution detected: this is an organization repository and your visible commit history appears very limited for this project.
                           </div>
-                          <div className="mb-1 flex flex-wrap items-center gap-3 text-body-sm">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
-                              {project.ai_evaluation?.repo_score !== undefined ? `${Math.round(project.ai_evaluation.repo_score)}% score` : 'N/A score'}
-                            </span>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-muted/20 px-3 py-0.5 text-muted-foreground">
-                              <GitBranch className="h-3 w-3" />
-                              {project.commits_count !== undefined ? `${project.commits_count} commits` : 'N/A commits'}
-                            </span>
-                          </div>
+                        );
+                      })()}
+
+                      {project.warnings && project.warnings.length > 0 && (
+                        <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
+                          <p className="font-semibold">Advisory warnings</p>
+                          <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                            {Array.from(new Set(project.warnings)).slice(0, 3).map((warning) => (
+                              <li key={`${project.id}-${warning}`}>{warning}</li>
+                            ))}
+                          </ul>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
-                          Active
-                          {project.github_url && (
-                            <a
-                              href={project.github_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ml-1 text-muted-foreground transition hover:text-primary"
-                              onClick={(e) => e.stopPropagation()}
-                              title="View on GitHub"
+                      )}
+
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="mb-2 break-words text-heading-sm">{project.name || 'N/A'}</h3>
+                              <div className="mb-2 flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-body-sm font-semibold text-white shadow-sm">
+                                  {(project.ai_evaluation?.difficulty_tier || 'N/A').replace(/\s*complexity\s*/gi, '').trim()} complexity
+                                </span>
+                                {project.language && (
+                                  <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-medium bg-secondary text-secondary-foreground">
+                                    {project.language}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mb-1 flex flex-wrap items-center gap-3 text-body-sm">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
+                                  {project.ai_evaluation?.repo_score !== undefined ? `${Math.round(project.ai_evaluation.repo_score)}% score` : 'N/A score'}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-muted/20 px-3 py-0.5 text-muted-foreground">
+                                  <GitBranch className="h-3 w-3" />
+                                  {project.commits_count !== undefined ? `${project.commits_count} commits` : 'N/A commits'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
+                              Active
+                              {project.github_url && (
+                                <a
+                                  href={project.github_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-1 text-muted-foreground transition hover:text-primary"
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="View on GitHub"
+                                >
+                                  <Github className="h-4 w-4" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+
+                          <p className="text-body-sm text-muted-foreground">
+                            {project.description || 'N/A'}
+                          </p>
+
+                          <div className="mt-4 flex justify-start">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/dashboard/projects/${project.id}`);
+                              }}
                             >
-                              <Github className="h-4 w-4" />
-                            </a>
-                          )}
+                              View more about project
+                            </Button>
+                          </div>
                         </div>
                       </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
-                      <p className="text-body-sm text-muted-foreground">
-                        {project.description || 'N/A'}
-                      </p>
+            <TabsContent value="education" className="space-y-4">
+              <div className="rounded-[24px] border border-dashed border-border bg-card/50 p-8 text-center">
+                <h3 className="mb-2 text-heading-sm">Feature coming soon</h3>
+                <p className="text-body text-muted-foreground">Education details will appear here soon.</p>
+              </div>
+            </TabsContent>
 
-                      <div className="mt-4 flex justify-start">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/dashboard/projects/${project.id}`);
-                          }}
-                        >
-                          View more about project
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
+            <TabsContent value="experience" className="space-y-4">
+              <div className="rounded-[24px] border border-dashed border-border bg-card/50 p-8 text-center">
+                <h3 className="mb-2 text-heading-sm">Feature coming soon</h3>
+                <p className="text-body text-muted-foreground">Experience details will appear here soon.</p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </motion.div>
       </div>
 
