@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, Check, Cpu, Info } from 'lucide-react';
+import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, Check, Cpu, Info, FileUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -582,17 +582,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {supportedRoles.length > 0 && (
-                <div className="px-4 text-caption text-muted-foreground">
-                  Supported roles: {supportedRoles.join(', ')}
-                </div>
-              )}
-              {developer.primary_role && supportedRoles.length > 0 && !supportedRoles.includes(developer.primary_role) && (
-                <div className="mx-4 rounded-md bg-yellow-100 p-2 text-caption text-yellow-800">
-                  Your declared role (‘{developer.primary_role}’) is not currently supported; evaluations may be limited.
-                </div>
-              )}
-
               <div className="mt-4 grid grid-cols-2 gap-3 text-body-sm">
                 <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-caption uppercase tracking-wide text-muted-foreground">Experience</span>
@@ -742,6 +731,14 @@ export default function Dashboard() {
                 className="w-full"
               >
                 Edit Profile
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/profile/cv-upload')}
+                className="w-full gap-2"
+              >
+                <FileUp className="h-4 w-4" />
+                Upload CV
               </Button>
               <Button
                 variant="secondary"
