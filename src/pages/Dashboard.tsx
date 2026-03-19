@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, Check, Cpu } from 'lucide-react';
+import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, Check, Cpu, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ErrorScreen } from '@/components/ErrorScreen';
 import { Header } from '@/components/landing/Header';
 import { useToast } from '@/hooks/use-toast';
@@ -133,6 +135,44 @@ export default function Dashboard() {
   const [published, setPublished] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [lastPublishAction, setLastPublishAction] = useState<'publish' | 'unpublish' | null>(null);
+  const [aiSignalModal, setAiSignalModal] = useState<{
+    type: 'repo_score' | 'confidence_score' | 'contribution_percentage';
+    projectName: string;
+    value: number;
+  } | null>(null);
+
+  const signalInfo = {
+    repo_score: {
+      title: 'Repository Score',
+      tooltip: 'Overall quality score for this repository from AI evaluation.',
+      explain: (value: number) =>
+        value >= 80
+          ? 'Strong repository quality with good engineering signals.'
+          : value >= 60
+            ? 'Good repository quality with room for improvement.'
+            : 'Repository quality appears moderate/low based on current signals.',
+    },
+    confidence_score: {
+      title: 'Confidence Score',
+      tooltip: 'How confident the AI is in its evaluation for this repository.',
+      explain: (value: number) =>
+        value >= 80
+          ? 'Very high confidence in this evaluation.'
+          : value >= 60
+            ? 'Good confidence in this evaluation.'
+            : 'Lower confidence because available signals are limited.',
+    },
+    contribution_percentage: {
+      title: 'Contribution',
+      tooltip: 'Estimated share of contribution by the developer in this repository.',
+      explain: (value: number) =>
+        value >= 70
+          ? 'Primary builder role in this repository.'
+          : value >= 40
+            ? 'Major contributor role in this repository.'
+            : 'Minor or partial contributor role in this repository.',
+    },
+  } as const;
 
   // load supported roles
   useEffect(() => {
@@ -423,10 +463,33 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-hero">
-        <div className="text-center">
-          <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-primary" />
-          <p className="text-body text-muted-foreground">Loading your profile...</p>
+      <div className="min-h-screen bg-gradient-hero">
+        <Header />
+        <div className="container px-4 py-8 sm:px-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="rounded-[24px] bg-card p-6 shadow-lg lg:col-span-2 space-y-4">
+              <Skeleton className="h-8 w-56" />
+              <Skeleton className="h-4 w-72" />
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
+              </div>
+            </div>
+            <div className="rounded-[24px] bg-card p-6 shadow-lg space-y-3">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+          <div className="mt-8 space-y-4">
+            <Skeleton className="h-7 w-52" />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Skeleton className="h-44 rounded-[24px]" />
+              <Skeleton className="h-44 rounded-[24px]" />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -872,6 +935,16 @@ export default function Dashboard() {
                                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
                                   {project.ai_evaluation?.repo_score !== undefined ? `${Math.round(project.ai_evaluation.repo_score)}% score` : 'N/A score'}
                                 </span>
+                                {project.ai_evaluation?.confidence_score !== undefined && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-0.5 text-secondary-foreground">
+                                    {Math.round(project.ai_evaluation.confidence_score)}% confidence
+                                  </span>
+                                )}
+                                {project.ai_evaluation?.contribution_percentage !== undefined && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-0.5 text-secondary-foreground">
+                                    {Math.round(project.ai_evaluation.contribution_percentage)}% contribution
+                                  </span>
+                                )}
                                 <span className="inline-flex items-center gap-1 rounded-full bg-muted/20 px-3 py-0.5 text-muted-foreground">
                                   <GitBranch className="h-3 w-3" />
                                   {project.commits_count !== undefined ? `${project.commits_count} commits` : 'N/A commits'}
@@ -901,6 +974,45 @@ export default function Dashboard() {
                           </p>
 
                           <div className="mt-4 flex justify-start">
+                            {project.ai_evaluation && (
+                              <div className="mb-3 mr-2 inline-flex items-center gap-2 rounded-md border border-border px-2 py-1 text-caption text-muted-foreground">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-foreground">
+                                      <Info className="h-3.5 w-3.5" />
+                                      AI signals
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs">
+                                    Hover/help for score, confidence, and contribution. Click view more for details.
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-caption"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const confidence = project.ai_evaluation?.confidence_score;
+                                    const contribution = project.ai_evaluation?.contribution_percentage;
+                                    const repo = project.ai_evaluation?.repo_score;
+                                    if (confidence !== undefined) {
+                                      setAiSignalModal({ type: 'confidence_score', projectName: project.name || 'N/A', value: Number(confidence) });
+                                      return;
+                                    }
+                                    if (contribution !== undefined) {
+                                      setAiSignalModal({ type: 'contribution_percentage', projectName: project.name || 'N/A', value: Number(contribution) });
+                                      return;
+                                    }
+                                    if (repo !== undefined) {
+                                      setAiSignalModal({ type: 'repo_score', projectName: project.name || 'N/A', value: Number(repo) });
+                                    }
+                                  }}
+                                >
+                                  View more
+                                </Button>
+                              </div>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
@@ -936,6 +1048,31 @@ export default function Dashboard() {
           </Tabs>
         </motion.div>
       </div>
+
+      <Dialog open={!!aiSignalModal} onOpenChange={(open) => !open && setAiSignalModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{aiSignalModal ? signalInfo[aiSignalModal.type].title : 'AI Signal'}</DialogTitle>
+            <DialogDescription>
+              {aiSignalModal?.projectName}
+            </DialogDescription>
+          </DialogHeader>
+          {aiSignalModal && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted/30 p-4 text-center">
+                <p className="text-caption text-muted-foreground">Value</p>
+                <p className="text-heading-lg font-bold">{Math.round(aiSignalModal.value)}%</p>
+              </div>
+              <p className="text-body-sm text-muted-foreground">
+                {signalInfo[aiSignalModal.type].tooltip}
+              </p>
+              <p className="text-body-sm">
+                {signalInfo[aiSignalModal.type].explain(aiSignalModal.value)}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* publish confirmation modal */}
       <Dialog open={publishModal} onOpenChange={setPublishModal}>
