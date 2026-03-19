@@ -14,9 +14,12 @@ import {
   BarChart3,
   Zap,
   CheckCircle2,
+  Info,
 } from 'lucide-react';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getDeveloperProjects, refreshProjectData, getProjectEvaluationLogs } from '@/lib/api';
 import type { Project, AIEvaluation, ProjectEvaluationLog } from '@/types/api';
 
@@ -31,6 +34,43 @@ export default function ProjectDetails() {
   const [refreshMode, setRefreshMode] = useState<'manual' | 'latest' | 'auto'>('manual');
   const [logsVisible, setLogsVisible] = useState(false);
   const [refreshLogs, setRefreshLogs] = useState<ProjectEvaluationLog[]>([]);
+  const [aiSignalModal, setAiSignalModal] = useState<{
+    type: 'repo_score' | 'confidence_score' | 'contribution_percentage';
+    value: number;
+  } | null>(null);
+
+  const signalInfo = {
+    repo_score: {
+      title: 'Repository Score',
+      tooltip: 'Overall quality score for this repository from AI evaluation.',
+      explain: (value: number) =>
+        value >= 80
+          ? 'Strong repository quality with good engineering signals.'
+          : value >= 60
+            ? 'Good repository quality with room for improvement.'
+            : 'Repository quality appears moderate/low based on current signals.',
+    },
+    confidence_score: {
+      title: 'Confidence Score',
+      tooltip: 'How confident the AI is in this repository evaluation.',
+      explain: (value: number) =>
+        value >= 80
+          ? 'Very high confidence in this evaluation.'
+          : value >= 60
+            ? 'Good confidence in this evaluation.'
+            : 'Lower confidence due to limited available signals.',
+    },
+    contribution_percentage: {
+      title: 'Contribution Percentage',
+      tooltip: 'Estimated share of contribution by the developer.',
+      explain: (value: number) =>
+        value >= 70
+          ? 'Primary builder role in this repository.'
+          : value >= 40
+            ? 'Major contributor role in this repository.'
+            : 'Minor or partial contributor role in this repository.',
+    },
+  } as const;
 
   useEffect(() => {
     const loadProject = async () => {
@@ -455,6 +495,71 @@ export default function ProjectDetails() {
               </div>
             )}
 
+            <div className="mb-4 rounded-lg border border-border bg-background/60 p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-body-sm font-semibold">
+                  <Info className="h-4 w-4 text-primary" />
+                  AI signals
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {evaluation.repo_score !== undefined && (
+                  <button
+                    type="button"
+                    className="rounded-md border border-border px-3 py-2 text-left hover:bg-muted/30"
+                    onClick={() => setAiSignalModal({ type: 'repo_score', value: Number(evaluation.repo_score) })}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-caption text-muted-foreground">Repo score</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-muted-foreground"><Info className="h-3.5 w-3.5" /></span>
+                        </TooltipTrigger>
+                        <TooltipContent>{signalInfo.repo_score.tooltip}</TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-body-sm font-semibold">{Math.round(evaluation.repo_score)}% • View more</p>
+                  </button>
+                )}
+                {evaluation.confidence_score !== undefined && (
+                  <button
+                    type="button"
+                    className="rounded-md border border-border px-3 py-2 text-left hover:bg-muted/30"
+                    onClick={() => setAiSignalModal({ type: 'confidence_score', value: Number(evaluation.confidence_score) })}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-caption text-muted-foreground">Confidence</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-muted-foreground"><Info className="h-3.5 w-3.5" /></span>
+                        </TooltipTrigger>
+                        <TooltipContent>{signalInfo.confidence_score.tooltip}</TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-body-sm font-semibold">{Math.round(evaluation.confidence_score)}% • View more</p>
+                  </button>
+                )}
+                {evaluation.contribution_percentage !== undefined && (
+                  <button
+                    type="button"
+                    className="rounded-md border border-border px-3 py-2 text-left hover:bg-muted/30"
+                    onClick={() => setAiSignalModal({ type: 'contribution_percentage', value: Number(evaluation.contribution_percentage) })}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-caption text-muted-foreground">Contribution</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-muted-foreground"><Info className="h-3.5 w-3.5" /></span>
+                        </TooltipTrigger>
+                        <TooltipContent>{signalInfo.contribution_percentage.tooltip}</TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-body-sm font-semibold">{Math.round(evaluation.contribution_percentage)}% • View more</p>
+                  </button>
+                )}
+              </div>
+            </div>
+
             {evaluation.strengths && evaluation.strengths.length > 0 && (
               <div className="rounded-lg bg-green-50 dark:bg-green-950/20 p-4 border border-green-200 dark:border-green-900 mb-4">
                 <p className="text-caption font-semibold text-green-700 dark:text-green-400 mb-2">STRENGTHS</p>
@@ -632,6 +737,25 @@ export default function ProjectDetails() {
             )}
           </motion.div>
         )}
+
+        <Dialog open={!!aiSignalModal} onOpenChange={(open) => !open && setAiSignalModal(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{aiSignalModal ? signalInfo[aiSignalModal.type].title : 'AI Signal'}</DialogTitle>
+              <DialogDescription>{project.name}</DialogDescription>
+            </DialogHeader>
+            {aiSignalModal && (
+              <div className="space-y-4">
+                <div className="rounded-lg bg-muted/30 p-4 text-center">
+                  <p className="text-caption text-muted-foreground">Value</p>
+                  <p className="text-display-xs font-bold">{Math.round(aiSignalModal.value)}%</p>
+                </div>
+                <p className="text-body-sm text-muted-foreground">{signalInfo[aiSignalModal.type].tooltip}</p>
+                <p className="text-body-sm">{signalInfo[aiSignalModal.type].explain(aiSignalModal.value)}</p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

@@ -567,22 +567,33 @@ export default function DeveloperProfile() {
                       </div>
                     )}
                   </div>
-                  <Button variant="outline" size="sm" className="gap-2" asChild>
-                    <a href={project.url} target="_blank" rel="noopener noreferrer">
-                      <Github className="h-4 w-4" />
-                      View on GitHub
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="gap-2" asChild>
+                      <a href={project.url} target="_blank" rel="noopener noreferrer">
+                        <Github className="h-4 w-4" />
+                        View on GitHub
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => navigate(`/dashboard/projects/${project.id}`)}
+                    >
+                      <Code2 className="h-4 w-4" />
+                      See more project
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="mb-6 grid grid-cols-2 gap-2 text-body-sm sm:grid-cols-4">
                   <div className="rounded-xl border border-border/50 bg-background/50 px-3 py-2 text-center">
-                    <p className="text-caption text-muted-foreground">Stars</p>
+                    <p className="text-caption text-muted-foreground flex items-center justify-center gap-1"><Star className="h-3.5 w-3.5" /> Stars</p>
                     <p className="font-semibold">{project.stars ?? 0}</p>
                   </div>
                   <div className="rounded-xl border border-border/50 bg-background/50 px-3 py-2 text-center">
-                    <p className="text-caption text-muted-foreground">Forks</p>
+                    <p className="text-caption text-muted-foreground flex items-center justify-center gap-1"><GitBranch className="h-3.5 w-3.5" /> Forks</p>
                     <p className="font-semibold">{project.forks ?? 0}</p>
                   </div>
                   {project.ai_evaluation?.repo_score != null && (
@@ -602,82 +613,52 @@ export default function DeveloperProfile() {
                 {project.ai_evaluation?.confidence_score != null && (
                   <div className="mb-4">
                     <div className="mb-1 flex items-center justify-between text-caption text-muted-foreground">
-                      <span>Confidence</span>
-                      <span className="font-medium">{project.ai_evaluation.confidence_score}%</span>
+                      <div className="flex items-center gap-2">
+                        <span>Confidence</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="text-muted-foreground hover:text-foreground" aria-label="Learn more about confidence score" title="Learn more about confidence score">
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-sm">{getAISignalDescription('confidence').tooltip}</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAiSignalModal({ type: 'confidence', project: project.name || 'Unknown', value: project.ai_evaluation?.confidence_score || 0 })}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {project.ai_evaluation.confidence_score}%
+                      </button>
                     </div>
                     <Progress value={project.ai_evaluation.confidence_score} className="h-1.5" />
-
-                                  {project.ai_evaluation?.confidence_score != null && (
-                                    <div className="mb-4">
-                                      <div className="mb-1 flex items-center justify-between text-caption text-muted-foreground">
-                                        <div className="flex items-center gap-2">
-                                          <span>Confidence</span>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <button
-                                                type="button"
-                                                className="text-muted-foreground hover:text-foreground"
-                                                aria-label="Learn more about confidence score"
-                                                title="Learn more about confidence score"
-                                              >
-                                                <Info className="h-3.5 w-3.5" />
-                                              </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent className="max-w-sm">{getAISignalDescription('confidence').tooltip}</TooltipContent>
-                                          </Tooltip>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => setAiSignalModal({ type: 'confidence', project: project.name || 'Unknown', value: project.ai_evaluation.confidence_score || 0 })}
-                                          className="font-medium text-primary hover:underline"
-                                        >
-                                          {project.ai_evaluation.confidence_score}%
-                                        </button>
-                                      </div>
-                                      <Progress value={project.ai_evaluation.confidence_score} className="h-1.5" />
-                                    </div>
-                                  )}
                   </div>
                 )}
 
                 {project.ai_evaluation?.contribution_percentage != null && (
                   <div className="mb-4">
                     <div className="mb-1 flex items-center justify-between text-caption text-muted-foreground">
-                      <span>Contribution</span>
-                      <span className="font-medium">{project.ai_evaluation.contribution_percentage}%</span>
+                      <div className="flex items-center gap-2">
+                        <span>Contribution</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="text-muted-foreground hover:text-foreground" aria-label="Learn more about contribution level" title="Learn more about contribution level">
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-sm">{getAISignalDescription('contribution').tooltip}</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAiSignalModal({ type: 'contribution', project: project.name || 'Unknown', value: project.ai_evaluation?.contribution_percentage || 0 })}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {project.ai_evaluation.contribution_percentage}%
+                      </button>
                     </div>
                     <Progress value={project.ai_evaluation.contribution_percentage} className="h-1.5 [&>div]:bg-emerald-500" />
-
-                                  {project.ai_evaluation?.contribution_percentage != null && (
-                                    <div className="mb-4">
-                                      <div className="mb-1 flex items-center justify-between text-caption text-muted-foreground">
-                                        <div className="flex items-center gap-2">
-                                          <span>Contribution</span>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <button
-                                                type="button"
-                                                className="text-muted-foreground hover:text-foreground"
-                                                aria-label="Learn more about contribution level"
-                                                title="Learn more about contribution level"
-                                              >
-                                                <Info className="h-3.5 w-3.5" />
-                                              </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent className="max-w-sm">{getAISignalDescription('contribution').tooltip}</TooltipContent>
-                                          </Tooltip>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => setAiSignalModal({ type: 'contribution', project: project.name || 'Unknown', value: project.ai_evaluation.contribution_percentage || 0 })}
-                                          className="font-medium text-primary hover:underline"
-                                        >
-                                          {project.ai_evaluation.contribution_percentage}%
-                                        </button>
-                                      </div>
-                                      <Progress value={project.ai_evaluation.contribution_percentage} className="h-1.5 [&>div]:bg-emerald-500" />
-                                    </div>
-                                  )}
                   </div>
                 )}
 
@@ -726,15 +707,10 @@ export default function DeveloperProfile() {
                   </div>
                 )}
 
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div>
-                    <h4 className="mb-2 flex items-center gap-2 text-body-sm font-semibold"><Code2 className="h-4 w-4 text-primary" /> Problem solved</h4>
-                    <p className="text-body-sm text-muted-foreground">{project.problem}</p>
-                  </div>
-                  <div>
-                    <h4 className="mb-2 flex items-center gap-2 text-body-sm font-semibold"><Code2 className="h-4 w-4 text-primary" /> Personal contribution</h4>
-                    <p className="text-body-sm text-muted-foreground">{project.contribution}</p>
-                  </div>
+                <div className="mb-4 grid grid-cols-1 gap-2 text-caption text-muted-foreground sm:grid-cols-3">
+                  <div className="flex items-center gap-2"><Code2 className="h-3.5 w-3.5" /> Language: {project.language || 'N/A'}</div>
+                  <div className="flex items-center gap-2"><Calendar className="h-3.5 w-3.5" /> Created: {formatDate(project.created_at) || 'N/A'}</div>
+                  <div className="flex items-center gap-2"><Calendar className="h-3.5 w-3.5" /> Updated: {formatDate(project.updated_at) || 'N/A'}</div>
                 </div>
 
                 <div className="mt-6 border-t border-border pt-4">
