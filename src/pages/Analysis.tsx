@@ -195,13 +195,18 @@ export default function Analysis() {
 
   const avgConfidence = readNumber(
     overview.average_confidence,
+    asRecord(payload.credibility_gauge).average_confidence,
+    asRecord(payload.credibility_gauge).confidence,
+    asRecord(payload.credibility_gauge).score,
     payload.average_confidence,
-    asRecord(payload.developer).average_confidence,
-    asRecord(payload.credibility_gauge).average_confidence
+    asRecord(payload.developer).average_confidence
   );
   const primaryBuilderPct = readNumber(
     overview.primary_builder_percentage,
     overview.primary_builder_pct,
+    asRecord(payload.contribution_level).primary_builder_pct,
+    asRecord(payload.contribution_level).primary_builder_percentage,
+    asRecord(payload.contribution_pie).primary_builder_pct,
     contributionLevel.primary_builder_pct,
     contributionLevel.primary_builder,
     contributionLevel.primary
@@ -598,7 +603,7 @@ export default function Analysis() {
                   tip={notes.avg_confidence || DEFAULT_TOOLTIPS.avg_confidence}
                 />
                 <p className="text-heading-sm">
-                  {Number.isFinite(avgConfidence) && avgConfidence > 0 ? `${Math.round(avgConfidence)}%` : NO_DATA_TEXT}
+                  {Number.isFinite(avgConfidence) ? `${Math.round(avgConfidence)}%` : NO_DATA_TEXT}
                 </p>
               </div>
 
@@ -608,7 +613,7 @@ export default function Analysis() {
                   tip={notes.contribution || DEFAULT_TOOLTIPS.contribution}
                 />
                 <p className="text-heading-sm">
-                  {Number.isFinite(primaryBuilderPct) && primaryBuilderPct > 0 ? `${Math.round(primaryBuilderPct)}% primary` : NO_DATA_TEXT}
+                  {Number.isFinite(primaryBuilderPct) ? `${Math.round(primaryBuilderPct)}% primary` : NO_DATA_TEXT}
                 </p>
               </div>
 
