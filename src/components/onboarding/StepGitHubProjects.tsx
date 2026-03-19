@@ -31,6 +31,9 @@ type Props = {
 
 export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImportingMore }: Props) {
   const IMPORT_RULES_ACK_KEY = 'v1_import_rules_ack';
+  const getUniqueWarnings = (warnings?: string[]) =>
+    Array.from(new Set((warnings || []).map((warning) => warning.trim()).filter(Boolean)));
+
   // translate backend skip reasons into human‑friendly messages
   const normalizeSkipReason = (reason: string) => {
     const lower = reason.toLowerCase();
@@ -101,6 +104,7 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
         includeOrgs
       );
       const formattedRepos = resp.import_results.map((r) => ({
+        warnings: getUniqueWarnings([...(r.warnings || []), ...(r.metadata?.warnings || [])]),
         id: r.repo_id,
         name: r.repo_name,
         language: r.metadata?.language ?? null,
@@ -136,7 +140,12 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
         const flaggedImported = formattedRepos.filter(
           (repo) =>
             repo.already_imported &&
-            (repo.role_mismatch || repo.detected_project_type === 'Unsupported' || repo.evaluation_profile === 'Unsupported')
+            (
+              repo.role_mismatch ||
+              repo.detected_project_type === 'Unsupported' ||
+              repo.evaluation_profile === 'Unsupported' ||
+              (repo.warnings && repo.warnings.length > 0)
+            )
         );
 
         if (flaggedImported.length > 0) {
@@ -145,6 +154,7 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
               repo: repo.full_name || `${repo.owner}/${repo.name}`,
               reason:
                 repo.role_mismatch_note ||
+                repo.warnings?.[0] ||
                 (repo.detected_project_type === 'Unsupported' || repo.evaluation_profile === 'Unsupported'
                   ? 'Repository type is currently unsupported for role-based evaluation'
                   : "Repo doesn't align with your selected role"),
@@ -402,6 +412,13 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
             ? selectedRepoFullNames.has(fullName)
             : data.selectedProjects.includes(repo.id);
           const isAlreadyImported = repo.already_imported || false;
+          const repoWarnings = getUniqueWarnings(repo.warnings);
+          const advisoryWarnings = repoWarnings.filter((warning) => {
+            const normalized = warning.toLowerCase();
+            if (repo.role_mismatch_note && warning.trim() === repo.role_mismatch_note.trim()) return false;
+            if ((repo.detected_project_type === 'Unsupported' || repo.evaluation_profile === 'Unsupported') && normalized.includes('unsupported')) return false;
+            return true;
+          });
 
           return (
             <motion.div
@@ -435,6 +452,16 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
                 <div className="mb-2 flex items-center gap-1.5 rounded-md bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 px-3 py-1.5 text-caption text-yellow-900 dark:text-yellow-200">
                   <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
                   <span><strong>Role conflict:</strong> {repo.role_mismatch_note || "This repo doesn't align with your declared role – importing may reduce visibility."}</span>
+                </div>
+              )}
+              {advisoryWarnings.length > 0 && (
+                <div className="mb-2 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
+                  <p className="mb-1 font-semibold">Advisory warnings</p>
+                  <ul className="list-disc space-y-0.5 pl-4">
+                    {advisoryWarnings.slice(0, 3).map((warning) => (
+                      <li key={`${repo.id}-${warning}`}>{warning}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
               <div className="flex items-start gap-4">

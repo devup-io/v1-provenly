@@ -3,6 +3,7 @@ import { Github, Plus, GitBranch, RefreshCw, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/landing/Header';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import type { AggregateEvaluation, DeveloperProfile, Project } from '@/types/api';
 
@@ -358,63 +359,123 @@ export default function MockDashboard() {
           transition={{ delay: 0.4 }}
           className="mt-8"
         >
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-heading-md">Your Repositories</h2>
-            <div className="flex items-center gap-4">
-              <p className="text-body-sm text-muted-foreground">{mockProjects.length} repositories</p>
+          <Tabs defaultValue="projects" className="space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-heading-md">Profile Details</h2>
+              <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+                <TabsTrigger value="projects">Projects</TabsTrigger>
+                <TabsTrigger value="education">Education</TabsTrigger>
+                <TabsTrigger value="experience">Experience</TabsTrigger>
+              </TabsList>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {mockProjects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + index * 0.05 }}
-                whileHover={{ y: -4 }}
-                className="group rounded-[24px] bg-gradient-to-br from-card to-card/80 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
-              >
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-heading-sm mb-2 break-words">{project.name}</h3>
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-semibold text-white bg-blue-600 shadow-sm">
-                            {project.ai_evaluation?.difficulty_tier} complexity
-                          </span>
-                          {project.language && (
-                            <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-medium bg-secondary text-secondary-foreground">
-                              {project.language}
-                            </span>
-                          )}
+            <TabsContent value="projects" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-heading-sm">Your Repositories</h3>
+                <p className="text-body-sm text-muted-foreground">{mockProjects.length} repositories</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {mockProjects.map((project, index) => (
+                  <motion.div
+                    key={project.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 + index * 0.05 }}
+                    whileHover={{ y: -4 }}
+                    className="group rounded-[24px] bg-gradient-to-br from-card to-card/80 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
+                  >
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-heading-sm mb-2 break-words">{project.name}</h3>
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-semibold text-white bg-blue-600 shadow-sm">
+                                {project.ai_evaluation?.difficulty_tier} complexity
+                              </span>
+                              {project.language && (
+                                <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-medium bg-secondary text-secondary-foreground">
+                                  {project.language}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mb-1 flex flex-wrap items-center gap-3 text-body-sm">
+                              {project.ai_evaluation?.repo_score !== undefined && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
+                                  {Math.round(project.ai_evaluation.repo_score)}% score
+                                </span>
+                              )}
+                              {project.commits_count !== undefined && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-muted/20 px-3 py-0.5 text-muted-foreground">
+                                  <GitBranch className="h-3 w-3" />
+                                  {project.commits_count} commits
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
+                            Active
+                          </div>
                         </div>
-                        <div className="mb-1 flex flex-wrap items-center gap-3 text-body-sm">
-                          {project.ai_evaluation?.repo_score !== undefined && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
-                              {Math.round(project.ai_evaluation.repo_score)}% score
-                            </span>
-                          )}
-                          {project.commits_count !== undefined && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-muted/20 px-3 py-0.5 text-muted-foreground">
-                              <GitBranch className="h-3 w-3" />
-                              {project.commits_count} commits
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
-                        Active
+                        <p className="text-body-sm text-muted-foreground">{project.description}</p>
                       </div>
                     </div>
-                    <p className="text-body-sm text-muted-foreground">{project.description}</p>
-                  </div>
+                  </motion.div>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="education" className="space-y-4">
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+                <p className="text-caption uppercase tracking-wide text-muted-foreground">2020 — 2024</p>
+                <h3 className="mt-1 text-heading-sm">B.Sc. Computer Science</h3>
+                <p className="text-body-sm text-muted-foreground">University of Lagos</p>
+                <p className="mt-3 text-body-sm text-muted-foreground">
+                  Focused on software engineering, UI systems, distributed applications, and practical product delivery.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-secondary px-3 py-1 text-caption">Algorithms</span>
+                  <span className="rounded-full bg-secondary px-3 py-1 text-caption">Databases</span>
+                  <span className="rounded-full bg-secondary px-3 py-1 text-caption">Human-Computer Interaction</span>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+                <p className="text-caption uppercase tracking-wide text-muted-foreground">Certifications</p>
+                <ul className="mt-3 space-y-2 text-body-sm text-muted-foreground">
+                  <li>• Frontend Performance Optimization — Advanced</li>
+                  <li>• TypeScript for Scalable Applications</li>
+                  <li>• GitHub Actions & CI/CD Fundamentals</li>
+                </ul>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="experience" className="space-y-4">
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+                <p className="text-caption uppercase tracking-wide text-muted-foreground">2024 — Present</p>
+                <h3 className="mt-1 text-heading-sm">Frontend Engineer • Provenly</h3>
+                <p className="mt-3 text-body-sm text-muted-foreground">
+                  Built role-aware onboarding, repository intelligence screens, and evaluator dashboards used by technical founders.
+                </p>
+                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="rounded-lg bg-muted/40 px-3 py-2 text-caption">Improved onboarding completion rate</div>
+                  <div className="rounded-lg bg-muted/40 px-3 py-2 text-caption">Integrated real-time analyzer logs</div>
+                  <div className="rounded-lg bg-muted/40 px-3 py-2 text-caption">Shipped publishable profile links</div>
+                  <div className="rounded-lg bg-muted/40 px-3 py-2 text-caption">Implemented production CI/CD workflow</div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+                <p className="text-caption uppercase tracking-wide text-muted-foreground">2022 — 2024</p>
+                <h3 className="mt-1 text-heading-sm">Frontend Developer • Freelance</h3>
+                <p className="mt-3 text-body-sm text-muted-foreground">
+                  Delivered responsive interfaces for startups with a focus on performance, accessibility, and maintainable component architecture.
+                </p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </motion.div>
       </div>
     </div>

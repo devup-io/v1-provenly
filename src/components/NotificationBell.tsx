@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Bell, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -25,6 +26,7 @@ function formatNotificationTime(value: string): string {
 }
 
 export function NotificationBell({ enabled }: { enabled: boolean }) {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -153,6 +155,21 @@ export function NotificationBell({ enabled }: { enabled: boolean }) {
               </button>
             ))
           )}
+        </div>
+
+        <DropdownMenuSeparator className="m-0" />
+        <div className="p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-center"
+            onClick={() => {
+              setOpen(false);
+              navigate('/notifications');
+            }}
+          >
+            View all notifications
+          </Button>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

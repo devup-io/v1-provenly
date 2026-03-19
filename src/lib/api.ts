@@ -1075,16 +1075,24 @@ export async function getProjectEvaluationLogs(projectId: string): Promise<Proje
 }
 
 export async function submitHireRequest(developerId: string, payload: HireDeveloperPayload): Promise<{ status?: string; message?: string }> {
+  const normalizedPayload: HireDeveloperPayload = {
+    ...payload,
+    founder_name: payload.founder_name || payload.name,
+    founder_email: payload.founder_email || payload.email,
+    name: payload.name || payload.founder_name,
+    email: payload.email || payload.founder_email,
+  };
+
   try {
     return await apiRequest<{ status?: string; message?: string }>(`/api/v1/developers/${encodeURIComponent(developerId)}/hire`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(normalizedPayload),
     });
   } catch (primaryErr) {
     try {
       return await apiRequest<{ status?: string; message?: string }>(`/api/v1/hiring/inquiries`, {
         method: 'POST',
-        body: JSON.stringify({ developer_id: developerId, ...payload }),
+        body: JSON.stringify({ developer_id: developerId, ...normalizedPayload }),
       });
     } catch {
       throw primaryErr;

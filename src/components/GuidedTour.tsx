@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import type { DeveloperProfile } from '@/types/api';
 import { getDeveloper } from '@/lib/api';
 
 const TOUR_COMPLETED_KEY = 'v1_intro_completed';
@@ -16,7 +17,7 @@ type TourStep = {
   selector?: string;
 };
 
-const TOUR_STEPS: TourStep[] = [
+const NEW_USER_TOUR_STEPS: TourStep[] = [
   {
     title: 'Welcome to Provenly 👋',
     description: 'We help you turn your projects into structured proof of skill.',
@@ -50,6 +51,33 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: 'You’re all set 🚀',
     description: 'Start building your proof.',
+    route: '/dashboard',
+    selector: '[data-tour="actions-card"]',
+  },
+];
+
+const EXISTING_USER_TOUR_STEPS: TourStep[] = [
+  {
+    title: 'Step 1: Submit repositories',
+    description: 'Use this action to import more repositories into your profile.',
+    route: '/dashboard',
+    selector: '[data-tour="add-repo-btn"]',
+  },
+  {
+    title: 'Step 2: AI evaluation',
+    description: 'Run analysis to update complexity, contribution, and credibility signals.',
+    route: '/dashboard',
+    selector: '[data-tour="run-analysis-btn"]',
+  },
+  {
+    title: 'Step 3: Your profile',
+    description: 'This section summarizes what founders can quickly verify about your skills.',
+    route: '/dashboard',
+    selector: '[data-tour="profile-overview"]',
+  },
+  {
+    title: 'You’re all set 🚀',
+    description: 'Keep improving your proof by importing relevant projects and rerunning analysis.',
     route: '/dashboard',
     selector: '[data-tour="actions-card"]',
   },
@@ -89,14 +117,18 @@ export function GuidedTour() {
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [target, setTarget] = useState<HTMLElement | null>(null);
+  const [developer, setDeveloper] = useState<DeveloperProfile | null>(null);
 
-  const step = TOUR_STEPS[stepIndex];
+  const tourSteps = developer?.profile_complete ? EXISTING_USER_TOUR_STEPS : NEW_USER_TOUR_STEPS;
+  const safeStepIndex = Math.min(stepIndex, Math.max(0, tourSteps.length - 1));
+  const step = tourSteps[safeStepIndex];
   const expectedRoute = parseRoute(step.route);
   const routeMatches =
     location.pathname === expectedRoute.pathname &&
     (expectedRoute.search ? location.search === expectedRoute.search : true);
 
   const startTour = () => {
+    setDeveloper(getDeveloper());
     setStepIndex(0);
     setOpen(true);
     clearTourTriggers();
@@ -126,8 +158,9 @@ export function GuidedTour() {
 
     window.addEventListener(START_TOUR_EVENT, onStartTour);
 
-    const developer = getDeveloper();
-    if (!developer) {
+    const dev = getDeveloper();
+    setDeveloper(dev);
+    if (!dev) {
       return () => {
         window.removeEventListener(START_TOUR_EVENT, onStartTour);
       };
@@ -151,6 +184,13 @@ export function GuidedTour() {
       window.removeEventListener(START_TOUR_EVENT, onStartTour);
     };
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    if (safeStepIndex !== stepIndex) {
+      setStepIndex(safeStepIndex);
+    }
+  }, [open, safeStepIndex, stepIndex]);
 
   useEffect(() => {
     if (!open) return;
@@ -202,7 +242,7 @@ export function GuidedTour() {
 
   if (!open) return null;
 
-  const isLastStep = stepIndex === TOUR_STEPS.length - 1;
+  const isLastStep = safeStepIndex === tourSteps.length - 1;
 
   return (
     <div className="fixed inset-0 z-[1200]">
@@ -210,12 +250,12 @@ export function GuidedTour() {
 
       <div className="fixed bottom-4 left-1/2 z-[1300] w-[92vw] max-w-md -translate-x-1/2 rounded-xl border border-border bg-card p-4 shadow-2xl">
         <p className="text-caption text-muted-foreground">
-          Step {stepIndex + 1} of {TOUR_STEPS.length}
+          Step {safeStepIndex + 1} of {tourSteps.length}
         </p>
         <h3 className="mt-1 text-body font-semibold">{step.title}</h3>
         <p className="mt-2 text-body-sm text-muted-foreground">{step.description}</p>
 
-        <Progress className="mt-3 h-1.5" value={Math.round(((stepIndex + 1) / TOUR_STEPS.length) * 100)} />
+        <Progress className="mt-3 h-1.5" value={Math.round(((safeStepIndex + 1) / tourSteps.length) * 100)} />
 
         {!routeMatches && (
           <p className="mt-2 text-caption text-muted-foreground">
@@ -231,7 +271,7 @@ export function GuidedTour() {
             <Button
               variant="outline"
               size="sm"
-              disabled={stepIndex === 0}
+              disabled={safeStepIndex === 0}
               onClick={() => setStepIndex((prev) => Math.max(0, prev - 1))}
             >
               Back
@@ -243,7 +283,7 @@ export function GuidedTour() {
                   stopTour(true);
                   return;
                 }
-                setStepIndex((prev) => Math.min(TOUR_STEPS.length - 1, prev + 1));
+                setStepIndex((prev) => Math.min(tourSteps.length - 1, prev + 1));
               }}
             >
               {isLastStep ? 'Finish' : 'Next'}

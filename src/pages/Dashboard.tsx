@@ -834,6 +834,17 @@ export default function Dashboard() {
                     );
                   })()}
 
+                  {project.warnings && project.warnings.length > 0 && (
+                    <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
+                      <p className="font-semibold">Advisory warnings</p>
+                      <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                        {Array.from(new Set(project.warnings)).slice(0, 3).map((warning) => (
+                          <li key={`${project.id}-${warning}`}>{warning}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 gap-4">
                     <div>
                       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">

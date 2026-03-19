@@ -54,6 +54,7 @@ export interface Repo {
   evaluation_profile?: string;
   role_mismatch?: boolean;
   role_mismatch_note?: string;
+  warnings?: string[];
   import_status?: "available" | "queued" | "completed" | "failed";
   import_failure_reason?: string;
 }
@@ -82,7 +83,9 @@ export interface V1ImportAllResponse {
       evaluation_profile?: string;
       role_mismatch?: boolean;
       role_mismatch_note?: string;
+      warnings?: string[];
     };
+    warnings?: string[];
     ai_fields?: Record<string, unknown>;
   }>;
 }
@@ -205,9 +208,15 @@ export interface ProjectEvaluationLog {
 }
 
 export interface HireDeveloperPayload {
-  name: string;
-  email: string;
+  founder_name?: string;
+  founder_email?: string;
+  name?: string;
+  email?: string;
   company?: string;
+  role_type: 'volunteer' | 'paid';
+  charges_per?: 'hour' | 'day' | 'week' | 'month' | 'project' | 'milestone';
+  compensation_amount?: number;
+  compensation_currency?: string;
   message: string;
 }
 

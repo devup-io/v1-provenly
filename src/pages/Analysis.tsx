@@ -51,11 +51,57 @@ const normalizeChartItems = (value: unknown): LabeledValue[] => {
       .filter((item) => item.label);
   }
   if (typeof value === 'object') {
-    return Object.entries(value as Record<string, unknown>)
+    const objectValue = value as Record<string, unknown>;
+
+    const nestedArray =
+      (Array.isArray(objectValue.data) && objectValue.data) ||
+      (Array.isArray(objectValue.items) && objectValue.items) ||
+      (Array.isArray(objectValue.series) && objectValue.series) ||
+      (Array.isArray(objectValue.values) && objectValue.values) ||
+      (Array.isArray(objectValue.rows) && objectValue.rows) ||
+      null;
+
+    if (nestedArray) {
+      return normalizeChartItems(nestedArray);
+    }
+
+    const labels = Array.isArray(objectValue.labels) ? objectValue.labels : null;
+    const values = Array.isArray(objectValue.values) ? objectValue.values : null;
+    if (labels && values && labels.length === values.length) {
+      return labels
+        .map((label, index) => ({ label: String(label || ''), value: Number(values[index]) || 0 }))
+        .filter((item) => item.label);
+    }
+
+    return Object.entries(objectValue)
       .map(([label, raw]) => ({ label, value: Number(raw) || 0 }))
       .filter((item) => item.label);
   }
   return [];
+};
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+
+const pickFirst = (...values: unknown[]): unknown => values.find((value) => value !== undefined && value !== null);
+
+const readNumber = (...values: unknown[]): number => {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+      const numeric = Number(value);
+      if (Number.isFinite(numeric)) return numeric;
+    }
+    if (value && typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      const candidate = pickFirst(record.value, record.score, record.current, record.average, record.mean);
+      if (candidate !== undefined) {
+        const numeric = Number(candidate);
+        if (Number.isFinite(numeric)) return numeric;
+      }
+    }
+  }
+  return 0;
 };
 
 const TooltipLabel = ({ text, tip }: { text: string; tip: string }) => (
@@ -93,6 +139,7 @@ export default function Analysis() {
   const effectiveDevId = devId || developer?.id || null;
 
   const payload = (charts || {}) as AnalyzerPayload;
+  const rawAnalyzerResponse = charts ? JSON.stringify(charts, null, 2) : null;
   const overview = ((payload.overview as Record<string, unknown>) || {}) as Record<string, unknown>;
   const notes = readNotes(overview);
 
@@ -107,27 +154,73 @@ export default function Analysis() {
     return record as AnalyzerPayload;
   };
 
-  const complexityBreakdown = normalizeChartItems(payload.complexity_breakdown);
-  const technologyUsage = normalizeChartItems(payload.technology_usage);
-  const contributionLevel = ((payload.contribution_level as Record<string, unknown>) || {}) as Record<string, unknown>;
-  const strengthAreas = normalizeChartItems(payload.strength_areas);
-  const activityPattern = normalizeChartItems(payload.activity_pattern);
-  const roleAlignment = ((payload.role_alignment as Record<string, unknown>) || {}) as Record<string, unknown>;
+  const complexityBreakdown = normalizeChartItems(pickFirst(payload.complexity_breakdown, payload.project_complexity_bar));
+  const technologyUsage = normalizeChartItems(pickFirst(payload.technology_usage, payload.technology_usage_bar));
+  const contributionLevel = asRecord(pickFirst(payload.contribution_level, payload.contribution_pie));
+  const strengthAreas = normalizeChartItems(pickFirst(payload.strength_areas, payload.strengths_radar));
+  const activityPattern = normalizeChartItems(pickFirst(payload.activity_pattern, payload.activity_timeline));
+  const roleAlignment = asRecord(payload.role_alignment);
   const roleAlignmentRoles = normalizeChartItems(roleAlignment.detected_roles);
-  const credibilityGauge = ((payload.credibility_gauge as Record<string, unknown>) || {}) as Record<string, unknown>;
-  const projectLongevity = ((payload.project_longevity as Record<string, unknown>) || {}) as Record<string, unknown>;
+  const credibilityGauge = asRecord(payload.credibility_gauge);
+  const hiringReadiness = asRecord(payload.hiring_readiness);
+  const projectLongevity = asRecord(pickFirst(payload.project_longevity, hiringReadiness.project_longevity));
+
+  const contributionPieItems = normalizeChartItems(payload.contribution_pie);
 
   const contributionDonut: LabeledValue[] = [
-    { label: 'Primary Builder', value: Number(contributionLevel.primary_builder_pct) || 0 },
-    { label: 'Major Contributor', value: Number(contributionLevel.major_contributor_pct) || 0 },
-    { label: 'Minor Contributor', value: Number(contributionLevel.minor_contributor_pct) || 0 },
-  ].filter((item) => item.value > 0);
+    {
+      label: 'Primary Builder',
+      value:
+        readNumber(contributionLevel.primary_builder_pct, contributionLevel.primary_builder, contributionLevel.primary) ||
+        readNumber(contributionLevel['Primary Builder']),
+    },
+    {
+      label: 'Major Contributor',
+      value:
+        readNumber(contributionLevel.major_contributor_pct, contributionLevel.major_contributor, contributionLevel.major) ||
+        readNumber(contributionLevel['Major Contributor']),
+    },
+    {
+      label: 'Minor Contributor',
+      value:
+        readNumber(contributionLevel.minor_contributor_pct, contributionLevel.minor_contributor, contributionLevel.minor) ||
+        readNumber(contributionLevel['Minor Contributor']),
+    },
+  ].filter((item) => item.value > 0 || contributionPieItems.length === 0);
 
-  const avgConfidence = Number(overview.average_confidence);
-  const primaryBuilderPct = Number(overview.primary_builder_percentage);
-  const experienceSignal = String(overview.experience_signal || 'N/A');
-  const verifiedProjects = Number(overview.verified_projects_count ?? overview.verified_projects ?? 0);
-  const systemComplexityScore = Number(payload.system_complexity_score ?? payload.system_complexity_gauge ?? 0);
+  const mergedContributionDonut =
+    contributionPieItems.length > 0
+      ? contributionPieItems
+      : contributionDonut.filter((item) => item.value > 0);
+
+  const avgConfidence = readNumber(
+    overview.average_confidence,
+    payload.average_confidence,
+    asRecord(payload.developer).average_confidence,
+    asRecord(payload.credibility_gauge).average_confidence
+  );
+  const primaryBuilderPct = readNumber(
+    overview.primary_builder_percentage,
+    overview.primary_builder_pct,
+    contributionLevel.primary_builder_pct,
+    contributionLevel.primary_builder,
+    contributionLevel.primary
+  );
+  const experienceSignal = String(
+    pickFirst(
+      overview.experience_signal,
+      asRecord(payload.developer).experience_signal,
+      asRecord(payload.hiring_readiness).experience_signal,
+      'N/A'
+    ) || 'N/A'
+  );
+  const verifiedProjects = readNumber(
+    overview.verified_projects_count,
+    overview.verified_projects,
+    asRecord(payload.developer).verified_projects,
+    asRecord(payload.hiring_readiness).verified_projects
+  );
+  const systemComplexityScore = readNumber(payload.system_complexity_score, payload.system_complexity_gauge);
 
   const nonArchivedProjects = projects.filter((project) => {
     const metadata = project.github_metadata as Record<string, unknown> | undefined;
@@ -419,6 +512,31 @@ export default function Analysis() {
         </details>
       </div>
 
+      <div className="container mt-4 max-w-4xl px-4 sm:px-6">
+        <details className="rounded-lg border border-border bg-card p-4">
+          <summary className="cursor-pointer list-none text-left">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-body-sm font-semibold">Temporary Debug: Raw analyzer response</p>
+              <span className="rounded-full bg-muted px-2 py-1 text-caption text-muted-foreground">
+                {rawAnalyzerResponse ? 'payload received' : 'no payload yet'}
+              </span>
+            </div>
+          </summary>
+
+          <div className="mt-3 rounded-md bg-muted/20 p-3">
+            {rawAnalyzerResponse ? (
+              <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words text-caption text-foreground">
+                {rawAnalyzerResponse}
+              </pre>
+            ) : (
+              <p className="text-caption text-muted-foreground">
+                No analyzer payload has been received yet. Run analysis to populate this panel.
+              </p>
+            )}
+          </div>
+        </details>
+      </div>
+
       {/* Live log panel — always visible while running or after logs exist */}
       {(running || logLines.length > 0) && (
         <div className="container mt-6 max-w-2xl px-4 sm:px-6">
@@ -558,11 +676,11 @@ export default function Analysis() {
 
               <div className="rounded-lg border border-border bg-card p-6">
                 <TooltipLabel text="Contribution (Donut)" tip="contribution_level.primary_builder_pct, major_contributor_pct, minor_contributor_pct." />
-                {contributionDonut.length === 0 ? (
+                {mergedContributionDonut.length === 0 ? (
                   <EmptyState />
                 ) : (
                   <div className="space-y-2">
-                    {contributionDonut.map((item) => (
+                    {mergedContributionDonut.map((item) => (
                       <div key={item.label} className="flex items-center justify-between text-body-sm">
                         <span>{item.label}</span>
                         <span className="font-medium">{item.value.toFixed(1)}%</span>

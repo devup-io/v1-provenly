@@ -11,20 +11,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { HireDeveloperPayload } from "@/types/api";
 
 interface HireModalProps {
   isOpen: boolean;
   onClose: () => void;
   developerName: string;
   developerUsername: string;
-  onSubmit?: (payload: { name: string; email: string; company?: string; message: string }) => Promise<void>;
+  onSubmit?: (payload: HireDeveloperPayload) => Promise<void>;
 }
 
 export function HireModal({ isOpen, onClose, developerName, developerUsername, onSubmit }: HireModalProps) {
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
+    founder_name: "",
+    founder_email: "",
     company: "",
+    role_type: "paid" as "volunteer" | "paid",
+    charges_per: "month" as "hour" | "day" | "week" | "month" | "project" | "milestone",
+    compensation_amount: "",
+    compensation_currency: "USD",
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -39,9 +45,18 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
     try {
       if (onSubmit) {
         await onSubmit({
-          name: formData.name,
-          email: formData.email,
+          founder_name: formData.founder_name,
+          founder_email: formData.founder_email,
+          name: formData.founder_name,
+          email: formData.founder_email,
           company: formData.company || undefined,
+          role_type: formData.role_type,
+          charges_per: formData.role_type === 'paid' ? formData.charges_per : undefined,
+          compensation_amount:
+            formData.role_type === 'paid' && formData.compensation_amount.trim() !== ''
+              ? Number(formData.compensation_amount)
+              : undefined,
+          compensation_currency: formData.role_type === 'paid' ? formData.compensation_currency || undefined : undefined,
           message: formData.message,
         });
       } else {
@@ -59,7 +74,16 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
     onClose();
     // Reset state after animation
     setTimeout(() => {
-      setFormData({ name: "", email: "", company: "", message: "" });
+      setFormData({
+        founder_name: "",
+        founder_email: "",
+        company: "",
+        role_type: "paid",
+        charges_per: "month",
+        compensation_amount: "",
+        compensation_currency: "USD",
+        message: "",
+      });
       setIsSubmitted(false);
       setSubmitError(null);
     }, 300);
@@ -92,8 +116,8 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
                  <div className="relative">
                    <Input
                      id="name"
-                     value={formData.name}
-                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                       value={formData.founder_name}
+                       onChange={(e) => setFormData({ ...formData, founder_name: e.target.value })}
                      placeholder="John Doe"
                      required
                      className="pl-10 w-full"
@@ -107,8 +131,8 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
                    <Input
                      id="email"
                      type="email"
-                     value={formData.email}
-                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                     value={formData.founder_email}
+                     onChange={(e) => setFormData({ ...formData, founder_email: e.target.value })}
                      placeholder="john@company.com"
                      required
                      className="pl-10 w-full"
@@ -132,6 +156,72 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
                </div>
              </div>
  
+             <div className="space-y-2">
+               <Label htmlFor="role_type">Engagement Type</Label>
+               <Select
+                 value={formData.role_type}
+                 onValueChange={(value: "volunteer" | "paid") => setFormData({ ...formData, role_type: value })}
+               >
+                 <SelectTrigger id="role_type" className="w-full">
+                   <SelectValue placeholder="Select role type" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="paid">Paid</SelectItem>
+                   <SelectItem value="volunteer">Volunteer</SelectItem>
+                 </SelectContent>
+               </Select>
+             </div>
+
+             {formData.role_type === 'paid' && (
+               <div className="grid gap-4 sm:grid-cols-3">
+                 <div className="space-y-2">
+                   <Label htmlFor="charges_per">Charges Per</Label>
+                   <Select
+                     value={formData.charges_per}
+                     onValueChange={(value: "hour" | "day" | "week" | "month" | "project" | "milestone") =>
+                       setFormData({ ...formData, charges_per: value })
+                     }
+                   >
+                     <SelectTrigger id="charges_per" className="w-full">
+                       <SelectValue placeholder="Charges per" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="hour">Hour</SelectItem>
+                       <SelectItem value="day">Day</SelectItem>
+                       <SelectItem value="week">Week</SelectItem>
+                       <SelectItem value="month">Month</SelectItem>
+                       <SelectItem value="project">Project</SelectItem>
+                       <SelectItem value="milestone">Milestone</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
+
+                 <div className="space-y-2">
+                   <Label htmlFor="compensation_amount">Amount</Label>
+                   <Input
+                     id="compensation_amount"
+                     inputMode="decimal"
+                     value={formData.compensation_amount}
+                     onChange={(e) => setFormData({ ...formData, compensation_amount: e.target.value })}
+                     placeholder="5000"
+                     className="w-full"
+                   />
+                 </div>
+
+                 <div className="space-y-2">
+                   <Label htmlFor="compensation_currency">Currency</Label>
+                   <Input
+                     id="compensation_currency"
+                     value={formData.compensation_currency}
+                     onChange={(e) => setFormData({ ...formData, compensation_currency: e.target.value.toUpperCase() })}
+                     placeholder="USD"
+                     maxLength={8}
+                     className="w-full"
+                   />
+                 </div>
+               </div>
+             )}
+
              <div className="space-y-2">
                <Label htmlFor="message">Message</Label>
                <Textarea

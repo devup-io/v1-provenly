@@ -30,6 +30,7 @@ import DebugAuth from "./pages/DebugAuth";
 import MockDashboard from "./pages/MockDashboard";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -91,6 +92,7 @@ function AppContent() {
         <Route path="/developers" element={<Developers />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/dev/:username" element={<DeveloperProfile />} />
         <Route path="/compare" element={<CompareDevelopers />} />
         <Route path="/debug/auth" element={<DebugAuth />} />
