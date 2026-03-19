@@ -211,6 +211,21 @@ export interface HireDeveloperPayload {
   message: string;
 }
 
+export interface NotificationItem {
+  id: string;
+  title?: string;
+  message: string;
+  type?: string;
+  is_read: boolean;
+  created_at: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface NotificationsResponse {
+  notifications: NotificationItem[];
+  unread_count: number;
+}
+
 export type SupportedDevTypes = string[];
 
 export interface GitHubOrganization {

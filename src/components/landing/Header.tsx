@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Search } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/NotificationBell";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -43,7 +44,7 @@ export function Header() {
     // Check if user is authenticated
     const developer = getDeveloper();
     setIsAuthenticated(!!developer);
-  }, []);
+  }, [location.pathname]);
 
   const handleNavClick = (href: string) => {
     setMobileMenuOpen(false);
@@ -98,6 +99,7 @@ export function Header() {
           {/* Desktop Search & Actions */}
           <div className="hidden items-center gap-3 md:flex">
             <ThemeToggle />
+            <NotificationBell enabled={isAuthenticated} />
             {/* Search Bar */}
             <div className={`relative transition-all duration-300 ${searchFocused ? "w-64" : "w-48"}`}>
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -125,6 +127,7 @@ export function Header() {
           {/* Mobile Actions */}
           <div className="flex items-center gap-1 md:hidden">
             <ThemeToggle />
+            <NotificationBell enabled={isAuthenticated} />
             <Button
               variant="ghost"
               size="icon"

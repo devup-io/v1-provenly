@@ -1,4 +1,4 @@
-import type { DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse } from "@/types/api";
+import type { DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse, NotificationItem, NotificationsResponse } from "@/types/api";
 import type { DeveloperSearchResponse, DeveloperSearchFilters } from "@/types/developer";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -1090,6 +1090,90 @@ export async function submitHireRequest(developerId: string, payload: HireDevelo
       throw primaryErr;
     }
   }
+}
+
+export async function getMyNotifications(options: { limit?: number; unreadOnly?: boolean } = {}): Promise<NotificationsResponse> {
+  const params = new URLSearchParams();
+  if (options.limit !== undefined) params.set('limit', String(options.limit));
+  if (options.unreadOnly !== undefined) params.set('unread_only', options.unreadOnly ? 'true' : 'false');
+
+  const query = params.toString();
+  const path = query ? `/api/v1/me/notifications?${query}` : '/api/v1/me/notifications';
+  const raw = await apiRequest<unknown>(path, { method: 'GET' });
+
+  const normalizeItem = (item: unknown): NotificationItem | null => {
+    if (!item || typeof item !== 'object') return null;
+    const row = item as Record<string, unknown>;
+    const id = String(row.id ?? row._id ?? '');
+    const message = typeof row.message === 'string'
+      ? row.message
+      : typeof row.body === 'string'
+      ? row.body
+      : typeof row.text === 'string'
+      ? row.text
+      : '';
+    if (!id || !message) return null;
+
+    return {
+      id,
+      title: typeof row.title === 'string' ? row.title : undefined,
+      message,
+      type: typeof row.type === 'string' ? row.type : undefined,
+      is_read: Boolean(row.is_read ?? row.read ?? false),
+      created_at:
+        typeof row.created_at === 'string'
+          ? row.created_at
+          : typeof row.createdAt === 'string'
+          ? row.createdAt
+          : new Date().toISOString(),
+      metadata:
+        row.metadata && typeof row.metadata === 'object'
+          ? (row.metadata as Record<string, unknown>)
+          : undefined,
+    };
+  };
+
+  let notifications: NotificationItem[] = [];
+  let unreadCount = 0;
+
+  if (Array.isArray(raw)) {
+    notifications = raw.map(normalizeItem).filter((entry): entry is NotificationItem => Boolean(entry));
+  } else if (raw && typeof raw === 'object') {
+    const payload = raw as Record<string, unknown>;
+    const sourceList = Array.isArray(payload.notifications)
+      ? payload.notifications
+      : Array.isArray(payload.items)
+      ? payload.items
+      : [];
+
+    notifications = sourceList.map(normalizeItem).filter((entry): entry is NotificationItem => Boolean(entry));
+    unreadCount = typeof payload.unread_count === 'number' ? payload.unread_count : 0;
+  }
+
+  notifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  if (!unreadCount) {
+    unreadCount = notifications.filter((item) => !item.is_read).length;
+  }
+
+  return {
+    notifications,
+    unread_count: unreadCount,
+  };
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+  await apiRequest<void>(`/api/v1/me/notifications/${encodeURIComponent(notificationId)}/read`, {
+    method: 'PATCH',
+    expectJson: false,
+  });
+}
+
+export async function markAllNotificationsAsRead(): Promise<void> {
+  await apiRequest<void>('/api/v1/me/notifications/read-all', {
+    method: 'POST',
+    expectJson: false,
+  });
 }
 
 export type BackendReadinessStatus = {

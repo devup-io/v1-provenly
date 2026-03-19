@@ -30,6 +30,7 @@ type Props = {
 };
 
 export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImportingMore }: Props) {
+  const IMPORT_RULES_ACK_KEY = 'v1_import_rules_ack';
   // translate backend skip reasons into human‑friendly messages
   const normalizeSkipReason = (reason: string) => {
     const lower = reason.toLowerCase();
@@ -53,6 +54,8 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
   const [skippedRepos, setSkippedRepos] = useState<Array<{ repo: string; reason: string }>>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [showRulesModal, setShowRulesModal] = useState(false);
+  const [shownMismatchNotice, setShownMismatchNotice] = useState(false);
 
   // when user confirms warning once, we don't show again this session
   const [confirmedAlignment, setConfirmedAlignment] = useState(false);
@@ -128,6 +131,30 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
           description: `${mismatches.length} repo(s) flagged as mobile but language looks web.`,
         });
       }
+
+      if (isImportingMore && !shownMismatchNotice) {
+        const flaggedImported = formattedRepos.filter(
+          (repo) =>
+            repo.already_imported &&
+            (repo.role_mismatch || repo.detected_project_type === 'Unsupported' || repo.evaluation_profile === 'Unsupported')
+        );
+
+        if (flaggedImported.length > 0) {
+          setSkippedRepos(
+            flaggedImported.map((repo) => ({
+              repo: repo.full_name || `${repo.owner}/${repo.name}`,
+              reason:
+                repo.role_mismatch_note ||
+                (repo.detected_project_type === 'Unsupported' || repo.evaluation_profile === 'Unsupported'
+                  ? 'Repository type is currently unsupported for role-based evaluation'
+                  : "Repo doesn't align with your selected role"),
+            }))
+          );
+          setShowRejectionModal(true);
+          setShownMismatchNotice(true);
+        }
+      }
+
       setRepos(formattedRepos);
       setQueueThreshold(resp.queue_threshold || null);
       setSelectedRepoFullNames(new Set());
@@ -144,6 +171,19 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
     loadRepos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isImportingMore, selectedOwner, username]);
+
+  useEffect(() => {
+    if (isImportingMore) return;
+
+    try {
+      const acknowledged = localStorage.getItem(IMPORT_RULES_ACK_KEY) === '1';
+      if (!acknowledged) {
+        setShowRulesModal(true);
+      }
+    } catch {
+      setShowRulesModal(true);
+    }
+  }, [isImportingMore]);
   
   const toggleProject = (repo: Repo) => {
     if (repo.already_imported) return; // Don't allow toggling already imported projects
@@ -264,7 +304,7 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
   const canContinue = selectedCount >= minRequired;
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-8 shadow-card">
+    <div className="rounded-3xl border border-border bg-card p-8 shadow-card" data-tour="repo-import-step">
       <div className="mb-8">
         <h2 className="mb-2 text-display-sm">
           {isImportingMore ? "Add more projects" : "Select your best projects"}
@@ -575,6 +615,48 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
             Cancel
           </Button>
           <Button onClick={() => { setConfirmedAlignment(true); setShowConfirm(false); handleImport(); }}>
+            I understand
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* New-user rules modal shown on first visit to repo import step */}
+    <Dialog open={showRulesModal} onOpenChange={() => undefined}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <div className="mb-2 flex items-center gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/40">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <DialogTitle className="text-heading-sm">Rules and regulations for repository import</DialogTitle>
+          </div>
+          <DialogDescription className="text-left text-body-sm">
+            Please review these rules before importing repositories to your profile.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="rounded-lg border border-border bg-muted/30 p-4">
+          <ul className="space-y-1.5 text-caption text-muted-foreground">
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> Import projects that align with your selected role and declared tech stack.</li>
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> Repositories with unsupported project types will not strengthen your role-based profile.</li>
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> Repeated role/language mismatch imports can reduce your visibility and trigger account review.</li>
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> Organization repositories should reflect meaningful personal contribution for credibility scoring.</li>
+            <li className="flex items-start gap-1.5"><span className="mt-0.5 flex-shrink-0 text-primary">•</span> Quality and relevance matter more than quantity.</li>
+          </ul>
+        </div>
+
+        <DialogFooter className="mt-4 flex justify-end">
+          <Button
+            onClick={() => {
+              try {
+                localStorage.setItem(IMPORT_RULES_ACK_KEY, '1');
+              } catch {
+                // ignore storage issues
+              }
+              setShowRulesModal(false);
+            }}
+          >
             I understand
           </Button>
         </DialogFooter>
