@@ -1,4 +1,4 @@
-import type { DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, SupportedDevTypesResponse, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse, NotificationItem, NotificationsResponse } from "@/types/api";
+import type { DeveloperProfile, Repo, GitHubAuthorizeResponse, GitHubStatusResponse, Project, AIEvaluation, AggregateEvaluation, GitHubOrganization, V1ImportAllResponse, SupportedDevTypes, SupportedDevTypesResponse, UserSettings, DeveloperFullDetailsResponse, ProjectEvaluationLog, HireDeveloperPayload, DevTypesResponse, DevTypesLanguagesResponse, DeveloperAnalyzerChartsResponse, NotificationItem, NotificationsResponse, CvUploadResponse } from "@/types/api";
 import type { DeveloperSearchResponse, DeveloperSearchFilters } from "@/types/developer";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://api.provenly.live";
@@ -14,6 +14,80 @@ const LEGACY_AUTH_STORAGE_KEYS = [
 ];
 
 let hasClearedLegacyAuthStorage = false;
+
+const PRIMARY_ROLE_ENUM_VALUES = [
+  'Frontend Developer',
+  'Backend Developer',
+  'Full-stack Developer',
+  'Mobile Developer',
+  'Blockchain / Web3 Developer',
+  'AI / ML Developer',
+  'DevOps Engineer',
+  'Data Engineer / Scientist',
+  'Security Engineer',
+] as const;
+
+const PRIMARY_ROLE_ALIAS_MAP: Record<string, string> = {
+  frontend: 'Frontend Developer',
+  'frontend developer': 'Frontend Developer',
+  backend: 'Backend Developer',
+  'backend developer': 'Backend Developer',
+  'full stack': 'Full-stack Developer',
+  fullstack: 'Full-stack Developer',
+  'full-stack': 'Full-stack Developer',
+  'full stack developer': 'Full-stack Developer',
+  'full-stack developer': 'Full-stack Developer',
+  mobile: 'Mobile Developer',
+  'mobile developer': 'Mobile Developer',
+  blockchain: 'Blockchain / Web3 Developer',
+  web3: 'Blockchain / Web3 Developer',
+  'blockchain developer': 'Blockchain / Web3 Developer',
+  'web3 developer': 'Blockchain / Web3 Developer',
+  'blockchain / web3 developer': 'Blockchain / Web3 Developer',
+  ai: 'AI / ML Developer',
+  ml: 'AI / ML Developer',
+  'ai developer': 'AI / ML Developer',
+  'ml developer': 'AI / ML Developer',
+  'ai/ml developer': 'AI / ML Developer',
+  'ai / ml developer': 'AI / ML Developer',
+  'machine learning engineer': 'AI / ML Developer',
+  'devops / cloud developer': 'DevOps Engineer',
+  devops: 'DevOps Engineer',
+  'devops engineer': 'DevOps Engineer',
+  'data engineer': 'Data Engineer / Scientist',
+  'data scientist': 'Data Engineer / Scientist',
+  'data engineer / scientist': 'Data Engineer / Scientist',
+  security: 'Security Engineer',
+  'security engineer': 'Security Engineer',
+};
+
+export const normalizePrimaryRole = (value?: string | null): string => {
+  if (!value || typeof value !== 'string') return '';
+
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  const exact = PRIMARY_ROLE_ENUM_VALUES.find((item) => item.toLowerCase() === trimmed.toLowerCase());
+  if (exact) return exact;
+
+  const aliased = PRIMARY_ROLE_ALIAS_MAP[trimmed.toLowerCase()];
+  return aliased || trimmed;
+};
+
+const normalizePrimaryRoleList = (values: string[]): string[] => {
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+
+  values.forEach((value) => {
+    const mapped = normalizePrimaryRole(value);
+    if (mapped && !seen.has(mapped)) {
+      seen.add(mapped);
+      normalized.push(mapped);
+    }
+  });
+
+  return normalized;
+};
 
 export class ApiError extends Error {
   status: number;
@@ -802,7 +876,7 @@ export async function fetchAvailableRepos(ownerLogin: string, limit = 100, inclu
 export async function getSupportedDevTypes(): Promise<SupportedDevTypes> {
   try {
     const data = await getSupportedDevTypesConfig();
-    return data.supported_dev_types || [];
+    return normalizePrimaryRoleList(data.supported_dev_types || []);
   } catch {
     return [];
   }
@@ -826,7 +900,7 @@ export async function getSupportedDevTypesConfig(): Promise<SupportedDevTypesRes
 
   return {
     supported_dev_types: Array.isArray(record.supported_dev_types)
-      ? record.supported_dev_types.filter((item): item is string => typeof item === 'string')
+      ? normalizePrimaryRoleList(record.supported_dev_types.filter((item): item is string => typeof item === 'string'))
       : [],
     signal_order: Array.isArray(record.signal_order)
       ? record.signal_order.filter((item): item is SupportedDevTypesResponse['signal_order'][number] => typeof item === 'string')
@@ -898,9 +972,71 @@ export async function evaluateProjectAI(projectId: string): Promise<void> {
 }
 
 export async function getDeveloperAnalyzerCharts(developerId: string): Promise<DeveloperAnalyzerChartsResponse> {
-  return apiRequest<DeveloperAnalyzerChartsResponse>(`/api/v1/developers/${encodeURIComponent(developerId)}/analyzer/charts`, {
-    method: 'GET',
-  });
+  const encodedId = encodeURIComponent(developerId);
+  const candidatePaths = [
+    `/api/v1/developers/${encodedId}/analyzer/charts`,
+    `/api/v1/developers/${encodedId}/analyzer`,
+  ];
+
+  const chartKeys = [
+    'project_complexity_bar',
+    'technology_usage_bar',
+    'contribution_pie',
+    'strengths_radar',
+    'credibility_gauge',
+    'system_complexity_gauge',
+    'activity_timeline',
+    'role_alignment',
+    'overview',
+  ];
+
+  const hasChartKeys = (value: unknown): boolean => {
+    if (!value || typeof value !== 'object') return false;
+    const record = value as Record<string, unknown>;
+    return chartKeys.some((key) => record[key] !== undefined);
+  };
+
+  const normalizeChartsPayload = (value: unknown): DeveloperAnalyzerChartsResponse => {
+    if (!value || typeof value !== 'object') return {} as DeveloperAnalyzerChartsResponse;
+    const record = value as Record<string, unknown>;
+
+    const wrappedCandidates = [record.data, record.charts, record.analyzer, record.result, record.payload];
+    const wrappedMatch = wrappedCandidates.find((candidate) => hasChartKeys(candidate));
+    if (wrappedMatch && typeof wrappedMatch === 'object') {
+      return wrappedMatch as DeveloperAnalyzerChartsResponse;
+    }
+
+    if (hasChartKeys(record)) {
+      return record as DeveloperAnalyzerChartsResponse;
+    }
+
+    return record as DeveloperAnalyzerChartsResponse;
+  };
+
+  let lastError: ApiError | null = null;
+
+  for (const path of candidatePaths) {
+    for (const method of ['GET', 'POST'] as const) {
+      try {
+        const raw = await apiRequest<unknown>(path, {
+          method,
+        });
+        return normalizeChartsPayload(raw);
+      } catch (error) {
+        if (error instanceof ApiError && [404, 405].includes(error.status)) {
+          lastError = error;
+          continue;
+        }
+        throw error;
+      }
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  throw new ApiError(500, 'Analyzer charts are currently unavailable. Please try again later.');
 }
 
 export function subscribeToAnalyzerStream(
@@ -1051,6 +1187,9 @@ export async function updateDeveloperProfile(userId: string, updates: {
   bio?: string;
 }, settings?: Partial<UserSettings>): Promise<DeveloperProfile> {
   const body: Record<string, unknown> = { ...updates };
+  if (typeof body.primary_role === 'string') {
+    body.primary_role = normalizePrimaryRole(body.primary_role);
+  }
   if (settings) body.settings = settings;
 
   const data = await apiRequest<DeveloperProfile>(`/api/v1/me`, {
@@ -1060,6 +1199,75 @@ export async function updateDeveloperProfile(userId: string, updates: {
 
   saveDeveloper(data);
   return data as DeveloperProfile;
+}
+
+export async function uploadDeveloperCv(file: File, saveToProfile = true): Promise<CvUploadResponse> {
+  const candidatePaths = [
+    '/api/v1/profile/cv/upload',
+    '/api/v1/profile/cv-upload',
+    '/api/v1/me/cv/upload',
+    '/api/v1/me/cv-upload',
+    '/api/v1/me/cv',
+    '/api/v1/profile/cv',
+    '/api/v1/cv/upload',
+  ];
+  const fileFieldCandidates = ['file', 'cv_file', 'cv', 'document'];
+  let lastError: ApiError | null = null;
+
+  for (const path of candidatePaths) {
+    for (const fileField of fileFieldCandidates) {
+      const formData = new FormData();
+      formData.append(fileField, file);
+      formData.append('save_to_profile', saveToProfile ? 'true' : 'false');
+      formData.append('saveToProfile', saveToProfile ? 'true' : 'false');
+
+      const res = await fetch(`${API_BASE_URL}${path}`, {
+        method: 'POST',
+        credentials: 'include',
+        mode: 'cors',
+        body: formData,
+      }).catch(() => null);
+
+      if (!res) {
+        lastError = new ApiError(0, 'Unable to reach the server. Please check your connection and try again.');
+        continue;
+      }
+
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          handleGlobalAuthFailure();
+        }
+
+        // Only fallback to another endpoint when this one is clearly unavailable.
+        if (res.status === 404 || res.status === 405 || res.status === 422) {
+          lastError = await buildApiError(res);
+          continue;
+        }
+
+        throw await buildApiError(res);
+      }
+
+      const text = await res.text();
+      if (!text) {
+        return { saved_to_profile: saveToProfile };
+      }
+
+      try {
+        return JSON.parse(text) as CvUploadResponse;
+      } catch {
+        return { message: text, saved_to_profile: saveToProfile };
+      }
+    }
+  }
+
+  if (lastError) {
+    if (lastError.status === 404) {
+      throw new ApiError(404, 'CV upload endpoint was not found on the server. Please contact support or update backend routes.');
+    }
+    throw lastError;
+  }
+
+  throw new ApiError(500, 'CV upload is currently unavailable. Please try again later.');
 }
 
 export async function logout(): Promise<void> {

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { getCurrentDeveloper, updateDeveloperProfile, getSupportedDevTypes, isAuthError, clearAuth } from '@/lib/api';
+import { getCurrentDeveloper, updateDeveloperProfile, getSupportedDevTypes, isAuthError, clearAuth, normalizePrimaryRole } from '@/lib/api';
 import { useSettings } from '@/contexts/SettingsContext';
 import type { DeveloperProfile } from '@/types/api';
 
@@ -141,7 +141,7 @@ export default function EditProfile() {
         setTechStack(initialTechStack);
         setForm({
           name: dev.name || '',
-          primary_role: dev.primary_role || '',
+          primary_role: normalizePrimaryRole(dev.primary_role || ''),
           bio: dev.bio || '',
         });
       } catch (err) {

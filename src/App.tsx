@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { ThemeProvider } from "next-themes";
 import { SettingsProvider } from "@/contexts/SettingsContext";
@@ -20,6 +20,7 @@ import Dashboard from "./pages/Dashboard";
 import Welcome from "./pages/Welcome";
 import ProfileSetup from "./pages/ProfileSetup";
 import EditProfile from "./pages/EditProfile";
+import CVUpload from "./pages/CVUpload";
 import ProjectDetails from "./pages/ProjectDetails";
 import Developers from "./pages/Developers";
 import DeveloperProfile from "./pages/DeveloperProfile";
@@ -39,6 +40,7 @@ function AppContent() {
   const { isChecking: isCheckingBackend, isReady, error, retry } = useBackendReadiness();
   const { isChecking } = useSessionCheck();
   const [bypassBackendCheck, setBypassBackendCheck] = useState(false);
+  const location = useLocation();
 
   if (isCheckingBackend) {
     return (
@@ -75,7 +77,7 @@ function AppContent() {
 
   return (
     <>
-      <Routes>
+      <Routes location={location} key={location.key}>
         <Route path="/" element={<Index />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/oauth-loading" element={<OAuthLoading />} />
@@ -89,6 +91,7 @@ function AppContent() {
         <Route path="/welcome" element={<Welcome />} />
         <Route path="/profile-setup" element={<ProfileSetup />} />
         <Route path="/profile/edit" element={<EditProfile />} />
+        <Route path="/profile/cv-upload" element={<CVUpload />} />
         <Route path="/developers" element={<Developers />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />

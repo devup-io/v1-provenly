@@ -7,6 +7,11 @@ export interface DeveloperProfile {
   name?: string | null;
   primary_role?: string | null;
   years_of_experience?: number | null;
+  education?: unknown[];
+  experiences?: unknown[];
+  cv_last_uploaded_at?: string | null;
+  cv_last_uploaded_filename?: string | null;
+  cv_last_uploaded_size?: number | null;
   primary_stack?: string[];
   bio?: string | null;
   profile_complete?: boolean;
@@ -255,6 +260,13 @@ export interface NotificationItem {
 export interface NotificationsResponse {
   notifications: NotificationItem[];
   unread_count: number;
+}
+
+export interface CvUploadResponse {
+  saved_to_profile?: boolean;
+  saved_fields?: string[];
+  message?: string;
+  status?: string;
 }
 
 export type SupportedDevTypes = string[];

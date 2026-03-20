@@ -824,7 +824,10 @@ export default function Dashboard() {
                         const metadataWarnings = Array.isArray((project.github_metadata as Record<string, unknown> | undefined)?.warnings)
                           ? ((project.github_metadata as Record<string, unknown>).warnings as string[])
                           : [];
-                        const allWarnings = Array.from(new Set([...(project.warnings || []), ...metadataWarnings].filter(Boolean)));
+                        const roleWarningPattern = /(role|declared|mismatch|supported\s+role|alignment)/i;
+                        const allWarnings = Array.from(
+                          new Set([...(project.warnings || []), ...metadataWarnings].filter(Boolean))
+                        ).filter((warning) => !roleWarningPattern.test(String(warning)));
 
                         if (allWarnings.length === 0) return null;
 

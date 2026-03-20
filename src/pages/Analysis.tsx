@@ -154,18 +154,20 @@ export default function Analysis() {
     return record as AnalyzerPayload;
   };
 
-  const complexityBreakdown = normalizeChartItems(pickFirst(payload.complexity_breakdown, payload.project_complexity_bar));
-  const technologyUsage = normalizeChartItems(pickFirst(payload.technology_usage, payload.technology_usage_bar));
-  const contributionLevel = asRecord(pickFirst(payload.contribution_level, payload.contribution_pie));
-  const strengthAreas = normalizeChartItems(pickFirst(payload.strength_areas, payload.strengths_radar));
-  const activityPattern = normalizeChartItems(pickFirst(payload.activity_pattern, payload.activity_timeline));
-  const roleAlignment = asRecord(payload.role_alignment);
+  const complexityBreakdown = normalizeChartItems(
+    pickFirst(payload.complexity_breakdown, payload.project_complexity_bar, payload.project_complexity, payload.complexity)
+  );
+  const technologyUsage = normalizeChartItems(pickFirst(payload.technology_usage, payload.technology_usage_bar, payload.tech_usage));
+  const contributionLevel = asRecord(pickFirst(payload.contribution_level, payload.contribution_pie, payload.contribution));
+  const strengthAreas = normalizeChartItems(pickFirst(payload.strength_areas, payload.strengths_radar, payload.strengths));
+  const activityPattern = normalizeChartItems(pickFirst(payload.activity_pattern, payload.activity_timeline, payload.activity));
+  const roleAlignment = asRecord(pickFirst(payload.role_alignment, payload.roleAlignment));
   const roleAlignmentRoles = normalizeChartItems(roleAlignment.detected_roles);
-  const credibilityGauge = asRecord(payload.credibility_gauge);
-  const hiringReadiness = asRecord(payload.hiring_readiness);
-  const projectLongevity = asRecord(pickFirst(payload.project_longevity, hiringReadiness.project_longevity));
+  const credibilityGauge = asRecord(pickFirst(payload.credibility_gauge, payload.credibilityGauge));
+  const hiringReadiness = asRecord(pickFirst(payload.hiring_readiness, payload.hiringReadiness));
+  const projectLongevity = asRecord(pickFirst(payload.project_longevity, payload.projectLongevity, hiringReadiness.project_longevity));
 
-  const contributionPieItems = normalizeChartItems(payload.contribution_pie);
+  const contributionPieItems = normalizeChartItems(pickFirst(payload.contribution_pie, payload.contributionPie));
 
   const contributionDonut: LabeledValue[] = [
     {
@@ -195,6 +197,7 @@ export default function Analysis() {
 
   const avgConfidence = readNumber(
     overview.average_confidence,
+    overview.avg_confidence,
     asRecord(payload.credibility_gauge).average_confidence,
     asRecord(payload.credibility_gauge).confidence,
     asRecord(payload.credibility_gauge).score,
@@ -222,10 +225,16 @@ export default function Analysis() {
   const verifiedProjects = readNumber(
     overview.verified_projects_count,
     overview.verified_projects,
+    overview.total_verified_projects,
     asRecord(payload.developer).verified_projects,
     asRecord(payload.hiring_readiness).verified_projects
   );
-  const systemComplexityScore = readNumber(payload.system_complexity_score, payload.system_complexity_gauge);
+  const systemComplexityScore = readNumber(
+    payload.system_complexity_score,
+    payload.system_complexity_gauge,
+    payload.systemComplexityScore,
+    asRecord(payload.system_complexity_gauge).score
+  );
 
   const nonArchivedProjects = projects.filter((project) => {
     const metadata = project.github_metadata as Record<string, unknown> | undefined;
@@ -298,7 +307,7 @@ export default function Analysis() {
     if (effectiveDevId) {
       getDeveloperAnalyzerCharts(effectiveDevId)
         .then((data) => {
-          setCharts(data);
+          setCharts(normalizeAnalyzerPayload(data) || data);
         })
         .catch((err) => {
         });

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getDeveloper, updateDeveloperProfile, importAllProjects, getSupportedDevTypes } from '@/lib/api';
+import { getDeveloper, updateDeveloperProfile, importAllProjects, getSupportedDevTypes, normalizePrimaryRole } from '@/lib/api';
 import { useSettings } from '@/contexts/SettingsContext';
 import type { DeveloperProfile } from '@/types/api';
 
@@ -43,11 +43,11 @@ const ROLE_TECH_MAP: Record<string, string[]> = {
   ],
   'Full-stack Developer': TECH_STACK_OPTIONS,
   'Mobile Developer': ['React Native', 'Swift', 'Kotlin', 'Java', 'Dart'],
+  'Blockchain / Web3 Developer': ['Solidity', 'TypeScript', 'Rust', 'Node.js', 'PostgreSQL'],
+  'AI / ML Developer': ['Python', 'TensorFlow', 'PyTorch', 'R', 'SQL'],
   'DevOps Engineer': ['AWS', 'Docker', 'Kubernetes', 'Terraform', 'CI/CD'],
-  'Data Engineer': ['Python', 'SQL', 'Scala', 'Spark', 'AWS'],
-  'Machine Learning Engineer': ['Python', 'TensorFlow', 'PyTorch', 'R'],
-  'Product Manager': [],
-  'Design Engineer': [],
+  'Data Engineer / Scientist': ['Python', 'SQL', 'Scala', 'Spark', 'AWS'],
+  'Security Engineer': ['Python', 'Go', 'Rust', 'Docker', 'AWS'],
 };
 
 const ROLE_OPTIONS = [
@@ -55,11 +55,11 @@ const ROLE_OPTIONS = [
   'Backend Developer',
   'Full-stack Developer',
   'Mobile Developer',
+  'Blockchain / Web3 Developer',
+  'AI / ML Developer',
   'DevOps Engineer',
-  'Data Engineer',
-  'Machine Learning Engineer',
-  'Product Manager',
-  'Design Engineer',
+  'Data Engineer / Scientist',
+  'Security Engineer',
 ];
 
 export default function Onboarding() {
@@ -78,12 +78,12 @@ export default function Onboarding() {
   const [formError, setFormError] = useState<string | null>(null);
   const [profileData, setProfileData] = useState({
     name: developer?.name || '',
-    primary_role: developer?.primary_role || '',
+    primary_role: normalizePrimaryRole(developer?.primary_role || ''),
     primary_stack: developer?.primary_stack || [],
     bio: developer?.bio || '',
   });
   const [selectedRoles, setSelectedRoles] = useState<string[]>(
-    developer?.primary_role ? [developer.primary_role] : []
+    developer?.primary_role ? [normalizePrimaryRole(developer.primary_role)] : []
   );
   const [supportedRoles, setSupportedRoles] = useState<string[]>([]);
 
