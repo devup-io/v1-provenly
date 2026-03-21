@@ -28,19 +28,23 @@ const getComplexityPair = (p: ProjectCardShape) => ({
   dominant: p.dominant_complexity ?? p.max_complexity ?? 'Unknown',
 });
 
-const techBadgeClasses: Record<string, string> = {
-  React: 'border border-cyan-500/30 bg-cyan-500/15 text-cyan-700 dark:text-cyan-300',
-  TypeScript: 'border border-blue-500/30 bg-blue-500/15 text-blue-700 dark:text-blue-300',
-  JavaScript: 'border border-yellow-500/30 bg-yellow-500/15 text-yellow-700 dark:text-yellow-300',
-  Tailwind: 'border border-teal-500/30 bg-teal-500/15 text-teal-700 dark:text-teal-300',
-  Vite: 'border border-violet-500/30 bg-violet-500/15 text-violet-700 dark:text-violet-300',
-  Recharts: 'border border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-  Python: 'border border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
-  'Node.js': 'border border-lime-500/30 bg-lime-500/15 text-lime-700 dark:text-lime-300',
-};
+const badgeColors = [
+  'border border-cyan-500/30 bg-cyan-500/15 text-cyan-700 dark:text-cyan-300',
+  'border border-blue-500/30 bg-blue-500/15 text-blue-700 dark:text-blue-300',
+  'border border-yellow-500/30 bg-yellow-500/15 text-yellow-700 dark:text-yellow-300',
+  'border border-teal-500/30 bg-teal-500/15 text-teal-700 dark:text-teal-300',
+  'border border-violet-500/30 bg-violet-500/15 text-violet-700 dark:text-violet-300',
+  'border border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+  'border border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300',
+  'border border-lime-500/30 bg-lime-500/15 text-lime-700 dark:text-lime-300',
+  'border border-pink-500/30 bg-pink-500/15 text-pink-700 dark:text-pink-300',
+  'border border-orange-500/30 bg-orange-500/15 text-orange-700 dark:text-orange-300',
+];
 
-const getTechBadgeClass = (tech: string) =>
-  techBadgeClasses[tech] || 'border border-border bg-secondary text-secondary-foreground';
+const getTechBadgeClass = (tech: string) => {
+  const hash = tech.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return badgeColors[hash % badgeColors.length];
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
