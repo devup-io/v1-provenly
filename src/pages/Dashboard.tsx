@@ -46,13 +46,29 @@ const getTechBadgeClass = (tech: string) => {
   return badgeColors[hash % badgeColors.length];
 };
 
+const InfoTip = ({ label, text }: { label: string; text: string }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <button
+        type="button"
+        className="inline-flex items-center text-muted-foreground transition hover:text-foreground"
+        aria-label={`${label} info`}
+      >
+        <Info className="h-3.5 w-3.5" />
+      </button>
+    </TooltipTrigger>
+    <TooltipContent className="max-w-xs">{text}</TooltipContent>
+  </Tooltip>
+);
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [developer, setDeveloper] = useState<DeveloperProfile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [stats, setStats] = useState<AggregateEvaluation | null>(null);
   const [loading, setLoading] = useState(true);
-  const [importing, setImporting] = useState(false);
+  const [refreshingInsights, setRefreshingInsights] = useState(false);
+  const [runningAnalysis, setRunningAnalysis] = useState(false);
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [errorStatusCode, setErrorStatusCode] = useState<string>('503');
@@ -247,8 +263,9 @@ export default function Dashboard() {
   };
 
   const handleRefreshEvaluations = async () => {
+    if (refreshingInsights || runningAnalysis) return;
     try {
-      setImporting(true);
+      setRefreshingInsights(true);
       // Re-fetch evaluations
       if (developer) {
         const updatedStats = await getAggregateEvaluation(developer.id);
@@ -261,7 +278,7 @@ export default function Dashboard() {
       setError(err instanceof Error ? err.message : 'Failed to refresh evaluations');
       setErrorStatusCode('500');
     } finally {
-      setImporting(false);
+      setRefreshingInsights(false);
     }
   };
 
@@ -467,6 +484,9 @@ export default function Dashboard() {
   })();
   const totalCommits = stats?.total_commits ?? projects.reduce((sum, project) => sum + (project.commits_count || 0), 0);
   const repoCountLabel = `${projects.length} ${projects.length === 1 ? 'repository' : 'repositories'}`;
+  const completionProjectTarget = 2;
+  const remainingProjects = Math.max(0, completionProjectTarget - projects.length);
+  const profileCompletion = Math.min(100, 20 + Math.min(projects.length, completionProjectTarget) * 40);
   const experienceValue = developer.experience_signal || 'N/A';
   const verifiedProjectsValue = developer.verified_projects !== undefined ? `${developer.verified_projects}/${projects.length}` : 'N/A';
   const avgConfidenceValue = developer.average_confidence !== undefined ? `${Math.round(developer.average_confidence)}%` : 'N/A';
@@ -492,7 +512,7 @@ export default function Dashboard() {
           >
             <p className="text-body text-muted-foreground">Welcome back,</p>
             <h1 className="text-display-sm font-bold">{developer.name || developer.github_username}</h1>
-            <p className="text-body-sm text-muted-foreground">Here's your developer profile dashboard</p>
+            <p className="text-body-sm text-muted-foreground">Start by adding a project to build your Provenly profile</p>
           </motion.div>
 
           <Button
@@ -531,6 +551,37 @@ export default function Dashboard() {
             </p>
           </motion.div>
         )}
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mb-6 rounded-[20px] border border-border bg-card p-5 shadow-sm"
+        >
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2">
+              <p className="text-body font-semibold">Start by adding a project to build your Provenly profile</p>
+              <div className="max-w-md space-y-1">
+                <p className="text-body-sm text-muted-foreground">Profile {profileCompletion}% complete</p>
+                <Progress value={profileCompletion} className="h-2" />
+                <p className="text-caption text-muted-foreground">
+                  {remainingProjects > 0
+                    ? `Add ${remainingProjects} more project${remainingProjects === 1 ? '' : 's'} to complete your profile`
+                    : 'Your profile is complete. Add more projects to strengthen your profile.'}
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={handleImportMore}
+              size="lg"
+              className="w-full gap-2 sm:w-auto"
+              data-tour="add-project-hero-btn"
+            >
+              <Plus className="h-4 w-4" />
+              Add Project
+            </Button>
+          </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {/* Profile Card */}
@@ -596,11 +647,23 @@ export default function Dashboard() {
                   <span className="font-medium text-foreground">{verifiedProjectsValue}</span>
                 </div>
                 <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-caption uppercase tracking-wide text-muted-foreground">Avg Confidence</span>
+                  <span className="inline-flex items-center gap-1 text-caption uppercase tracking-wide text-muted-foreground">
+                    Avg Confidence
+                    <InfoTip
+                      label="Average confidence"
+                      text="How confident the AI is in evaluations across your analyzed projects."
+                    />
+                  </span>
                   <span className="font-medium text-foreground">{avgConfidenceValue}</span>
                 </div>
                 <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3">
-                  <span className="text-caption uppercase tracking-wide text-muted-foreground">Contribution</span>
+                  <span className="inline-flex items-center gap-1 text-caption uppercase tracking-wide text-muted-foreground">
+                    Contribution
+                    <InfoTip
+                      label="Contribution"
+                      text="Estimated share of your contribution: Primary Builder, Major Contributor, or Minor Contributor."
+                    />
+                  </span>
                   <span className="font-medium text-foreground">{contributionValue}</span>
                 </div>
               </div>
@@ -629,7 +692,7 @@ export default function Dashboard() {
             whileHover={{ y: -4 }}
             className="rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
           >
-            <h3 className="mb-4 text-heading-sm">Statistics</h3>
+            <h3 className="mb-4 text-heading-sm">Your Profile Insights</h3>
             <div className="space-y-4">
               <div className="rounded-lg bg-primary/10 p-3">
                 <p className="text-body-sm text-muted-foreground">Repository Quality</p>
@@ -680,8 +743,8 @@ export default function Dashboard() {
 
               {!stats && (
                 <div className="py-2 text-center">
-                  <Button onClick={handleRefreshEvaluations} variant="outline" size="sm" disabled={importing}>
-                    {importing ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
+                  <Button onClick={handleRefreshEvaluations} variant="outline" size="sm" disabled={refreshingInsights || runningAnalysis}>
+                    {refreshingInsights ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
                     Run Evaluation
                   </Button>
                 </div>
@@ -698,36 +761,37 @@ export default function Dashboard() {
             data-tour="actions-card"
             className="rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-lg transition-all hover:shadow-xl sm:col-span-2 sm:p-6 xl:col-span-1"
           >
-            <h3 className="mb-4 text-heading-sm">Actions</h3>
+            <h3 className="mb-4 text-heading-sm">Quick Actions</h3>
             <div className="space-y-3">
               <Button
-                onClick={async () => {
-                  if (!developer) return;
-                  setImporting(true);
-                  try {
-                    await getDeveloperAnalyzer(developer.id);
-                  } catch {
-                    toast({ title: 'Analysis failed', description: 'Unable to start analysis. Please try again.', variant: 'destructive' });
-                  } finally {
-                    setImporting(false);
-                    navigate(`/analysis?dev=${developer?.id}`);
-                  }
-                }}
-                disabled={importing}
-                className="w-full gap-2"
-                data-tour="run-analysis-btn"
-              >
-                {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Run Analysis
-              </Button>
-              <Button
                 onClick={handleImportMore}
-                variant="outline"
                 className="w-full gap-2"
                 data-tour="add-repo-btn"
               >
                 <Plus className="h-4 w-4" />
-                Import More Repos
+                Add Project
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!developer || runningAnalysis || refreshingInsights) return;
+                  setRunningAnalysis(true);
+                  try {
+                    toast({ title: 'Project submitted for analysis…' });
+                    await getDeveloperAnalyzer(developer.id);
+                    toast({ title: 'Analysis complete ✅' });
+                  } catch {
+                    toast({ title: 'Analysis failed', description: 'We couldn’t analyze this repo. Make sure it’s public and contains code.', variant: 'destructive' });
+                  } finally {
+                    setRunningAnalysis(false);
+                    navigate(`/analysis?dev=${developer?.id}`);
+                  }
+                }}
+                disabled={runningAnalysis || refreshingInsights}
+                className="w-full gap-2"
+                data-tour="run-analysis-btn"
+              >
+                {runningAnalysis ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Analyze Projects
               </Button>
               <Button
                 variant="outline"
@@ -786,9 +850,9 @@ export default function Dashboard() {
           className="mt-8"
         >
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-heading-md">Your Repositories</h2>
+            <h2 className="text-heading-md">Project Breakdown</h2>
             <div className="flex items-center gap-4">
-              <p className="text-body-sm text-muted-foreground">{projects.length} {projects.length === 1 ? 'repository' : 'repositories'}</p>
+              <p className="text-body-sm text-muted-foreground">{repoCountLabel}</p>
             </div>
           </div>
 
@@ -803,13 +867,13 @@ export default function Dashboard() {
               {projects.length === 0 ? (
                 <div className="rounded-[24px] border border-dashed border-border bg-card/50 p-8 text-center">
                   <GitBranch className="mx-auto mb-4 h-8 w-8 text-muted-foreground" />
-                  <h3 className="mb-2 text-heading-sm">No repositories imported yet</h3>
+                  <h3 className="mb-2 text-heading-sm">You haven’t added any projects yet</h3>
                   <p className="mb-6 text-body text-muted-foreground">
-                    Import your GitHub repositories to see them here with AI-powered evaluations
+                    Add your first repo to start your analysis
                   </p>
                   <Button onClick={handleImportMore}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Import Your Repositories
+                    Add Project
                   </Button>
                 </div>
               ) : (
@@ -874,6 +938,10 @@ export default function Dashboard() {
                                 <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-body-sm font-semibold text-white shadow-sm">
                                   {(project.ai_evaluation?.difficulty_tier || 'N/A').replace(/\s*complexity\s*/gi, '').trim()} complexity
                                 </span>
+                                <InfoTip
+                                  label="Project complexity"
+                                  text="L1: foundational project. L2: intermediate project with real backend logic and multiple components. L3: advanced architecture with higher scale and complexity."
+                                />
                                 {(() => {
                                   const { highest, dominant } = getComplexityPair(project);
                                   return (
@@ -900,11 +968,19 @@ export default function Dashboard() {
                                 {project.ai_evaluation?.confidence_score !== undefined && (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-0.5 text-secondary-foreground">
                                     {Math.round(project.ai_evaluation.confidence_score)}% confidence
+                                    <InfoTip
+                                      label="Confidence score"
+                                      text="How confident the AI is in this project’s evaluation based on available repository signals."
+                                    />
                                   </span>
                                 )}
                                 {project.ai_evaluation?.contribution_percentage !== undefined && (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-0.5 text-secondary-foreground">
                                     {Math.round(project.ai_evaluation.contribution_percentage)}% contribution
+                                    <InfoTip
+                                      label="Contribution level"
+                                      text="Estimated share of your contribution in this repository."
+                                    />
                                   </span>
                                 )}
                                 <span className="inline-flex items-center gap-1 rounded-full bg-muted/20 px-3 py-0.5 text-muted-foreground">

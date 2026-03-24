@@ -10,9 +10,7 @@ import { getDeveloper } from "@/lib/api";
 
 const navLinks = [
   { label: "Developers", href: "/developers" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
-  { label: "How It Works", href: "/#how-it-works" },
+  { label: "How It Works", href: "/how-it-works" },
   { label: "Features", href: "/#features" },
 ];
 

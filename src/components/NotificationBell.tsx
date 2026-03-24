@@ -107,7 +107,11 @@ export function NotificationBell({ enabled }: { enabled: boolean }) {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-[24rem] overflow-hidden rounded-2xl border border-border/80 p-0 shadow-xl">
+      <DropdownMenuContent
+        align="center"
+        sideOffset={10}
+        className="w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-border/80 p-0 shadow-xl"
+      >
         <div className="flex items-center justify-between bg-muted/30 p-3">
           <DropdownMenuLabel className="p-0 text-body-sm font-semibold">Notifications</DropdownMenuLabel>
           <Button

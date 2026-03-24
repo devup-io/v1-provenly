@@ -241,6 +241,7 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
     setQueuedNotice(false);
     setSkippedRepos([]);
     setIsImporting(true);
+    toast({ title: 'Project submitted for analysis…' });
 
     const initialProjectCount = await getDeveloperProjects().then((p) => p.length).catch(() => 0);
 
@@ -258,6 +259,7 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
           ? result.imported_projects.length
           : selectedRepoFullNames.size;
         setModalMessage(`${importedCount} repos imported`);
+        toast({ title: 'Analysis complete ✅' });
         // refresh available list after a short pause
         const wasSkipped = !!(result.skipped && result.skipped.length > 0);
         setTimeout(() => {
@@ -283,6 +285,7 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
             if (projects.length > initialProjectCount) {
               // new items arrived
               setQueuedNotice(false);
+              toast({ title: 'Analysis complete ✅' });
               loadRepos();
               onNext();
               return;
@@ -302,7 +305,7 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
       setSelectedRepoFullNames(new Set());
     } catch (err) {
       setModalOpen(false);
-      toast({ title: "Import failed", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Import failed", description: "We couldn’t analyze this repo. Make sure it’s public and contains code.", variant: "destructive" });
     } finally {
       setIsImporting(false);
     }
@@ -314,7 +317,7 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
   const canContinue = selectedCount >= minRequired;
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-8 shadow-card" data-tour="repo-import-step">
+    <div className="rounded-3xl border border-border/50 bg-gradient-to-br from-card to-card/80 backdrop-blur p-8 shadow-lg" data-tour="repo-import-step">
       <div className="mb-8">
         <h2 className="mb-2 text-display-sm">
           {isImportingMore ? "Add more projects" : "Select your best projects"}
@@ -368,21 +371,26 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
           Note: importing more than {settings.import_queue_threshold} repos will queue the request.
         </div>
       )}
-      <div className="mb-6 rounded-xl bg-muted/50 p-4">
-        <p className="text-body-sm">
-          <span className="font-semibold text-primary">{selectedCount}</span> of{" "}
-          <span className="font-semibold">{repos.length}</span> repositories selected
-          {selectedCount < minRequired && (
-            <span className="ml-2 text-muted-foreground">
-              (minimum {minRequired} required)
-            </span>
+      <div className="mb-6 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 p-5">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-body-sm font-semibold">
+            <span className="text-primary">{selectedCount}</span> of{" "}
+            <span className="text-foreground">{repos.length}</span> selected
+          </p>
+          {canContinue && (
+            <span className="text-caption text-green-600 dark:text-green-400 font-medium">✓ Ready to continue</span>
           )}
-        </p>
-        <p className="mt-1 text-caption text-muted-foreground">
+        </div>
+        <p className="text-caption text-muted-foreground">
           {isImportingMore
             ? "You can select up to 10 projects total on your profile"
             : "You can select up to 10 projects to showcase on your profile"}
         </p>
+        {selectedCount < minRequired && (
+          <p className="mt-2 text-caption text-yellow-700 dark:text-yellow-300 font-medium">
+            Select at least {minRequired} {minRequired === 1 ? 'project' : 'projects'} ({minRequired - selectedCount} more needed)
+          </p>
+        )}
       </div>
 
       {/* Project Grid */}
@@ -426,26 +434,43 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              onClick={() => toggleProject(repo)}
-              className={`rounded-xl border-2 p-4 transition-all ${
+              whileHover={!isAlreadyImported ? { y: -2, boxShadow: "0 8px 16px rgba(0,0,0,0.1)" } : {}}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleProject(repo);
+              }}
+              className={`rounded-2xl p-5 transition-all cursor-pointer relative overflow-hidden group ${
                 isAlreadyImported
-                  ? "border-muted/50 bg-muted/20 cursor-not-allowed opacity-60"
+                  ? "border-2 border-muted/30 bg-gradient-to-br from-muted/40 to-muted/20 opacity-60 cursor-not-allowed"
                   : isSelected
-                  ? "cursor-pointer border-primary bg-primary/5"
-                  : "cursor-pointer border-border bg-muted/30 hover:border-muted-foreground/30"
+                  ? "border-2 border-primary bg-gradient-to-br from-primary/15 to-primary/5 shadow-md"
+                  : "border-2 border-border bg-gradient-to-br from-card to-muted/20 hover:shadow-lg hover:border-primary/50"
               }`}
             >
               {/* evaluation badges */}
               {(repo.difficulty_tier || repo.detected_project_type || repo.evaluation_profile) && (
-                <div className="mb-2 flex flex-wrap gap-2 text-caption text-muted-foreground">
-                  {repo.difficulty_tier && <span>{repo.difficulty_tier} complexity</span>}
-                  {repo.detected_project_type && <span>Type: {repo.detected_project_type}</span>}
-                  {repo.evaluation_profile && <span>Profile: {repo.evaluation_profile}</span>}
+                <div className="mb-3 flex flex-wrap gap-2 text-caption">
+                  {repo.difficulty_tier && (
+                    <span className="rounded-full bg-blue-100 dark:bg-blue-900/40 px-2 py-1 text-blue-700 dark:text-blue-300 font-medium">
+                      {repo.difficulty_tier} complexity
+                    </span>
+                  )}
+                  {repo.detected_project_type && (
+                    <span className="rounded-full bg-purple-100 dark:bg-purple-900/40 px-2 py-1 text-purple-700 dark:text-purple-300 font-medium">
+                      {repo.detected_project_type}
+                    </span>
+                  )}
+                  {repo.evaluation_profile && (
+                    <span className="rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-1 text-green-700 dark:text-green-300 font-medium">
+                      {repo.evaluation_profile}
+                    </span>
+                  )}
                 </div>
               )}
               {(repo.detected_project_type === 'Unsupported' || repo.evaluation_profile === 'Unsupported') && (
-                <div className="mb-2 rounded-md bg-destructive/10 p-1 text-destructive text-caption">
-                  Unsupported project – generic evaluation
+                <div className="mb-3 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-destructive text-caption font-medium">
+                  ⚠️ Unsupported project – generic evaluation
                 </div>
               )}
               {repo.role_mismatch && (
@@ -467,59 +492,63 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
               <div className="flex items-start gap-4">
                 {/* Checkbox */}
                 <div
-                  className={`mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  className={`mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg border-2 transition-all ${
                     isAlreadyImported
-                      ? "border-muted/50 bg-muted"
+                      ? "border-muted/50 bg-muted/40"
                       : isSelected
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-muted-foreground/30"
+                      ? "border-primary bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg"
+                      : "border-muted-foreground/40 bg-muted/30 group-hover:border-primary/60 group-hover:bg-primary/5"
                   }`}
                 >
                   {isAlreadyImported ? (
-                    <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Lock className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    isSelected && <Check className="h-3.5 w-3.5" />
+                    isSelected && <Check className="h-4 w-4 animate-in fade-in scale-in-50" />
                   )}
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="mb-1 flex items-center gap-2">
-                    <h3 className="truncate font-semibold">{repo.name}</h3>
+                  <div className="mb-2 flex items-center gap-2 flex-wrap">
+                    <h3 className="truncate font-semibold text-heading-xs text-foreground">{repo.name}</h3>
                     {isAlreadyImported && (
-                      <span className="flex-shrink-0 rounded-full bg-muted px-2 py-0.5 text-caption font-medium text-muted-foreground">
-                        Already imported
+                      <span className="flex-shrink-0 rounded-full bg-muted/50 px-2.5 py-1 text-caption font-semibold text-muted-foreground">
+                        ✓ Imported
                       </span>
                     )}
                     <span
-                      className={`flex-shrink-0 rounded-full px-2 py-0.5 text-caption font-medium ${
+                      className={`flex-shrink-0 rounded-full px-2.5 py-1 text-caption font-semibold ${
                         languageColors[String(repo.language ?? "Unknown")] || "bg-secondary"
                       }`}
                     >
                       {repo.language ?? "Unknown"}
                     </span>
                   </div>
-                  <p className="mb-3 truncate text-body-sm text-muted-foreground">
-                    {repo.description}
+                  <p className="mb-3 text-body-sm text-muted-foreground line-clamp-2">
+                    {repo.description || "No description"}
                   </p>
-                  <div className="flex items-center gap-4 text-caption text-muted-foreground">
-                    <span className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-3 text-caption text-muted-foreground">
+                    <span className="flex items-center gap-1 hover:text-foreground transition-colors">
                       <Star className="h-3.5 w-3.5" />
-                      {repo.stars}
+                      <span className="font-medium">{repo.stars}</span>
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 hover:text-foreground transition-colors">
                       <GitBranch className="h-3.5 w-3.5" />
-                      {repo.forks}
+                      <span className="font-medium">{repo.forks}</span>
                     </span>
                     {repo.commits_count !== undefined && (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 hover:text-foreground transition-colors">
                         <GitCommit className="h-3.5 w-3.5" />
-                        {repo.commits_count}
+                        <span className="font-medium">{repo.commits_count}</span>
                       </span>
                     )}
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />
-                      {repo.lastUpdated}
+                      <span className="font-medium">{repo.lastUpdated}</span>
                     </span>
                   </div>
                 </div>

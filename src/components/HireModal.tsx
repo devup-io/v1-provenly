@@ -275,12 +275,17 @@ export function HireModal({ isOpen, onClose, developerName, developerUsername, o
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
-        <DrawerContent className="max-h-[90vh] overflow-y-auto px-4 pb-6">
-          <DrawerHeader>
-            <DrawerTitle>Contact {developerName}</DrawerTitle>
-            <DrawerDescription>@{developerUsername}</DrawerDescription>
+        <DrawerContent className="max-h-[85vh] overflow-y-auto px-4 pb-6 max-w-lg mx-auto">
+          <div className="w-full flex justify-center pt-2 pb-2">
+            <div className="h-1 w-12 rounded-full bg-muted"></div>
+          </div>
+          <DrawerHeader className="pt-2">
+            <DrawerTitle className="text-heading-sm">Contact {developerName}</DrawerTitle>
+            <DrawerDescription className="text-body-sm">@{developerUsername}</DrawerDescription>
           </DrawerHeader>
-          {content}
+          <div className="px-2">
+            {content}
+          </div>
         </DrawerContent>
       </Drawer>
     );

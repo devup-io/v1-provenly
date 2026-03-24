@@ -5,7 +5,7 @@ const footerLinks = {
   Product: [
     { label: "Find Talent", href: "#" },
     { label: "Find Work", href: "#" },
-    { label: "How It Works", href: "#" },
+    { label: "How It Works", href: "/how-it-works" },
     { label: "Pricing", href: "#" },
     { label: "Enterprise", href: "#" },
   ],
@@ -17,11 +17,11 @@ const footerLinks = {
     { label: "Contact", href: "/contact" },
   ],
   Resources: [
-    { label: "Help Center", href: "#" },
+    { label: "Help", href: "/help" },
     { label: "Community", href: "#" },
     { label: "Guidelines", href: "#" },
     { label: "API", href: "#" },
-    { label: "Status", href: "#" },
+    { label: "Status", href: "/status" },
   ],
   Legal: [
     { label: "Privacy", href: "#" },

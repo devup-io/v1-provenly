@@ -31,6 +31,9 @@ import DebugAuth from "./pages/DebugAuth";
 import MockDashboard from "./pages/MockDashboard";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Help from "./pages/Help";
+import HowItWorks from "./pages/HowItWorks";
+import Status from "./pages/Status";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
@@ -95,6 +98,9 @@ function AppContent() {
         <Route path="/developers" element={<Developers />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/help" element={<Help />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/status" element={<Status />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/dev/:username" element={<DeveloperProfile />} />
         <Route path="/compare" element={<CompareDevelopers />} />
