@@ -487,12 +487,49 @@ export default function Dashboard() {
   const completionProjectTarget = 2;
   const remainingProjects = Math.max(0, completionProjectTarget - projects.length);
   const profileCompletion = Math.min(100, 20 + Math.min(projects.length, completionProjectTarget) * 40);
-  const experienceValue = developer.experience_signal || 'N/A';
-  const verifiedProjectsValue = developer.verified_projects !== undefined ? `${developer.verified_projects}/${projects.length}` : 'N/A';
-  const avgConfidenceValue = developer.average_confidence !== undefined ? `${Math.round(developer.average_confidence)}%` : 'N/A';
+  const confidenceValues = projects
+    .map((project) => project.ai_evaluation?.confidence_score)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  const fallbackAverageConfidence =
+    confidenceValues.length > 0
+      ? Math.round(confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length)
+      : null;
+
+  const fallbackContributionBreakdown = projects.reduce(
+    (acc, project) => {
+      const level = project.ai_evaluation?.contribution_level || project.contribution_level;
+      if (!level) return acc;
+      if (level === 'Primary Builder') acc.primary += 1;
+      if (level === 'Major Contributor') acc.major += 1;
+      if (level === 'Minor Contributor') acc.minor += 1;
+      return acc;
+    },
+    { primary: 0, major: 0, minor: 0 }
+  );
+
+  const fallbackVerifiedProjects = projects.filter(
+    (project) => project.ai_evaluation?.verified_badge || project.verified_badge || project.evaluation_status === 'completed'
+  ).length;
+
+  const derivedExperienceFromSkill =
+    stats?.overall_skill_level === 'Advanced' || stats?.overall_skill_level === 'Expert'
+      ? 'Senior'
+      : stats?.overall_skill_level === 'Intermediate'
+        ? 'Intermediate'
+        : stats?.overall_skill_level === 'Beginner'
+          ? 'Junior'
+          : null;
+
+  const experienceValue = developer.experience_signal || derivedExperienceFromSkill || 'Building';
+  const verifiedProjectsCount =
+    typeof developer.verified_projects === 'number' ? developer.verified_projects : fallbackVerifiedProjects;
+  const verifiedProjectsValue = `${verifiedProjectsCount}/${Math.max(projects.length, verifiedProjectsCount, 1)}`;
+  const avgConfidenceNumber =
+    typeof developer.average_confidence === 'number' ? Math.round(developer.average_confidence) : fallbackAverageConfidence;
+  const avgConfidenceValue = avgConfidenceNumber !== null ? `${avgConfidenceNumber}%` : 'Pending';
   const contributionValue = developer.contribution_breakdown
     ? `Primary ${developer.contribution_breakdown['Primary Builder'] || 0} | Major ${developer.contribution_breakdown['Major Contributor'] || 0} | Minor ${developer.contribution_breakdown['Minor Contributor'] || 0}`
-    : 'N/A';
+    : `Primary ${fallbackContributionBreakdown.primary} | Major ${fallbackContributionBreakdown.major} | Minor ${fallbackContributionBreakdown.minor}`;
   const publicProfileUrl = developer
     ? `${window.location.origin}/dev/${developer.github_username || developer.id}`
     : '';

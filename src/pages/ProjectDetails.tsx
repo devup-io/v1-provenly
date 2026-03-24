@@ -131,6 +131,16 @@ export default function ProjectDetails() {
   }
 
   const evaluation = project.ai_evaluation;
+  const metadata = project.github_metadata as Record<string, unknown> | undefined;
+  const detectedTypeValue =
+    evaluation?.detected_project_type ||
+    (typeof metadata?.detected_project_type === 'string' ? metadata.detected_project_type : null) ||
+    (typeof metadata?.project_type === 'string' ? metadata.project_type : null) ||
+    'N/A';
+  const evaluationProfileValue =
+    evaluation?.evaluation_profile ||
+    (typeof metadata?.evaluation_profile === 'string' ? metadata.evaluation_profile : null) ||
+    'N/A';
 
   // configuration for how to emphasize signals based on detected project type
   const typeConfigs: Record<
@@ -223,7 +233,7 @@ export default function ProjectDetails() {
     //'AI / ML': {...} will fallback later
   };
 
-  const projectType = evaluation?.detected_project_type || evaluation?.evaluation_profile || '';
+  const projectType = detectedTypeValue !== 'N/A' ? detectedTypeValue : evaluationProfileValue !== 'N/A' ? evaluationProfileValue : '';
   const config = typeConfigs[projectType] || {
     primary: 'code_quality_score' as keyof AIEvaluation,
     secondary: 'architecture_score' as keyof AIEvaluation,
@@ -322,7 +332,11 @@ export default function ProjectDetails() {
               </div>
               <div className="rounded-xl border border-border/60 bg-background/60 p-3">
                 <p className="text-caption text-muted-foreground">Detected Type</p>
-                <p className="font-semibold">{evaluation?.detected_project_type || 'N/A'}</p>
+                <p className="font-semibold">{detectedTypeValue}</p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+                <p className="text-caption text-muted-foreground">Evaluation Profile</p>
+                <p className="font-semibold">{evaluationProfileValue}</p>
               </div>
               <div className="rounded-xl border border-border/60 bg-background/60 p-3">
                 <p className="text-caption text-muted-foreground">Role Alignment</p>
@@ -331,9 +345,9 @@ export default function ProjectDetails() {
             </div>
 
             <div className="mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
-              <p className="text-caption text-muted-foreground">Project Type</p>
+              <p className="text-caption text-muted-foreground">Project Classification</p>
               <p className="text-body-sm font-medium text-foreground">
-                {evaluation?.primary_role_alignment || 'N/A'} project
+                {detectedTypeValue !== 'N/A' ? detectedTypeValue : evaluationProfileValue} project
               </p>
             </div>
           </div>
