@@ -7,6 +7,7 @@ import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, Check, Cpu, I
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ErrorScreen } from '@/components/ErrorScreen';
 import { Header } from '@/components/landing/Header';
@@ -74,6 +75,9 @@ export default function Dashboard() {
   const [errorStatusCode, setErrorStatusCode] = useState<string>('503');
   const [supportedRoles, setSupportedRoles] = useState<string[]>([]);
   const [supportedDevConfig, setSupportedDevConfig] = useState<SupportedDevTypesResponse | null>(null);
+  const [projectQuery, setProjectQuery] = useState('');
+  const [projectTypeFilter, setProjectTypeFilter] = useState<'all' | string>('all');
+  const [projectTestsFilter, setProjectTestsFilter] = useState<'all' | 'with-tests' | 'without-tests'>('all');
 
   // publish modal state
   const [publishModal, setPublishModal] = useState(false);
@@ -554,6 +558,35 @@ export default function Dashboard() {
   const publicProfileUrl = developer
     ? `${window.location.origin}/dev/${developer.github_username || developer.id}`
     : '';
+  const availableProjectTypes = Array.from(
+    new Set(
+      projects
+        .map((project) => project.ai_evaluation?.detected_project_type)
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    )
+  ).sort((a, b) => a.localeCompare(b));
+  const filteredProjects = projects.filter((project) => {
+    const query = projectQuery.trim().toLowerCase();
+    if (query) {
+      const haystack = [project.name, project.description, project.language]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      if (!haystack.includes(query)) return false;
+    }
+
+    if (projectTypeFilter !== 'all' && project.ai_evaluation?.detected_project_type !== projectTypeFilter) {
+      return false;
+    }
+
+    if (projectTestsFilter !== 'all') {
+      const hasTests = project.ai_evaluation?.has_tests;
+      if (projectTestsFilter === 'with-tests' && hasTests !== true) return false;
+      if (projectTestsFilter === 'without-tests' && hasTests !== false) return false;
+    }
+
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -639,6 +672,9 @@ export default function Dashboard() {
               Add Project
             </Button>
           </div>
+          <p className="mt-3 text-caption text-muted-foreground">
+            Add Project now includes smart recommendations, lightweight tags, featured-project priority, and role-alignment guidance.
+          </p>
         </motion.div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -939,8 +975,60 @@ export default function Dashboard() {
                   </Button>
                 </div>
               ) : (
+                <>
+                  <div className="rounded-2xl border border-border/60 bg-card p-4">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <Input
+                        value={projectQuery}
+                        onChange={(e) => setProjectQuery(e.target.value)}
+                        placeholder="Search projects"
+                        aria-label="Search projects"
+                      />
+                      <select
+                        value={projectTypeFilter}
+                        onChange={(e) => setProjectTypeFilter(e.target.value)}
+                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        aria-label="Filter by project type"
+                      >
+                        <option value="all">All project types</option>
+                        {availableProjectTypes.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={projectTestsFilter}
+                        onChange={(e) => setProjectTestsFilter(e.target.value as 'all' | 'with-tests' | 'without-tests')}
+                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        aria-label="Filter by tests status"
+                      >
+                        <option value="all">All test status</option>
+                        <option value="with-tests">With tests</option>
+                        <option value="without-tests">Without tests</option>
+                      </select>
+                    </div>
+                    <p className="mt-2 text-caption text-muted-foreground">
+                      Showing {filteredProjects.length} of {projects.length} projects
+                    </p>
+                  </div>
+
+                  {filteredProjects.length === 0 ? (
+                    <div className="rounded-[24px] border border-dashed border-border bg-card/50 p-8 text-center">
+                      <h3 className="mb-2 text-heading-sm">No projects match your filters</h3>
+                      <p className="mb-4 text-body text-muted-foreground">Try clearing or adjusting your filters.</p>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setProjectQuery('');
+                          setProjectTypeFilter('all');
+                          setProjectTestsFilter('all');
+                        }}
+                      >
+                        Reset filters
+                      </Button>
+                    </div>
+                  ) : (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {projects.map((project, index) => (
+                  {filteredProjects.map((project, index) => (
                     <motion.div
                       key={project.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -1144,6 +1232,8 @@ export default function Dashboard() {
                     </motion.div>
                   ))}
                 </div>
+                  )}
+                </>
               )}
             </TabsContent>
 
