@@ -482,7 +482,10 @@ export default function Dashboard() {
     if (stats?.primary_technologies?.length) return stats.primary_technologies.slice(0, 5);
     return Array.from(new Set(projects.map((project) => project.language).filter(Boolean) as string[])).slice(0, 5);
   })();
-  const totalCommits = stats?.total_commits ?? projects.reduce((sum, project) => sum + (project.commits_count || 0), 0);
+  const totalCommits =
+    typeof stats?.total_commits === 'number' && Number.isFinite(stats.total_commits)
+      ? stats.total_commits
+      : projects.reduce((sum, project) => sum + (project.commits_count || 0), 0);
   const repoCountLabel = `${projects.length} ${projects.length === 1 ? 'repository' : 'repositories'}`;
   const completionProjectTarget = 2;
   const remainingProjects = Math.max(0, completionProjectTarget - projects.length);
@@ -757,7 +760,7 @@ export default function Dashboard() {
                 </div>
                 <div className="rounded-2xl border border-border bg-card p-4">
                   <p className="text-body-sm text-muted-foreground">Total Commits</p>
-                  <p className="text-heading-md">{totalCommits || 'N/A'}</p>
+                  <p className="text-heading-md">{totalCommits}</p>
                 </div>
                 <div className="rounded-2xl border border-border bg-card p-4">
                   <p className="mb-2 text-body-sm text-muted-foreground">Top Technologies</p>

@@ -1207,55 +1207,76 @@ export async function uploadDeveloperCv(file: File, saveToProfile = true): Promi
     '/api/v1/profile/cv-upload',
     '/api/v1/me/cv/upload',
     '/api/v1/me/cv-upload',
+    '/api/v1/developers/me/cv/upload',
+    '/api/v1/developers/cv/upload',
     '/api/v1/me/cv',
+    '/api/v1/developers/me/cv',
+    '/api/v1/developers/cv',
     '/api/v1/profile/cv',
     '/api/v1/cv/upload',
   ];
+  const methodCandidates: Array<'POST' | 'PUT' | 'PATCH'> = ['POST', 'PUT', 'PATCH'];
   const fileFieldCandidates = ['file', 'cv_file', 'cv', 'document'];
   let lastError: ApiError | null = null;
 
   for (const path of candidatePaths) {
-    for (const fileField of fileFieldCandidates) {
-      const formData = new FormData();
-      formData.append(fileField, file);
-      formData.append('save_to_profile', saveToProfile ? 'true' : 'false');
-      formData.append('saveToProfile', saveToProfile ? 'true' : 'false');
+    for (const method of methodCandidates) {
+      for (const fileField of fileFieldCandidates) {
+        const formData = new FormData();
+        formData.append(fileField, file);
+        formData.append('save_to_profile', saveToProfile ? 'true' : 'false');
+        formData.append('saveToProfile', saveToProfile ? 'true' : 'false');
 
-      const res = await fetch(`${API_BASE_URL}${path}`, {
-        method: 'POST',
-        credentials: 'include',
-        mode: 'cors',
-        body: formData,
-      }).catch(() => null);
+        const res = await fetch(`${API_BASE_URL}${path}`, {
+          method,
+          credentials: 'include',
+          mode: 'cors',
+          body: formData,
+        }).catch(() => null);
 
-      if (!res) {
-        lastError = new ApiError(0, 'Unable to reach the server. Please check your connection and try again.');
-        continue;
-      }
-
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          handleGlobalAuthFailure();
-        }
-
-        // Only fallback to another endpoint when this one is clearly unavailable.
-        if (res.status === 404 || res.status === 405 || res.status === 422) {
-          lastError = await buildApiError(res);
+        if (!res) {
+          lastError = new ApiError(0, 'Unable to reach the server. Please check your connection and try again.');
           continue;
         }
 
-        throw await buildApiError(res);
-      }
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            handleGlobalAuthFailure();
+          }
 
-      const text = await res.text();
-      if (!text) {
-        return { saved_to_profile: saveToProfile };
-      }
+          const endpointError = await buildApiError(res);
+          const details = (endpointError.details || endpointError.message || '').toLowerCase();
+          const looksLikeRouteMismatch =
+            details.includes('endpoint') ||
+            details.includes('not available') ||
+            details.includes('not found') ||
+            details.includes('no route') ||
+            details.includes('method not allowed');
 
-      try {
-        return JSON.parse(text) as CvUploadResponse;
-      } catch {
-        return { message: text, saved_to_profile: saveToProfile };
+          if (
+            res.status === 404 ||
+            res.status === 405 ||
+            res.status === 422 ||
+            res.status === 501 ||
+            looksLikeRouteMismatch
+          ) {
+            lastError = endpointError;
+            continue;
+          }
+
+          throw endpointError;
+        }
+
+        const text = await res.text();
+        if (!text) {
+          return { saved_to_profile: saveToProfile };
+        }
+
+        try {
+          return JSON.parse(text) as CvUploadResponse;
+        } catch {
+          return { message: text, saved_to_profile: saveToProfile };
+        }
       }
     }
   }

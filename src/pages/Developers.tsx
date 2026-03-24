@@ -121,7 +121,7 @@ const complexityColors: Record<string, string> = {
 
 export default function Developers() {
   const navigate = useNavigate();
-  // searchQuery state is intentionally removed: filters suffice for finding developers
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedTech, setSelectedTech] = useState<string[]>([]);
   // only one complexity level may be selected at a time
@@ -163,6 +163,7 @@ export default function Developers() {
   };
 
   const clearFilters = () => {
+    setSearchQuery("");
     setSelectedRoles([]);
     setSelectedTech([]);
     setSelectedComplexity(null);
@@ -205,6 +206,7 @@ export default function Developers() {
   // results are already filtered by the backend; just use developers array
   const filteredDevelopers = developers;
   const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
     selectedRoles.length > 0 ||
     selectedTech.length > 0 ||
     !!selectedComplexity ||
@@ -214,16 +216,6 @@ export default function Developers() {
 
   // fetch with backend search when filters/page change
   const loadDevelopers = useCallback(async () => {
-    // only perform search when at least one filter is active
-    if (!hasActiveFilters) {
-      setDevelopers([]);
-      setTotalCount(0);
-      setTotalPages(1);
-      setError(null);
-      setErrorStatusCode(null);
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setErrorStatusCode(null);
@@ -232,6 +224,9 @@ export default function Developers() {
         page,
         limit,
       };
+      if (searchQuery.trim()) {
+        filters.q = searchQuery.trim();
+      }
       if (selectedRoles.length > 0) {
         filters.role = selectedRoles[0];
       }
@@ -286,7 +281,7 @@ export default function Developers() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, selectedRoles, selectedComplexity, contributionLevel, minVerified, selectedTech, minProjectsAtLevel, hasActiveFilters]);
+  }, [page, limit, searchQuery, selectedRoles, selectedComplexity, contributionLevel, minVerified, selectedTech, minProjectsAtLevel]);
   useEffect(() => {
     loadDevelopers();
   }, [loadDevelopers]);
@@ -294,12 +289,12 @@ export default function Developers() {
   // clear cache when key filters change (especially role)
   useEffect(() => {
     cacheRef.current.clear();
-  }, [selectedRoles, selectedTech, selectedComplexity, minProjectsAtLevel, minVerified, contributionLevel]);
+  }, [searchQuery, selectedRoles, selectedTech, selectedComplexity, minProjectsAtLevel, minVerified, contributionLevel]);
 
   // reset page when filter criteria change
   useEffect(() => {
     setPage(1);
-  }, [selectedRoles, selectedTech, selectedComplexity, minProjectsAtLevel, minVerified, contributionLevel]);
+  }, [searchQuery, selectedRoles, selectedTech, selectedComplexity, minProjectsAtLevel, minVerified, contributionLevel]);
 
   if (errorStatusCode === '503') {
     return (
@@ -329,8 +324,18 @@ export default function Developers() {
           </p>
         </div>
 
-        {/* Filter button */}
-        <div className="mb-6 flex justify-end">
+        {/* Search + Filter controls */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, username, or skills"
+              className="h-12 pl-10"
+              aria-label="Search developers"
+            />
+          </div>
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
@@ -716,9 +721,9 @@ export default function Developers() {
             {!hasActiveFilters ? (
               <>
                 <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="mb-2 text-heading-sm">Looking for qualified developers?</p>
+                <p className="mb-2 text-heading-sm">No developers to show yet</p>
                 <p className="text-body text-muted-foreground">
-                  Are you a founder or an HR searching for verified engineers? Apply one or more filters above to get started.
+                  Try searching by name/skill or applying filters to narrow results.
                 </p>
               </>
             ) : (
