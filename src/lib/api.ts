@@ -352,6 +352,16 @@ function transformBackendProject(raw: Record<string, unknown>): Project {
       estimated_developer_level: getString({ obj: aiEvaluation, key: 'estimated_developer_level' }),
       primary_role_alignment: getString({ obj: aiEvaluation, key: 'primary_role_alignment' }),
       summary: getString({ obj: aiEvaluation, key: 'summary' }),
+      confidence_score: getNumber({ obj: aiEvaluation, key: 'confidence_score' }, 'confidence_score') ?? 0,
+      confidence_level: getString({ obj: aiEvaluation, key: 'confidence_level' }) as AIEvaluation['confidence_level'],
+      contribution_percentage: getNumber({ obj: aiEvaluation, key: 'contribution_percentage' }, 'contribution_percentage'),
+      contribution_level: getString({ obj: aiEvaluation, key: 'contribution_level' }, 'contribution_level') as AIEvaluation['contribution_level'],
+      has_tests:
+        (typeof aiEvaluation.has_tests === 'boolean' ? aiEvaluation.has_tests : undefined) ??
+        (typeof raw.has_tests === 'boolean' ? (raw.has_tests as boolean) : undefined),
+      test_frameworks:
+        (Array.isArray(aiEvaluation.test_frameworks) ? (aiEvaluation.test_frameworks as string[]) : undefined) ??
+        (Array.isArray(raw.test_frameworks) ? (raw.test_frameworks as string[]) : undefined),
       strengths: Array.isArray(aiEvaluation.strengths) ? aiEvaluation.strengths as string[] : undefined,
       weaknesses: Array.isArray(aiEvaluation.weaknesses) ? aiEvaluation.weaknesses as string[] : undefined,
       recommendations: Array.isArray(aiEvaluation.recommendations) ? aiEvaluation.recommendations as string[] : undefined,
@@ -371,6 +381,15 @@ function transformBackendProject(raw: Record<string, unknown>): Project {
 
 // Transform backend aggregate evaluation to frontend type
 function transformBackendAggregateEvaluation(raw: Record<string, unknown>): AggregateEvaluation {
+  const toNumber = (value: unknown): number | undefined => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return undefined;
+  };
+
   // Extract overall object
   const overall = (raw.overall as Record<string, unknown>) || {};
   
@@ -400,12 +419,20 @@ function transformBackendAggregateEvaluation(raw: Record<string, unknown>): Aggr
   }
   
   // Calculate total commits from projects
-  let totalCommits = 0;
-  if (raw.projects && Array.isArray(raw.projects)) {
+  let totalCommits =
+    toNumber(raw.total_commits) ??
+    toNumber((raw.commit_metrics as Record<string, unknown> | undefined)?.total_commits) ??
+    toNumber((raw.overview as Record<string, unknown> | undefined)?.total_commits) ??
+    0;
+  if (totalCommits === 0 && raw.projects && Array.isArray(raw.projects)) {
     totalCommits = raw.projects.reduce((sum: number, p: Record<string, unknown>) => {
       // Check commit_metrics.total_commits first, then top-level commits_count
       const commitMetrics = (p.commit_metrics as Record<string, unknown>) || {};
-      const commits = (commitMetrics.total_commits as number) || (p.commits_count as number) || 0;
+      const commits =
+        toNumber(commitMetrics.total_commits) ??
+        toNumber(p.commits_count) ??
+        toNumber((p.github_metadata as Record<string, unknown> | undefined)?.commits_count) ??
+        0;
       return sum + commits;
     }, 0);
   }
@@ -442,7 +469,7 @@ function transformBackendAggregateEvaluation(raw: Record<string, unknown>): Aggr
 
   return {
     developer_id: String(raw.developer_id),
-    total_projects: (raw.total_projects as number) || 0,
+    total_projects: toNumber(raw.total_projects) ?? 0,
     overall_skill_level: skillLevel as "Beginner" | "Intermediate" | "Advanced" | "Expert",
     difficulty_distribution: difficultyDist,
     primary_technologies: technologies.slice(0, 5), // Top 5 technologies

@@ -12,6 +12,8 @@ export type ProfileData = {
   yearsOfExperience: number;
   techStack: string[];
   selectedProjects: string[];
+  projectTags: Record<string, string[]>;
+  featuredProjects: string[];
   repos: Repo[];
   projectBreakdowns: Record<
     string,
@@ -38,6 +40,8 @@ export default function ProfileSetup() {
     yearsOfExperience: 3,
     techStack: [],
     selectedProjects: [],
+    projectTags: {},
+    featuredProjects: [],
     repos: [],
     projectBreakdowns: {},
   });
@@ -91,6 +95,7 @@ export default function ProfileSetup() {
       try {
         await importAllProjects(state, selectedRepoNames);
       } catch (err) {
+        void err;
       }
     }
 

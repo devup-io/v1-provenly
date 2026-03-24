@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Github, Star, GitBranch, Calendar, Check, CheckCircle2, ArrowLeft, GitCommit, Lock, Loader2, AlertTriangle } from "lucide-react";
+import { Github, Star, GitBranch, Calendar, Check, CheckCircle2, ArrowLeft, GitCommit, Lock, Loader2, AlertTriangle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/contexts/SettingsContext";
 import { getDeveloper, fetchGitHubOrganizations, fetchReposByOwner, fetchAvailableRepos, getDeveloperProjects, getCurrentDeveloper, importSelectedRepos } from "@/lib/api";
+import { getRecommendedRepoIds, getRoleAlignmentWarning } from "@/lib/project-showcase";
 import type { ProfileData } from "@/pages/ProfileSetup";
 import type { Repo, GitHubOrganization } from "@/types/api";
 
@@ -20,6 +21,8 @@ const languageColors: Record<string, string> = {
   JavaScript: "bg-pastel-yellow",
   Unknown: "bg-secondary",
 };
+
+const PROJECT_TAG_OPTIONS = ["Backend", "Frontend", "API", "Mobile"] as const;
 
 type Props = {
   data: ProfileData;
@@ -66,6 +69,8 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
   const [selectedOwner, setSelectedOwner] = useState<string>("personal");
   const [username, setUsername] = useState<string>("");
   const [selectedRepoFullNames, setSelectedRepoFullNames] = useState<Set<string>>(new Set());
+  const [projectTags, setProjectTags] = useState<Record<string, string[]>>(data.projectTags || {});
+  const [featuredProjects, setFeaturedProjects] = useState<string[]>(data.featuredProjects || []);
 
   // Fetch organizations on mount
   useEffect(() => {
@@ -194,6 +199,18 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
       setShowRulesModal(true);
     }
   }, [isImportingMore]);
+
+  useEffect(() => {
+    const validKeys = new Set(repos.map((repo) => repo.full_name || repo.id));
+    setFeaturedProjects((prev) => prev.filter((key) => validKeys.has(key)));
+    setProjectTags((prev) => {
+      const next: Record<string, string[]> = {};
+      Object.entries(prev).forEach(([key, tags]) => {
+        if (validKeys.has(key)) next[key] = tags;
+      });
+      return next;
+    });
+  }, [repos]);
   
   const toggleProject = (repo: Repo) => {
     if (repo.already_imported) return; // Don't allow toggling already imported projects
@@ -220,6 +237,32 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
   };
 
   const { toast } = useToast();
+
+  const toggleTag = (repoKey: string, tag: string) => {
+    setProjectTags((prev) => {
+      const existing = prev[repoKey] || [];
+      const next = existing.includes(tag)
+        ? existing.filter((value) => value !== tag)
+        : [...existing, tag];
+      const updated = { ...prev, [repoKey]: next };
+      onUpdate({ projectTags: updated });
+      return updated;
+    });
+  };
+
+  const toggleFeatured = (repoKey: string) => {
+    setFeaturedProjects((prev) => {
+      if (prev.includes(repoKey)) {
+        const updated = prev.filter((item) => item !== repoKey);
+        onUpdate({ featuredProjects: updated });
+        return updated;
+      }
+      if (prev.length >= 3) return prev;
+      const updated = [...prev, repoKey];
+      onUpdate({ featuredProjects: updated });
+      return updated;
+    });
+  };
 
   const handleImport = async () => {
     if (selectedRepoFullNames.size === 0) {
@@ -315,6 +358,21 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
   const minRequired = isImportingMore ? 1 : 2;
   const selectedCount = isImportingMore ? selectedRepoFullNames.size : data.selectedProjects.length;
   const canContinue = selectedCount >= minRequired;
+  const selectedRole = data.roles?.[0];
+  const recommendedIds = getRecommendedRepoIds(repos, 3);
+  const recommendedSet = new Set(recommendedIds);
+  const featuredSet = new Set(featuredProjects);
+  const orderedRepos = [...repos].sort((a, b) => {
+    const aKey = a.full_name || a.id;
+    const bKey = b.full_name || b.id;
+    const aFeatured = featuredSet.has(aKey) ? 1 : 0;
+    const bFeatured = featuredSet.has(bKey) ? 1 : 0;
+    if (aFeatured !== bFeatured) return bFeatured - aFeatured;
+    const aRecommended = recommendedSet.has(a.id) ? 1 : 0;
+    const bRecommended = recommendedSet.has(b.id) ? 1 : 0;
+    if (aRecommended !== bRecommended) return bRecommended - aRecommended;
+    return (b.stars || 0) - (a.stars || 0);
+  });
 
   return (
     <div className="rounded-3xl border border-border/50 bg-gradient-to-br from-card to-card/80 backdrop-blur p-8 shadow-lg" data-tour="repo-import-step">
@@ -327,10 +385,34 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
             ? "Choose 1 or more new projects to add to your profile."
             : "Choose 2–5 projects that best represent your skills. These will be showcased on your profile."}
         </p>
+        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
+          <p className="text-body-sm font-semibold text-foreground">Select your best 2–5 projects to showcase your skills</p>
+          <p className="mt-1 text-caption text-muted-foreground">Quality beats quantity. Pick projects with strong activity, meaningful complexity, and clear contribution history.</p>
+        </div>
         <div className="mt-4 rounded-lg bg-yellow-50 border border-yellow-200 p-4 text-body-sm text-yellow-900">
           <strong>Warning:</strong> to get jobs aligned with your role, make sure you import projects that match your declared dev_type and tech stack. Repositories that deviate may flag your account for suspicion; if we detect a pattern of unrelated languages/technologies your job visibility will drop and your account could be temporarily suspended.
         </div>
       </div>
+
+      {recommendedIds.length > 0 && (
+        <div className="mb-6 rounded-xl border border-purple-300/40 bg-purple-50/60 p-4 dark:border-purple-700/40 dark:bg-purple-950/20">
+          <div className="flex items-center gap-2 text-body-sm font-semibold text-purple-800 dark:text-purple-300">
+            <Sparkles className="h-4 w-4" />
+            Recommended projects
+          </div>
+          <p className="mt-1 text-caption text-muted-foreground">We recommend these projects based on activity, complexity, and commits.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {recommendedIds
+              .map((id) => repos.find((repo) => repo.id === id))
+              .filter((repo): repo is Repo => Boolean(repo))
+              .map((repo) => (
+                <span key={repo.id} className="rounded-full bg-purple-100 px-2.5 py-1 text-caption font-medium text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                  ⭐ {repo.name}
+                </span>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Organization Selector */}
       <div className="mb-6">
@@ -384,7 +466,7 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
         <p className="text-caption text-muted-foreground">
           {isImportingMore
             ? "You can select up to 10 projects total on your profile"
-            : "You can select up to 10 projects to showcase on your profile"}
+            : "You can select up to 10 projects, but we strongly recommend featuring your best 2–5"}
         </p>
         {selectedCount < minRequired && (
           <p className="mt-2 text-caption text-yellow-700 dark:text-yellow-300 font-medium">
@@ -413,12 +495,16 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
       )}
       {(loadingRepos ? [] : (
         // paginate repositories in client
-        repos.slice((currentPage - 1) * reposPerPage, currentPage * reposPerPage)
+        orderedRepos.slice((currentPage - 1) * reposPerPage, currentPage * reposPerPage)
       )).map((repo, index) => {
           const fullName = repo.full_name || `${repo.owner}/${repo.name}`;
+          const repoKey = repo.full_name || repo.id;
           const isSelected = isImportingMore
             ? selectedRepoFullNames.has(fullName)
             : data.selectedProjects.includes(repo.id);
+          const isFeatured = featuredSet.has(repoKey);
+          const isRecommended = recommendedSet.has(repo.id);
+          const roleAlignmentWarning = getRoleAlignmentWarning(repo, selectedRole);
           const isAlreadyImported = repo.already_imported || false;
           const repoWarnings = getUniqueWarnings(repo.warnings);
           const advisoryWarnings = repoWarnings.filter((warning) => {
@@ -445,6 +531,8 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
                   ? "border-2 border-muted/30 bg-gradient-to-br from-muted/40 to-muted/20 opacity-60 cursor-not-allowed"
                   : isSelected
                   ? "border-2 border-primary bg-gradient-to-br from-primary/15 to-primary/5 shadow-md"
+                  : isRecommended
+                  ? "border-2 border-purple-300 bg-gradient-to-br from-purple-100/40 to-card hover:shadow-lg hover:border-purple-400"
                   : "border-2 border-border bg-gradient-to-br from-card to-muted/20 hover:shadow-lg hover:border-primary/50"
               }`}
             >
@@ -461,11 +549,27 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
                       {repo.detected_project_type}
                     </span>
                   )}
+                  {isRecommended && (
+                    <span className="rounded-full bg-purple-200 dark:bg-purple-900/60 px-2 py-1 text-purple-800 dark:text-purple-200 font-medium">
+                      Recommended
+                    </span>
+                  )}
+                  {isFeatured && (
+                    <span className="rounded-full bg-primary/20 px-2 py-1 text-primary font-medium">
+                      Featured
+                    </span>
+                  )}
                   {repo.evaluation_profile && (
                     <span className="rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-1 text-green-700 dark:text-green-300 font-medium">
                       {repo.evaluation_profile}
                     </span>
                   )}
+                </div>
+              )}
+              {roleAlignmentWarning && (
+                <div className="mb-2 flex items-center gap-1.5 rounded-md bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 px-3 py-1.5 text-caption text-amber-900 dark:text-amber-200">
+                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span><strong>Role alignment:</strong> {roleAlignmentWarning}</span>
                 </div>
               )}
               {(repo.detected_project_type === 'Unsupported' || repo.evaluation_profile === 'Unsupported') && (
@@ -513,6 +617,23 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isFeatured ? "default" : "outline"}
+                      className="h-7 px-2 text-caption"
+                      disabled={!isSelected || isAlreadyImported}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleFeatured(repoKey);
+                      }}
+                    >
+                      {isFeatured ? "★ Featured" : "☆ Feature"}
+                    </Button>
+                    <span className="text-caption text-muted-foreground">Top 2–3 featured projects show first</span>
+                  </div>
                   <div className="mb-2 flex items-center gap-2 flex-wrap">
                     <h3 className="truncate font-semibold text-heading-xs text-foreground">{repo.name}</h3>
                     {isAlreadyImported && (
@@ -531,6 +652,30 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
                   <p className="mb-3 text-body-sm text-muted-foreground line-clamp-2">
                     {repo.description || "No description"}
                   </p>
+                  <div className="mb-3 flex flex-wrap gap-1.5">
+                    {PROJECT_TAG_OPTIONS.map((tag) => {
+                      const active = (projectTags[repoKey] || []).includes(tag);
+                      return (
+                        <button
+                          key={`${repo.id}-${tag}`}
+                          type="button"
+                          disabled={!isSelected || isAlreadyImported}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleTag(repoKey, tag);
+                          }}
+                          className={`rounded-full px-2 py-0.5 text-caption transition-all ${
+                            active
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-secondary-foreground"
+                          } ${(!isSelected || isAlreadyImported) ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"}`}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <div className="flex flex-wrap items-center gap-3 text-caption text-muted-foreground">
                     <span className="flex items-center gap-1 hover:text-foreground transition-colors">
                       <Star className="h-3.5 w-3.5" />
@@ -570,13 +715,13 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
             Previous
           </Button>
           <span className="text-caption">
-            Page {currentPage} of {Math.ceil(repos.length / reposPerPage)}
+            Page {currentPage} of {Math.ceil(orderedRepos.length / reposPerPage)}
           </span>
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setCurrentPage((p) => Math.min(Math.ceil(repos.length / reposPerPage), p + 1))}
-            disabled={currentPage === Math.ceil(repos.length / reposPerPage)}
+            onClick={() => setCurrentPage((p) => Math.min(Math.ceil(orderedRepos.length / reposPerPage), p + 1))}
+            disabled={currentPage === Math.ceil(orderedRepos.length / reposPerPage)}
           >
             Next
           </Button>

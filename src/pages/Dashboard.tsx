@@ -501,10 +501,25 @@ export default function Dashboard() {
   const fallbackContributionBreakdown = projects.reduce(
     (acc, project) => {
       const level = project.ai_evaluation?.contribution_level || project.contribution_level;
-      if (!level) return acc;
-      if (level === 'Primary Builder') acc.primary += 1;
-      if (level === 'Major Contributor') acc.major += 1;
-      if (level === 'Minor Contributor') acc.minor += 1;
+      if (level === 'Primary Builder') {
+        acc.primary += 1;
+        return acc;
+      }
+      if (level === 'Major Contributor') {
+        acc.major += 1;
+        return acc;
+      }
+      if (level === 'Minor Contributor') {
+        acc.minor += 1;
+        return acc;
+      }
+
+      const contributionPct = project.ai_evaluation?.contribution_percentage;
+      if (typeof contributionPct === 'number') {
+        if (contributionPct >= 70) acc.primary += 1;
+        else if (contributionPct >= 40) acc.major += 1;
+        else if (contributionPct > 0) acc.minor += 1;
+      }
       return acc;
     },
     { primary: 0, major: 0, minor: 0 }
@@ -527,8 +542,11 @@ export default function Dashboard() {
   const verifiedProjectsCount =
     typeof developer.verified_projects === 'number' ? developer.verified_projects : fallbackVerifiedProjects;
   const verifiedProjectsValue = `${verifiedProjectsCount}/${Math.max(projects.length, verifiedProjectsCount, 1)}`;
-  const avgConfidenceNumber =
-    typeof developer.average_confidence === 'number' ? Math.round(developer.average_confidence) : fallbackAverageConfidence;
+  const avgConfidenceFromDeveloper =
+    typeof developer.average_confidence === 'number' && Number.isFinite(developer.average_confidence)
+      ? Math.round(developer.average_confidence)
+      : null;
+  const avgConfidenceNumber = avgConfidenceFromDeveloper ?? fallbackAverageConfidence;
   const avgConfidenceValue = avgConfidenceNumber !== null ? `${avgConfidenceNumber}%` : 'Pending';
   const contributionValue = developer.contribution_breakdown
     ? `Primary ${developer.contribution_breakdown['Primary Builder'] || 0} | Major ${developer.contribution_breakdown['Major Contributor'] || 0} | Minor ${developer.contribution_breakdown['Minor Contributor'] || 0}`
@@ -677,16 +695,16 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 text-body-sm">
-                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-4 grid grid-cols-1 gap-3 text-body-sm sm:grid-cols-2">
+                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:min-h-[88px] sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-caption uppercase tracking-wide text-muted-foreground">Experience</span>
                   <span className="font-medium text-foreground">{experienceValue}</span>
                 </div>
-                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:min-h-[88px] sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-caption uppercase tracking-wide text-muted-foreground">Verified Projects</span>
                   <span className="font-medium text-foreground">{verifiedProjectsValue}</span>
                 </div>
-                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:min-h-[88px] sm:flex-row sm:items-center sm:justify-between">
                   <span className="inline-flex items-center gap-1 text-caption uppercase tracking-wide text-muted-foreground">
                     Avg Confidence
                     <InfoTip
@@ -696,7 +714,7 @@ export default function Dashboard() {
                   </span>
                   <span className="font-medium text-foreground">{avgConfidenceValue}</span>
                 </div>
-                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3">
+                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:col-span-2">
                   <span className="inline-flex items-center gap-1 text-caption uppercase tracking-wide text-muted-foreground">
                     Contribution
                     <InfoTip
@@ -704,7 +722,7 @@ export default function Dashboard() {
                       text="Estimated share of your contribution: Primary Builder, Major Contributor, or Minor Contributor."
                     />
                   </span>
-                  <span className="font-medium text-foreground">{contributionValue}</span>
+                  <span className="break-words font-medium text-foreground">{contributionValue}</span>
                 </div>
               </div>
 
