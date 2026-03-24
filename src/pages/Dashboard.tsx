@@ -695,16 +695,16 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 text-body-sm sm:grid-cols-2">
-                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:min-h-[88px] sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-caption uppercase tracking-wide text-muted-foreground">Experience</span>
-                  <span className="font-medium text-foreground">{experienceValue}</span>
+              <div className="mt-4 grid grid-cols-1 gap-3 text-body-sm md:grid-cols-2">
+                <div className="rounded-xl border border-border/50 bg-background/60 px-4 py-3">
+                  <p className="text-caption uppercase tracking-wide text-muted-foreground">Experience</p>
+                  <p className="mt-1 break-words text-base font-medium text-foreground">{experienceValue}</p>
                 </div>
-                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:min-h-[88px] sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-caption uppercase tracking-wide text-muted-foreground">Verified Projects</span>
-                  <span className="font-medium text-foreground">{verifiedProjectsValue}</span>
+                <div className="rounded-xl border border-border/50 bg-background/60 px-4 py-3">
+                  <p className="text-caption uppercase tracking-wide text-muted-foreground">Verified Projects</p>
+                  <p className="mt-1 text-base font-medium text-foreground">{verifiedProjectsValue}</p>
                 </div>
-                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:min-h-[88px] sm:flex-row sm:items-center sm:justify-between">
+                <div className="rounded-xl border border-border/50 bg-background/60 px-4 py-3">
                   <span className="inline-flex items-center gap-1 text-caption uppercase tracking-wide text-muted-foreground">
                     Avg Confidence
                     <InfoTip
@@ -712,9 +712,9 @@ export default function Dashboard() {
                       text="How confident the AI is in evaluations across your analyzed projects."
                     />
                   </span>
-                  <span className="font-medium text-foreground">{avgConfidenceValue}</span>
+                  <p className="mt-1 text-base font-medium text-foreground">{avgConfidenceValue}</p>
                 </div>
-                <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-background/60 px-4 py-3 sm:col-span-2">
+                <div className="rounded-xl border border-border/50 bg-background/60 px-4 py-3 md:col-span-2">
                   <span className="inline-flex items-center gap-1 text-caption uppercase tracking-wide text-muted-foreground">
                     Contribution
                     <InfoTip
@@ -722,7 +722,11 @@ export default function Dashboard() {
                       text="Estimated share of your contribution: Primary Builder, Major Contributor, or Minor Contributor."
                     />
                   </span>
-                  <span className="break-words font-medium text-foreground">{contributionValue}</span>
+                  <div className="mt-2 flex flex-wrap gap-2 text-caption">
+                    <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">Primary {developer.contribution_breakdown?.['Primary Builder'] ?? fallbackContributionBreakdown.primary}</span>
+                    <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">Major {developer.contribution_breakdown?.['Major Contributor'] ?? fallbackContributionBreakdown.major}</span>
+                    <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">Minor {developer.contribution_breakdown?.['Minor Contributor'] ?? fallbackContributionBreakdown.minor}</span>
+                  </div>
                 </div>
               </div>
 
