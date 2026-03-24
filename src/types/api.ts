@@ -1,3 +1,9 @@
+export interface TestStats {
+  projects_with_tests?: number;
+  projects_without_tests?: number;
+  test_coverage_rate?: number; // percentage (0-100)
+}
+
 export interface DeveloperProfile {
   id: string;
   github_id: number | string;
@@ -20,6 +26,8 @@ export interface DeveloperProfile {
   average_confidence?: number;
   experience_signal?: string;
   contribution_breakdown?: Record<string, number>;
+  // test statistics
+  test_stats?: TestStats;
   // some endpoints may include projects directly
   projects?: Project[];
   is_published?: boolean; // indicates whether the profile has been published
@@ -115,10 +123,13 @@ export interface DeveloperFullDetailsProject {
   summary?: string;
   contribution_percentage?: number;
   confidence_score?: number;
+  confidence_level?: string;
   detected_project_type?: string;
   evaluation_profile?: string;
   role_mismatch?: boolean;
   role_mismatch_note?: string;
+  has_tests?: boolean;
+  test_frameworks?: string[];
   created_at?: string;
   updated_at?: string;
   imported_at?: string;
@@ -323,7 +334,7 @@ export interface AIEvaluation {
   commit_distribution_signal?: string; // natural vs dumped description
   development_timeline_signal?: string; // sustained vs sporadic
   confidence_level?: "High" | "Medium" | "Low";
-  confidence_score?: number; // 0-100
+  confidence_score: number; // 0-100, now guaranteed (never null)
 
   // Verified badge
   verified_badge?: boolean;
@@ -344,6 +355,10 @@ export interface AIEvaluation {
   evaluation_profile?: string;
   role_mismatch?: boolean;
   role_mismatch_note?: string;
+
+  // test information
+  has_tests?: boolean;
+  test_frameworks?: string[];
 
   created_at?: string;
   updated_at?: string;
@@ -388,6 +403,10 @@ export interface Project {
   max_complexity?: string;
   highest_complexity?: string;
   dominant_complexity?: string;
+
+  // test information
+  has_tests?: boolean;
+  test_frameworks?: string[];
 
   // engineering signals for additional insights
   engineering_signals?: Record<string, unknown>;

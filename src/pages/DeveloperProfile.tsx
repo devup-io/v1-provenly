@@ -14,6 +14,8 @@ import {
   Code2,
   Loader2,
   Info,
+  TestTube,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";import { Progress } from '@/components/ui/progress';import { ErrorScreen } from "@/components/ErrorScreen";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,6 +45,8 @@ type Project = ApiProject & {
   evaluation_profile?: string;
   role_mismatch?: boolean;
   role_mismatch_note?: string;
+  has_tests?: boolean;
+  test_frameworks?: string[];
   max_complexity?: string;
   highest_complexity?: string;
   dominant_complexity?: string;
@@ -157,10 +161,13 @@ function mapFullDetailsProject(raw: DeveloperFullDetailsProject, developerId: st
     summary: raw.summary,
     contribution_percentage: raw.contribution_percentage,
     confidence_score: raw.confidence_score,
+    confidence_level: raw.confidence_level as AIEvaluation['confidence_level'] | undefined,
     detected_project_type: raw.detected_project_type,
     evaluation_profile: raw.evaluation_profile,
     role_mismatch: raw.role_mismatch,
     role_mismatch_note: raw.role_mismatch_note,
+    has_tests: raw.has_tests,
+    test_frameworks: raw.test_frameworks,
     created_at: raw.created_at,
     updated_at: raw.updated_at,
   };
@@ -476,6 +483,28 @@ export default function DeveloperProfile() {
                     {developer.average_confidence !== undefined ? `${Math.round(developer.average_confidence)}%` : 'N/A'}
                   </p>
                 </div>
+                {developer.test_stats && (
+                  <>
+                    <div className="rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+                      <p className="text-caption text-muted-foreground flex items-center gap-1">
+                        <TestTube className="h-3.5 w-3.5" />
+                        Projects with Tests
+                      </p>
+                      <p className="font-medium">{developer.test_stats.projects_with_tests ?? 0}</p>
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+                      <p className="text-caption text-muted-foreground flex items-center gap-1">
+                        <BarChart3 className="h-3.5 w-3.5" />
+                        Test Coverage
+                      </p>
+                      <p className="font-medium">
+                        {developer.test_stats.test_coverage_rate !== undefined 
+                          ? `${Math.round(developer.test_stats.test_coverage_rate)}%` 
+                          : 'N/A'}
+                      </p>
+                    </div>
+                  </>
+                )}
                 <div className="rounded-xl border border-border/60 bg-background/60 px-3 py-2">
                   <p className="text-caption text-muted-foreground">Projects</p>
                   <p className="font-medium">{developer.projectCount ?? developerProjects.length ?? 0}</p>
@@ -626,7 +655,7 @@ export default function DeveloperProfile() {
                       <p className="font-semibold">{project.ai_evaluation.repo_score}</p>
                     </div>
                   )}
-                  {project.ai_evaluation?.confidence_score != null && (
+                  {project.ai_evaluation && (
                     <div className="rounded-xl border border-border/50 bg-background/50 px-3 py-2 text-center">
                       <p className="text-caption text-muted-foreground">Confidence</p>
                       <p className="font-semibold">{project.ai_evaluation.confidence_score}%</p>
@@ -634,7 +663,7 @@ export default function DeveloperProfile() {
                   )}
                 </div>
 
-                {project.ai_evaluation?.confidence_score != null && (
+                {project.ai_evaluation && (
                   <div className="mb-4">
                     <div className="mb-1 flex items-center justify-between text-caption text-muted-foreground">
                       <div className="flex items-center gap-2">
@@ -650,7 +679,7 @@ export default function DeveloperProfile() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setAiSignalModal({ type: 'confidence', project: project.name || 'Unknown', value: project.ai_evaluation?.confidence_score || 0 })}
+                        onClick={() => setAiSignalModal({ type: 'confidence', project: project.name || 'Unknown', value: project.ai_evaluation.confidence_score })}
                         className="font-medium text-primary hover:underline"
                       >
                         {project.ai_evaluation.confidence_score}%
@@ -705,7 +734,20 @@ export default function DeveloperProfile() {
                       <div>Role alignment: {project.ai_evaluation.primary_role_alignment}</div>
                     )}
                     {project.ai_evaluation.detected_project_type && (
-                      <div>Detected type: {project.ai_evaluation.detected_project_type}</div>
+                      <div className="font-medium text-primary">Detected type: {project.ai_evaluation.detected_project_type}</div>
+                    )}
+                    {project.ai_evaluation.has_tests !== undefined && (
+                      <div className="flex items-center gap-2">
+                        <TestTube className="h-4 w-4" />
+                        {project.ai_evaluation.has_tests ? (
+                          <span>Tests: <span className="font-medium text-green-600 dark:text-green-400">Yes</span></span>
+                        ) : (
+                          <span>Tests: <span className="font-medium text-muted-foreground">No</span></span>
+                        )}
+                      </div>
+                    )}
+                    {project.ai_evaluation.test_frameworks && project.ai_evaluation.test_frameworks.length > 0 && (
+                      <div>Test frameworks: {project.ai_evaluation.test_frameworks.join(', ')}</div>
                     )}
                     {project.ai_evaluation.evaluation_profile && (
                       <div>Profile: {project.ai_evaluation.evaluation_profile}</div>

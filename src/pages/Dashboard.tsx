@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, Check, Cpu, Info, FileUp } from 'lucide-react';
+import { Github, Loader2, AlertCircle, RefreshCw, Plus, GitBranch, Check, Cpu, Info, FileUp, TestTube, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -1002,13 +1002,28 @@ export default function Dashboard() {
                                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
                                   {project.ai_evaluation?.repo_score !== undefined ? `${Math.round(project.ai_evaluation.repo_score)}% score` : 'N/A score'}
                                 </span>
-                                {project.ai_evaluation?.confidence_score !== undefined && (
+                                {project.ai_evaluation && (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-0.5 text-secondary-foreground">
                                     {Math.round(project.ai_evaluation.confidence_score)}% confidence
                                     <InfoTip
                                       label="Confidence score"
                                       text="How confident the AI is in this project’s evaluation based on available repository signals."
                                     />
+                                  </span>
+                                )}
+                                {project.ai_evaluation?.detected_project_type && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-3 py-0.5 font-semibold text-blue-700 dark:text-blue-300">
+                                    {project.ai_evaluation.detected_project_type}
+                                  </span>
+                                )}
+                                {project.ai_evaluation?.has_tests !== undefined && (
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-3 py-0.5 ${
+                                    project.ai_evaluation.has_tests 
+                                      ? 'bg-green-500/10 text-green-700 dark:text-green-300' 
+                                      : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                                  }`}>
+                                    <TestTube className="h-3 w-3" />
+                                    {project.ai_evaluation.has_tests ? 'Has tests' : 'No tests'}
                                   </span>
                                 )}
                                 {project.ai_evaluation?.contribution_percentage !== undefined && (

@@ -1,11 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/landing/Header';
 import { Footer } from '@/components/landing/Footer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Accordion,
@@ -28,8 +27,9 @@ import {
   Eye,
   Cpu,
   GitCommit,
+  Mail,
+  Lock,
 } from 'lucide-react';
-
 interface HelpSection {
   id: string;
   title: string;
@@ -78,7 +78,7 @@ export default function Help() {
 
           <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-6">
             <p className="text-body-sm text-muted-foreground">
-              💡 <strong>Pro Tip:</strong> Import projects that best represent your skills and complexity levels (L1-L3). Quality over quantity!
+              <strong>Tip:</strong> Import projects that best represent your skills and complexity levels (L1-L3). Quality over quantity.
             </p>
           </div>
         </div>
@@ -102,9 +102,9 @@ export default function Help() {
                 Overall quality score (0-100) based on code architecture, engineering practices, and project maturity. Higher scores indicate well-engineered projects with good patterns.
               </p>
               <div className="mt-3 text-caption text-muted-foreground space-y-1">
-                <p>🟢 80+: Strong repository quality ({`""`}Production-ready{""})</p>
-                <p>🟡 60-79: Good quality with room for improvement</p>
-                <p>🔴 Below 60: Needs attention or basic projects</p>
+                <p>80+: Strong repository quality (production-ready).</p>
+                <p>60-79: Good quality with room for improvement.</p>
+                <p>Below 60: Needs attention or basic projects.</p>
               </div>
             </div>
 
@@ -117,9 +117,9 @@ export default function Help() {
                 How confident our AI is in its evaluation (0-100). Based on available data signals, repository history, and code patterns.
               </p>
               <div className="mt-3 text-caption text-muted-foreground space-y-1">
-                <p>🟢 80+: Very high confidence</p>
-                <p>🟡 60-79: Good confidence</p>
-                <p>🔴 Below 60: Limited signals - provide more context in your profile</p>
+                <p>80+: Very high confidence.</p>
+                <p>60-79: Good confidence.</p>
+                <p>Below 60: Limited signals; provide more context in your profile.</p>
               </div>
             </div>
 
@@ -132,9 +132,9 @@ export default function Help() {
                 Estimated share of your contribution in the repository. Helps founders understand your role and impact.
               </p>
               <div className="mt-3 text-caption text-muted-foreground space-y-1">
-                <p>🟢 70%+: Primary Builder - you drove this project</p>
-                <p>🟡 40-69%: Major Contributor - significant impact</p>
-                <p>🔴 Below 40%: Minor/Partial - supporting role</p>
+                <p>70%+: Primary Builder — you drove this project.</p>
+                <p>40-69%: Major Contributor — significant impact.</p>
+                <p>Below 40%: Minor or partial contributor role.</p>
               </div>
             </div>
 
@@ -147,16 +147,16 @@ export default function Help() {
                 Categorizes your projects by technical depth and scale.
               </p>
               <div className="mt-3 text-caption text-muted-foreground space-y-1">
-                <p>📦 <strong>L1 (Beginner)</strong> - Simple projects, learning phase</p>
-                <p>🏢 <strong>L2 (Intermediate)</strong> - Multi-feature projects, team collaboration</p>
-                <p>🚀 <strong>L3 (Advanced)</strong> - Enterprise scale, complex architecture</p>
+                <p><strong>L1 (Beginner)</strong> - Simple projects, learning phase.</p>
+                <p><strong>L2 (Intermediate)</strong> - Multi-feature projects and team collaboration.</p>
+                <p><strong>L3 (Advanced)</strong> - Complex architecture and higher scale.</p>
               </div>
             </div>
           </div>
 
           <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-6">
             <p className="text-body-sm text-muted-foreground">
-              ✨ <strong>What Helps Analysis:</strong> Active repositories, clear commit history, diverse tech stack, and well-documented code.
+              <strong>What helps analysis:</strong> Active repositories, clear commit history, diverse tech stack, and well-documented code.
             </p>
           </div>
         </div>
@@ -222,20 +222,20 @@ export default function Help() {
             <h3 className="mb-4 font-semibold">Dashboard Features</h3>
             <div className="space-y-3 text-body-sm text-muted-foreground">
               <div>
-                <p className="font-medium text-foreground">📊 Your Projects Tab</p>
-                <p className="text-caption mt-1">View all imported repositories with their AI evaluation scores and complexity levels.</p>
+                <p className="font-medium text-foreground">Your Projects tab</p>
+                <p className="text-caption mt-1">View imported repositories with AI evaluation scores and complexity levels.</p>
               </div>
               <div>
-                <p className="font-medium text-foreground">📚 Education Tab</p>
+                <p className="font-medium text-foreground">Education tab</p>
                 <p className="text-caption mt-1">Add certifications, degrees, and learning achievements to your profile.</p>
               </div>
               <div>
-                <p className="font-medium text-foreground">💼 Experience Tab</p>
+                <p className="font-medium text-foreground">Experience tab</p>
                 <p className="text-caption mt-1">Highlight your professional work history and achievements.</p>
               </div>
               <div>
-                <p className="font-medium text-foreground">🔍 Run Analysis</p>
-                <p className="text-caption mt-1">Trigger a fresh AI evaluation of your projects any time.</p>
+                <p className="font-medium text-foreground">Run analysis</p>
+                <p className="text-caption mt-1">Trigger a fresh AI evaluation of your projects at any time.</p>
               </div>
             </div>
           </div>
@@ -260,7 +260,7 @@ export default function Help() {
 
           <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-6">
             <p className="text-body-sm text-muted-foreground">
-              💡 <strong>Tip:</strong> Regularly update your profile and re-run analysis to keep your evaluation scores fresh and accurate.
+              <strong>Tip:</strong> Regularly update your profile and re-run analysis to keep your evaluation scores fresh and accurate.
             </p>
           </div>
         </div>
@@ -278,11 +278,11 @@ export default function Help() {
             <h3 className="mb-4 font-semibold">Public vs Private Profiles</h3>
             <div className="space-y-4 text-body-sm text-muted-foreground">
               <div>
-                <p className="font-medium text-green-500">🟢 Public Profile</p>
-                <p className="mt-2">Your profile is visible in search results and to all hiring managers. They can see your projects, scores, and contact you directly.</p>
+                <p className="font-medium text-green-500 flex items-center gap-2"><Eye className="h-4 w-4" />Public profile</p>
+                <p className="mt-2">Your profile is visible in search results and to hiring managers. They can see projects, scores, and contact details.</p>
               </div>
               <div className="mt-4 pt-4 border-t border-border">
-                <p className="font-medium text-gray-500">🔒 Private Profile</p>
+                <p className="font-medium text-gray-500 flex items-center gap-2"><Lock className="h-4 w-4" />Private profile</p>
                 <p className="mt-2">Your profile is hidden from public search. Only people with your direct link can view it.</p>
               </div>
             </div>
@@ -410,17 +410,21 @@ export default function Help() {
     },
   ];
 
-  const filteredSections = useMemo(() => {
-    if (!searchQuery.trim()) return helpSections;
+  const filteredSections = !searchQuery.trim()
+    ? helpSections
+    : helpSections.filter((section) => {
+        const query = searchQuery.toLowerCase();
+        return (
+          section.title.toLowerCase().includes(query) ||
+          section.description.toLowerCase().includes(query) ||
+          section.keywords.some((keyword) => keyword.includes(query))
+        );
+      });
 
-    const query = searchQuery.toLowerCase();
-    return helpSections.filter(
-      (section) =>
-        section.title.toLowerCase().includes(query) ||
-        section.description.toLowerCase().includes(query) ||
-        section.keywords.some((keyword) => keyword.includes(query))
-    );
-  }, [searchQuery]);
+  const sectionOrder = ['getting-started', 'repo-selection', 'analysis-explained', 'dashboard-guide', 'profile-visibility', 'troubleshooting'];
+  const orderedSections = [...filteredSections].sort(
+    (a, b) => sectionOrder.indexOf(a.id) - sectionOrder.indexOf(b.id)
+  );
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -464,9 +468,9 @@ export default function Help() {
         {/* Help Sections */}
         <section className="py-12 md:py-20">
           <div className="container max-w-4xl mx-auto px-4">
-            {filteredSections.length > 0 ? (
+            {orderedSections.length > 0 ? (
               <div className="grid gap-6">
-                {filteredSections.map((section, index) => (
+                {orderedSections.map((section, index) => (
                   <motion.div
                     key={section.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -564,5 +568,3 @@ export default function Help() {
   );
 }
 
-// Add Mail icon if not imported
-import { Mail } from 'lucide-react';
