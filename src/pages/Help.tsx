@@ -427,105 +427,80 @@ export default function Help() {
   );
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="flex-1">
-        <div className="min-h-screen bg-gradient-to-br from-pastel-mint/30 via-pastel-peach/20 to-pastel-lavender/20">
-          <div className="container max-w-3xl px-4 pb-12 pt-28 md:pt-32">
-            <div className="mb-8 flex flex-col items-center gap-2">
-              <h1 className="text-display-sm font-extrabold text-pastel-peach drop-shadow">Help & Support</h1>
-              <p className="text-body text-muted-foreground text-center max-w-xl">
-                Find answers, tips, and support for using Provenly. Search or browse the sections below.
-              </p>
-            </div>
-            <div className="mb-8 flex justify-center">
-              <Input
-                type="text"
-                placeholder="Search help topics..."
-                className="w-full max-w-md rounded-full border-2 border-pastel-mint bg-pastel-mint/10 px-5 py-3 text-lg shadow focus:border-pastel-peach focus:bg-white focus:ring-2 focus:ring-pastel-peach"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="space-y-8">
-              {filteredSections.length === 0 ? (
-                <div className="rounded-2xl border-2 border-pastel-peach bg-pastel-peach/10 p-8 text-center text-body-lg text-pastel-peach-foreground shadow animate-bounce-in">
-                  <HelpCircle className="mx-auto mb-2 h-10 w-10 text-pastel-peach animate-bounce" />
-                  No help topics found. Try a different search!
-                </div>
-              ) : (
-                <Accordion type="multiple" className="rounded-2xl bg-white/80 p-2 shadow-lg">
-                  {filteredSections.map((section) => (
-                    <AccordionItem key={section.id} value={section.id} className="rounded-xl border-2 border-pastel-mint bg-pastel-mint/10 mb-4 hover:scale-[1.02] transition-transform">
-                      <AccordionTrigger className="flex items-center gap-3 text-heading-md">
-                        <span className="rounded-full bg-pastel-peach/30 p-2 shadow">
-                          {section.icon}
-                        </span>
-                        {section.title}
-                      </AccordionTrigger>
-                      <AccordionContent className="bg-white/90 p-4 rounded-b-xl">
-                        {section.content}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              )}
+        <div className="container max-w-3xl px-4 pb-12 pt-24">
+          <div className="mb-8 flex flex-col items-center gap-2">
+            <h1 className="text-3xl font-bold text-foreground">Help & Support</h1>
+            <p className="text-body text-muted-foreground text-center max-w-xl">
+              Find answers, tips, and support for using Provenly. Search or browse the sections below.
+            </p>
+          </div>
+          <div className="mb-8 flex justify-center">
+            <Input
+              type="text"
+              placeholder="Search help topics..."
+              className="w-full max-w-md border px-5 py-3 text-base focus:border-primary focus:ring-2 focus:ring-primary"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="space-y-6">
+            {filteredSections.length === 0 ? (
+              <div className="p-8 text-center text-body-lg text-muted-foreground border rounded">
+                <HelpCircle className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
+                No help topics found. Try a different search!
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {orderedSections.map((section) => (
+                  <div key={section.id} className="flex gap-4 items-start border-b pb-6">
+                    <div className="mt-1">{section.icon}</div>
+                    <div>
+                      <h2 className="text-lg font-semibold mb-1">{section.title}</h2>
+                      <div className="text-muted-foreground mb-2 text-sm">{section.description}</div>
+                      <div>{section.content}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Links */}
+        <section className="py-10 border-t mt-12">
+          <div className="container max-w-4xl mx-auto px-4">
+            <h2 className="mb-6 text-center text-xl font-semibold">Quick Links</h2>
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 px-6 py-3"
+                onClick={() => navigate('/contact')}
+              >
+                <Mail className="h-5 w-5" />
+                Contact Support
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 px-6 py-3"
+                onClick={() => navigate('/about')}
+              >
+                <BookOpen className="h-5 w-5" />
+                About Provenly
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 px-6 py-3"
+                onClick={() => navigate('/dashboard')}
+              >
+                <Zap className="h-5 w-5" />
+                Back to Dashboard
+              </Button>
             </div>
           </div>
-
-          {/* Quick Links */}
-          <section className="py-12 md:py-20 bg-muted/30">
-            <div className="container max-w-4xl mx-auto px-4">
-              <h2 className="mb-8 text-center text-heading-lg">Need more help?</h2>
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                >
-                  <Button
-                    variant="outline"
-                    className="w-full h-auto flex flex-col items-center justify-center gap-2 py-4"
-                    onClick={() => navigate('/contact')}
-                  >
-                    <Mail className="h-5 w-5" />
-                    <span>Contact Support</span>
-                  </Button>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <Button
-                    variant="outline"
-                    className="w-full h-auto flex flex-col items-center justify-center gap-2 py-4"
-                    onClick={() => navigate('/about')}
-                  >
-                    <BookOpen className="h-5 w-5" />
-                    <span>About Provenly</span>
-                  </Button>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <Button
-                    variant="outline"
-                    className="w-full h-auto flex flex-col items-center justify-center gap-2 py-4"
-                    onClick={() => navigate('/dashboard')}
-                  >
-                    <Zap className="h-5 w-5" />
-                    <span>Back to Dashboard</span>
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
-          </section>
-        </div>
+        </section>
       </main>
       <Footer />
     </div>

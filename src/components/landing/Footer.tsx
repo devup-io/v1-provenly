@@ -4,11 +4,8 @@ import { Twitter, Linkedin, Instagram, Github } from "lucide-react";
 const footerLinks = {
   Product: [
     { label: "Find Talent", href: "#" },
-    { label: "Find Work", href: "#" },
     { label: "How It Works", href: "/how-it-works" },
-    { label: "Pricing", href: "#" },
-    { label: "Enterprise", href: "#" },
-    { label: "Login / Sign Up", href: "/signup" },
+   
     { label: "Features", href: "/features" },
     { label: "Use Cases", href: "/use-cases" },
     { label: "What is Provenly?", href: "/what-is-provenly" },
@@ -17,8 +14,6 @@ const footerLinks = {
   Company: [
     { label: "About", href: "/about" },
     { label: "Help", href: "/help" },
-    { label: "Blog", href: "#" },
-    { label: "Careers", href: "#" },
     { label: "Press", href: "#" },
     { label: "Contact", href: "/contact" },
   ],
