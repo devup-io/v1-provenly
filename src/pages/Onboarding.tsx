@@ -97,6 +97,10 @@ export default function Onboarding() {
     navigate('/signup');
     return null;
   }
+  if (developer.profile_complete) {
+    navigate('/dashboard');
+    return null;
+  }
 
   const handleNext = async () => {
     if (step === 1) {
