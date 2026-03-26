@@ -16,15 +16,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main>
-        <Hero />
-        {/* Internal links for SEO anchor/resource pages */}
-        <div className="container mx-auto mt-8 flex flex-wrap gap-3 justify-center">
-          <a className="rounded-full bg-secondary px-3 py-1 text-body-sm" href="/what-is-provenly">What is Provenly?</a>
-          <a className="rounded-full bg-secondary px-3 py-1 text-body-sm" href="/features">Features</a>
-          <a className="rounded-full bg-secondary px-3 py-1 text-body-sm" href="/use-cases">Use Cases</a>
-          <a className="rounded-full bg-secondary px-3 py-1 text-body-sm" href="/resources/best-platform-to-showcase-developer-projects">Best Platform Guide</a>
-        </div>
-        <Hero />
+         <Hero />
         <SocialProof />
         <Features />
         <HowItWorksNew />

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -123,6 +124,7 @@ const EmptyState = () => <p className="text-caption text-muted-foreground">{NO_D
 export default function Analysis() {
   const navigate = useNavigate();
   const [running, setRunning] = useState(false);
+  const [modalStep, setModalStep] = useState<'checking' | 'logs' | 'ready' | 'results' | null>(null);
   const [charts, setCharts] = useState<unknown>(null);
   const [logLines, setLogLines] = useState<string[]>([]);
   const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
@@ -416,12 +418,17 @@ export default function Analysis() {
       return;
     }
 
+
     setRunning(true);
     setLogLines([]);
     setAnalysisStatus('starting');
+    setModalStep('checking');
 
     try {
       let triggered = false;
+
+      // Simulate status check modal
+      setTimeout(() => setModalStep('logs'), 1200);
 
       try {
         await getDeveloperAnalyzer(effectiveDevId);
@@ -445,15 +452,47 @@ export default function Analysis() {
         throw new Error('No analysis trigger succeeded.');
       }
 
+      // Simulate logs modal, then ready modal
+      setTimeout(() => setModalStep('ready'), 2200);
+
       startStream(effectiveDevId);
     } catch (err) {
       toast({ title: 'Analysis failed', description: 'Unable to run analysis, please try again.', variant: 'destructive' });
       setRunning(false);
+      setModalStep(null);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-hero py-8">
+      {/* Modal flow for status, logs, ready */}
+      <Dialog open={modalStep === 'checking'}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Checking Analyzer Status</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">Checking all analyzer statuses...</div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={modalStep === 'logs'}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Analyzer Logs</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">Analyzer log output (see below for live logs)...</div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={modalStep === 'ready'}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Analyzer Ready</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">The analyzer is ready. You can now view your results.</div>
+          <DialogFooter>
+            <Button onClick={() => setModalStep('results')}>See Results</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="container max-w-2xl px-4 text-center sm:px-6">
         <h1 className="text-display-sm mb-6">Profile Analyzer</h1>
         <p className="text-body mb-4">Run thorough AI evaluations across your imported repos.</p>
@@ -585,7 +624,7 @@ export default function Analysis() {
       )}
 
       {/* Results area */}
-      {!running && (
+      {!running && modalStep === 'results' && (
         <div className="container mt-12 max-w-6xl px-4 sm:px-6">
           <h2 className="text-heading-md mb-4">Recent Analysis</h2>
           <div className="grid grid-cols-1 gap-6">
