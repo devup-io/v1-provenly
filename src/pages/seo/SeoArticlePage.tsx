@@ -1,6 +1,8 @@
 import { Header } from "@/components/landing/Header";
 import { Footer } from "@/components/landing/Footer";
+import { Link } from "react-router-dom";
 import { seoArticleBySlug } from "./seoArticles";
+import SeoHead from "./SeoHead";
 
 type Props = {
   slug: string;
@@ -22,8 +24,46 @@ export default function SeoArticlePage({ slug }: Props) {
     );
   }
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: article.faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  };
+
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.snippet,
+    mainEntityOfPage: `/resources/${article.slug}`,
+    author: {
+      "@type": "Organization",
+      name: "Provenly",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Provenly",
+    },
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <SeoHead
+        title={`${article.title} | Provenly Resources`}
+        description={article.snippet}
+        keywords="developer portfolio, project showcase, provenly, technical hiring"
+        ogType="article"
+      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+
       <Header />
       <main className="container max-w-4xl px-4 pb-12 pt-28 md:pt-32">
         <article className="space-y-8">
@@ -82,6 +122,15 @@ export default function SeoArticlePage({ slug }: Props) {
                 <p className="mt-1 text-body-sm text-muted-foreground">{faq.answer}</p>
               </div>
             ))}
+          </section>
+
+          <section className="rounded-xl border border-border bg-card p-5">
+            <h2 className="text-heading-md">Related Pages</h2>
+            <div className="mt-3 flex flex-wrap gap-2 text-body-sm">
+              <Link className="rounded-full bg-secondary px-3 py-1" to="/what-is-provenly">What is Provenly</Link>
+              <Link className="rounded-full bg-secondary px-3 py-1" to="/features">Features</Link>
+              <Link className="rounded-full bg-secondary px-3 py-1" to="/use-cases">Use Cases</Link>
+            </div>
           </section>
         </article>
       </main>

@@ -37,6 +37,9 @@ import Status from "./pages/Status";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import SeoArticlePage from "./pages/seo/SeoArticlePage";
+import WhatIsProvenly from "./pages/WhatIsProvenly";
+import FeaturesPage from "./pages/FeaturesPage";
+import UseCasesPage from "./pages/UseCasesPage";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +106,9 @@ function AppContent() {
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/status" element={<Status />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/what-is-provenly" element={<WhatIsProvenly />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/use-cases" element={<UseCasesPage />} />
         <Route
           path="/resources/best-platform-to-showcase-developer-projects"
           element={<SeoArticlePage slug="best-platform-to-showcase-developer-projects" />}

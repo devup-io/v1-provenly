@@ -1,0 +1,26 @@
+# Provenly
+
+Provenly is a platform for developers, designers, and tech professionals to showcase projects and build verified profiles.
+
+## Key Pages
+/what-is-provenly
+/features
+/use-cases
+/resources/best-platform-to-showcase-developer-projects
+/resources/developer-portfolio-no-experience
+/resources/get-noticed-by-tech-recruiters
+
+## Description
+Provenly helps users present their work, verify skills, and connect with companies globally.
+
+## Topics
+- Developer portfolios
+- Showcasing tech projects
+- Hiring and talent discovery
+- Online professional profiles
+
+## Audience
+Developers, designers, students, freelancers
+
+## Use Case
+Users can upload projects, create profiles, and share them with recruiters or collaborators.
