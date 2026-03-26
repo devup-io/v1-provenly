@@ -11,10 +11,6 @@ import { getDeveloper } from "@/lib/api";
 const navLinks = [
   { label: "Developers", href: "/developers" },
   { label: "How It Works", href: "/how-it-works" },
-  { label: "Features", href: "/features" },
-  { label: "Use Cases", href: "/use-cases" },
-  { label: "What is Provenly?", href: "/what-is-provenly" },
-  { label: "Resource Guides", href: "/resources/best-platform-to-showcase-developer-projects" },
 ];
 
 export function Header() {

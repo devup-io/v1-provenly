@@ -430,53 +430,60 @@ export default function Help() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1">
-        {/* Hero Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative overflow-hidden bg-gradient-to-b from-primary/10 via-transparent to-transparent py-12 md:py-20"
-        >
-          <div className="container max-w-4xl mx-auto px-4">
-            <div className="text-center mb-8">
-              <h1 className="mb-4 text-heading-xl md:text-heading-xxl">Help & Guides</h1>
-              <p className="text-body-lg text-muted-foreground mb-8">
-                Everything you need to know about Provenly and maximizing your developer profile
-              </p>
-            </div>
+        const filteredSections = helpSections.filter(
+          (section) =>
+            section.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            section.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            section.keywords.some((kw) => kw.includes(searchQuery.toLowerCase()))
+        );
 
-            {/* Search Bar */}
-            <div className="relative mb-8">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-pastel-mint/30 via-pastel-peach/20 to-pastel-lavender/20">
+            <Header />
+            <main className="container max-w-3xl px-4 pb-12 pt-28 md:pt-32">
+              <div className="mb-8 flex flex-col items-center gap-2">
+                <h1 className="text-display-sm font-extrabold text-pastel-peach drop-shadow">Help & Support</h1>
+                <p className="text-body text-muted-foreground text-center max-w-xl">
+                  Find answers, tips, and support for using Provenly. Search or browse the sections below.
+                </p>
+              </div>
+              <div className="mb-8 flex justify-center">
                 <Input
-                  placeholder="Search for help topics..."
+                  type="text"
+                  placeholder="Search help topics..."
+                  className="w-full max-w-md rounded-full border-2 border-pastel-mint bg-pastel-mint/10 px-5 py-3 text-lg shadow focus:border-pastel-peach focus:bg-white focus:ring-2 focus:ring-pastel-peach"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 h-12 text-body-sm"
                 />
               </div>
-              {searchQuery && (
-                <p className="mt-2 text-caption text-muted-foreground">
-                  Found {filteredSections.length} relevant topics
-                </p>
-              )}
-            </div>
+              <div className="space-y-8">
+                {filteredSections.length === 0 ? (
+                  <div className="rounded-2xl border-2 border-pastel-peach bg-pastel-peach/10 p-8 text-center text-body-lg text-pastel-peach-foreground shadow animate-bounce-in">
+                    <HelpCircle className="mx-auto mb-2 h-10 w-10 text-pastel-peach animate-bounce" />
+                    No help topics found. Try a different search!
+                  </div>
+                ) : (
+                  <Accordion type="multiple" className="rounded-2xl bg-white/80 p-2 shadow-lg">
+                    {filteredSections.map((section) => (
+                      <AccordionItem key={section.id} value={section.id} className="rounded-xl border-2 border-pastel-mint bg-pastel-mint/10 mb-4 hover:scale-[1.02] transition-transform">
+                        <AccordionTrigger className="flex items-center gap-3 text-heading-md">
+                          <span className="rounded-full bg-pastel-peach/30 p-2 shadow">
+                            {section.icon}
+                          </span>
+                          {section.title}
+                        </AccordionTrigger>
+                        <AccordionContent className="bg-white/90 p-4 rounded-b-xl">
+                          {section.content}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                )}
+              </div>
+            </main>
+            <Footer />
           </div>
-        </motion.section>
-
-        {/* Help Sections */}
-        <section className="py-12 md:py-20">
-          <div className="container max-w-4xl mx-auto px-4">
-            {orderedSections.length > 0 ? (
-              <div className="grid gap-6">
-                {orderedSections.map((section, index) => (
-                  <motion.div
-                    key={section.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
+        );
                     <Card className="hover:shadow-lg transition-shadow">
                       <CardHeader>
                         <div className="flex items-start justify-between">
