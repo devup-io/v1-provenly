@@ -430,14 +430,6 @@ export default function Help() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1">
-        const filteredSections = helpSections.filter(
-          (section) =>
-            section.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            section.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            section.keywords.some((kw) => kw.includes(searchQuery.toLowerCase()))
-        );
-
-        return (
           <div className="min-h-screen bg-gradient-to-br from-pastel-mint/30 via-pastel-peach/20 to-pastel-lavender/20">
             <Header />
             <main className="container max-w-3xl px-4 pb-12 pt-28 md:pt-32">
