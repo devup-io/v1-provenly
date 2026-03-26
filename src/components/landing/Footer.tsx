@@ -6,6 +6,10 @@ const footerLinks = {
     { label: "Find Talent", href: "#" },
     { label: "Find Work", href: "#" },
     { label: "How It Works", href: "/how-it-works" },
+    { label: "Features", href: "/features" },
+    { label: "Use Cases", href: "/use-cases" },
+    { label: "What is Provenly?", href: "/what-is-provenly" },
+    { label: "Resource Guides", href: "/resources/best-platform-to-showcase-developer-projects" },
     { label: "Pricing", href: "#" },
     { label: "Enterprise", href: "#" },
   ],
@@ -22,6 +26,7 @@ const footerLinks = {
     { label: "Guidelines", href: "#" },
     { label: "API", href: "#" },
     { label: "Status", href: "/status" },
+    { label: "Best Platform Guide", href: "/resources/best-platform-to-showcase-developer-projects" },
   ],
   Legal: [
     { label: "Privacy", href: "#" },
