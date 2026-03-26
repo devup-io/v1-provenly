@@ -484,12 +484,11 @@ export default function Dashboard() {
     return null;
   }
 
-  const primaryStack = normalizeTechStack(developer.primary_stack).slice(0, 5);
+  const primaryStack = normalizeTechStack(developer.primary_stack);
+  // Top technologies: dynamic from stats or projects
   const topTechnologies = (() => {
-    const fromConfig = supportedDevConfig ? getLanguageCatalog(supportedDevConfig) : [];
-    if (fromConfig.length > 0) return fromConfig.slice(0, 5);
-    if (stats?.primary_technologies?.length) return stats.primary_technologies.slice(0, 5);
-    return Array.from(new Set(projects.map((project) => project.language).filter(Boolean) as string[])).slice(0, 5);
+    if (stats?.primary_technologies?.length) return stats.primary_technologies;
+    return Array.from(new Set(projects.map((project) => project.language).filter(Boolean) as string[]));
   })();
   const totalCommits =
     typeof stats?.total_commits === 'number' && Number.isFinite(stats.total_commits)
@@ -662,24 +661,24 @@ export default function Dashboard() {
           </motion.div>
         )}
 
+        {/* Removed the card above the profile card. Optionally, show as a floating card at bottom-left in future. */}
+        {/*
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="mb-6 rounded-[20px] border border-border bg-card p-5 shadow-sm"
+          transition={{ delay: 0.1 }}
+          className="fixed bottom-6 left-6 z-50 hidden md:block rounded-[20px] border border-border bg-card p-5 shadow-lg"
         >
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
-              <p className="text-body font-semibold">Start by adding a project to build your Provenly profile</p>
-              <div className="max-w-md space-y-1">
-                <p className="text-body-sm text-muted-foreground">Profile {profileCompletion}% complete</p>
-                <Progress value={profileCompletion} className="h-2" />
-                <p className="text-caption text-muted-foreground">
-                  {remainingProjects > 0
-                    ? `Add ${remainingProjects} more project${remainingProjects === 1 ? '' : 's'} to complete your profile`
-                    : 'Your profile is complete. Add more projects to strengthen your profile.'}
-                </p>
-              </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-body font-semibold">Start by adding a project to build your Provenly profile</p>
+            <div className="max-w-md space-y-1">
+              <p className="text-body-sm text-muted-foreground">Profile {profileCompletion}% complete</p>
+              <Progress value={profileCompletion} className="h-2" />
+              <p className="text-caption text-muted-foreground">
+                {remainingProjects > 0
+                  ? `Add ${remainingProjects} more project${remainingProjects === 1 ? '' : 's'} to complete your profile`
+                  : 'Your profile is complete. Add more projects to strengthen your profile.'}
+              </p>
             </div>
             <Button
               onClick={handleImportMore}
@@ -691,10 +690,8 @@ export default function Dashboard() {
               Add Project
             </Button>
           </div>
-          <p className="mt-3 text-caption text-muted-foreground">
-            Add Project now includes smart recommendations, lightweight tags, featured-project priority, and role-alignment guidance.
-          </p>
         </motion.div>
+        */}
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {/* Profile Card */}
@@ -726,6 +723,15 @@ export default function Dashboard() {
                     </span>
                   </div>
                 </div>
+              </div>
+
+
+              {/* Bio moved above other info, with indicator */}
+              <div className="mb-2 flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                  <Info className="h-3 w-3" /> Bio
+                </span>
+                <span className="text-body-sm text-muted-foreground">{developer.bio || 'N/A'}</span>
               </div>
 
               <div className="mt-3 space-y-3 px-4">
@@ -784,8 +790,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-
-              <p className="mt-4 text-body-sm text-muted-foreground">{developer.bio || 'N/A'}</p>
 
               <div className="mt-6 flex justify-center">
                 <a
@@ -847,7 +851,7 @@ export default function Dashboard() {
                         <span
                           key={tech}
                           className={`rounded-full px-2.5 py-1 text-caption font-medium ${getTechBadgeClass(tech)}`}
-                         >
+                        >
                           {tech}
                         </span>
                       ))
@@ -1126,8 +1130,41 @@ export default function Dashboard() {
                         <div>
                           <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
-                              <h3 className="mb-2 break-words text-heading-sm">{project.name || 'N/A'}</h3>
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="break-words text-heading-sm m-0">{project.name || 'N/A'}</h3>
+                                {/* Complexity beside repo name */}
+                                <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${getComplexityColor(project.ai_evaluation?.difficulty_tier)}`}
+                                  title="Project complexity level">
+                                  {project.ai_evaluation?.difficulty_tier || 'N/A'}
+                                </span>
+                              </div>
                               <div className="mb-2 flex flex-wrap items-center gap-2">
+                                {/* Language icon/title beside language (icon to be added in next step) */}
+                                {project.language && (
+                                  <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-medium bg-secondary text-secondary-foreground">
+                                    {/* Language icon/title */}
+                                    {(() => {
+                                      // Simple language icon mapping
+                                      const lang = project.language.toLowerCase();
+                                      if (lang === 'javascript') return <span title="JavaScript">🟨</span>;
+                                      if (lang === 'typescript') return <span title="TypeScript">🟦</span>;
+                                      if (lang === 'python') return <span title="Python">🐍</span>;
+                                      if (lang === 'java') return <span title="Java">☕</span>;
+                                      if (lang === 'go') return <span title="Go">💧</span>;
+                                      if (lang === 'rust') return <span title="Rust">🦀</span>;
+                                      if (lang === 'c++' || lang === 'cpp') return <span title="C++">➕</span>;
+                                      if (lang === 'c#') return <span title="C#">🎯</span>;
+                                      if (lang === 'php') return <span title="PHP">🐘</span>;
+                                      if (lang === 'ruby') return <span title="Ruby">💎</span>;
+                                      if (lang === 'swift') return <span title="Swift">🦅</span>;
+                                      if (lang === 'kotlin') return <span title="Kotlin">🟪</span>;
+                                      if (lang === 'html') return <span title="HTML">🌐</span>;
+                                      if (lang === 'css') return <span title="CSS">🎨</span>;
+                                      return null;
+                                    })()}
+                                    <span className="ml-1">{project.language}</span>
+                                  </span>
+                                )}
                                 <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-body-sm font-semibold text-white shadow-sm">
                                   {(project.ai_evaluation?.difficulty_tier || 'N/A').replace(/\s*complexity\s*/gi, '').trim()} complexity
                                 </span>
@@ -1135,24 +1172,6 @@ export default function Dashboard() {
                                   label="Project complexity"
                                   text="L1: foundational project. L2: intermediate project with real backend logic and multiple components. L3: advanced architecture with higher scale and complexity."
                                 />
-                                {(() => {
-                                  const { highest, dominant } = getComplexityPair(project);
-                                  return (
-                                    <>
-                                      <span className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-body-sm font-medium text-secondary-foreground">
-                                        Highest: {highest}
-                                      </span>
-                                      <span className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-body-sm font-medium text-secondary-foreground">
-                                        Dominant: {dominant}
-                                      </span>
-                                    </>
-                                  );
-                                })()}
-                                {project.language && (
-                                  <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-medium bg-secondary text-secondary-foreground">
-                                    {project.language}
-                                  </span>
-                                )}
                               </div>
                               <div className="mb-1 flex flex-wrap items-center gap-3 text-body-sm">
                                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
@@ -1215,50 +1234,15 @@ export default function Dashboard() {
                             </div>
                           </div>
 
+                          <div className="flex items-center gap-2 mb-1">
+                            <Info className="h-4 w-4 text-primary" />
+                            <span className="font-semibold text-body-sm text-primary">Description</span>
+                          </div>
                           <p className="text-body-sm text-muted-foreground">
                             {project.description || 'N/A'}
                           </p>
 
                           <div className="mt-4 flex justify-start">
-                            {project.ai_evaluation && (
-                              <div className="mb-3 mr-2 inline-flex items-center gap-2 rounded-md border border-border px-2 py-1 text-caption text-muted-foreground">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button type="button" className="inline-flex items-center gap-1 hover:text-foreground">
-                                      <Info className="h-3.5 w-3.5" />
-                                      AI signals
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-xs">
-                                    Hover/help for score, confidence, and contribution. Click view more for details.
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 px-2 text-caption"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const confidence = project.ai_evaluation?.confidence_score;
-                                    const contribution = project.ai_evaluation?.contribution_percentage;
-                                    const repo = project.ai_evaluation?.repo_score;
-                                    if (confidence !== undefined) {
-                                      setAiSignalModal({ type: 'confidence_score', projectName: project.name || 'N/A', value: Number(confidence) });
-                                      return;
-                                    }
-                                    if (contribution !== undefined) {
-                                      setAiSignalModal({ type: 'contribution_percentage', projectName: project.name || 'N/A', value: Number(contribution) });
-                                      return;
-                                    }
-                                    if (repo !== undefined) {
-                                      setAiSignalModal({ type: 'repo_score', projectName: project.name || 'N/A', value: Number(repo) });
-                                    }
-                                  }}
-                                >
-                                  View more
-                                </Button>
-                              </div>
-                            )}
                             <Button
                               variant="outline"
                               size="sm"

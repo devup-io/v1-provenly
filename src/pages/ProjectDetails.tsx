@@ -330,26 +330,9 @@ export default function ProjectDetails() {
                   {evaluation?.repo_score !== undefined ? `${Math.round(evaluation.repo_score)}%` : 'N/A'}
                 </p>
               </div>
-              <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-                <p className="text-caption text-muted-foreground">Detected Type</p>
-                <p className="font-semibold">{detectedTypeValue}</p>
-              </div>
-              <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-                <p className="text-caption text-muted-foreground">Evaluation Profile</p>
-                <p className="font-semibold">{evaluationProfileValue}</p>
-              </div>
-              <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-                <p className="text-caption text-muted-foreground">Role Alignment</p>
-                <p className="font-semibold">{evaluation?.primary_role_alignment || 'N/A'}</p>
-              </div>
+             
             </div>
 
-            <div className="mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
-              <p className="text-caption text-muted-foreground">Project Classification</p>
-              <p className="text-body-sm font-medium text-foreground">
-                {detectedTypeValue !== 'N/A' ? detectedTypeValue : evaluationProfileValue} project
-              </p>
-            </div>
           </div>
         </motion.div>
 
