@@ -453,16 +453,20 @@ export default function Help() {
                 No help topics found. Try a different search!
               </div>
             ) : (
-              <div className="flex flex-col gap-6">
+              <div className="grid gap-6 sm:grid-cols-2">
                 {orderedSections.map((section) => (
-                  <div key={section.id} className="flex gap-4 items-start border-b pb-6">
-                    <div className="mt-1">{section.icon}</div>
-                    <div>
-                      <h2 className="text-lg font-semibold mb-1">{section.title}</h2>
-                      <div className="text-muted-foreground mb-2 text-sm">{section.description}</div>
-                      <div>{section.content}</div>
-                    </div>
-                  </div>
+                  <Card key={section.id} className="h-full flex flex-col">
+                    <CardHeader className="flex flex-row items-start gap-3 pb-2">
+                      <div className="mt-1">{section.icon}</div>
+                      <div>
+                        <CardTitle className="text-base mb-1">{section.title}</CardTitle>
+                        <CardDescription className="mb-1 text-xs">{section.description}</CardDescription>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="text-sm text-muted-foreground flex-1">
+                      {section.content}
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
