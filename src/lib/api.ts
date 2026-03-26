@@ -356,6 +356,12 @@ function transformBackendProject(raw: Record<string, unknown>): Project {
       confidence_level: getString({ obj: aiEvaluation, key: 'confidence_level' }) as AIEvaluation['confidence_level'],
       contribution_percentage: getNumber({ obj: aiEvaluation, key: 'contribution_percentage' }, 'contribution_percentage'),
       contribution_level: getString({ obj: aiEvaluation, key: 'contribution_level' }, 'contribution_level') as AIEvaluation['contribution_level'],
+      detected_project_type: getString({ obj: aiEvaluation, key: 'detected_project_type' }, 'detected_project_type'),
+      evaluation_profile: getString({ obj: aiEvaluation, key: 'evaluation_profile' }, 'evaluation_profile'),
+      role_mismatch:
+        (typeof aiEvaluation.role_mismatch === 'boolean' ? aiEvaluation.role_mismatch : undefined) ??
+        (typeof raw.role_mismatch === 'boolean' ? (raw.role_mismatch as boolean) : undefined),
+      role_mismatch_note: getString({ obj: aiEvaluation, key: 'role_mismatch_note' }, 'role_mismatch_note'),
       has_tests:
         (typeof aiEvaluation.has_tests === 'boolean' ? aiEvaluation.has_tests : undefined) ??
         (typeof raw.has_tests === 'boolean' ? (raw.has_tests as boolean) : undefined),

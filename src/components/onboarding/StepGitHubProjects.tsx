@@ -394,25 +394,30 @@ export function StepGitHubProjects({ data, onUpdate, onNext, onBack, isImporting
         </div>
       </div>
 
-      {recommendedIds.length > 0 && (
-        <div className="mb-6 rounded-xl border border-purple-300/40 bg-purple-50/60 p-4 dark:border-purple-700/40 dark:bg-purple-950/20">
-          <div className="flex items-center gap-2 text-body-sm font-semibold text-purple-800 dark:text-purple-300">
-            <Sparkles className="h-4 w-4" />
-            Recommended projects
-          </div>
-          <p className="mt-1 text-caption text-muted-foreground">We recommend these projects based on activity, complexity, and commits.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {recommendedIds
+      <div className="mb-6 rounded-xl border border-purple-300/40 bg-purple-50/60 p-4 dark:border-purple-700/40 dark:bg-purple-950/20">
+        <div className="flex items-center gap-2 text-body-sm font-semibold text-purple-800 dark:text-purple-300">
+          <Sparkles className="h-4 w-4" />
+          Recommended projects
+        </div>
+        <p className="mt-1 text-caption text-muted-foreground">We recommend these projects based on activity, complexity, and commits.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {recommendedIds.length > 0 ? (
+            recommendedIds
               .map((id) => repos.find((repo) => repo.id === id))
               .filter((repo): repo is Repo => Boolean(repo))
               .map((repo) => (
                 <span key={repo.id} className="rounded-full bg-purple-100 px-2.5 py-1 text-caption font-medium text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
                   ⭐ {repo.name}
                 </span>
-              ))}
-          </div>
+              ))
+          ) : (
+            <span className="text-caption text-muted-foreground">No new recommendations yet. Import more repos and this section will populate automatically.</span>
+          )}
         </div>
-      )}
+        <div className="mt-3 rounded-lg border border-purple-300/40 bg-background/70 p-3 text-caption text-muted-foreground">
+          Tip: Select a repo first, then use <strong>Feature</strong> to prioritize top projects and add tags (Backend, Frontend, API, Mobile) for better organization.
+        </div>
+      </div>
 
       {/* Organization Selector */}
       <div className="mb-6">

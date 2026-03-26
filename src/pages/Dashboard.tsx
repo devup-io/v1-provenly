@@ -78,6 +78,11 @@ export default function Dashboard() {
   const [projectQuery, setProjectQuery] = useState('');
   const [projectTypeFilter, setProjectTypeFilter] = useState<'all' | string>('all');
   const [projectTestsFilter, setProjectTestsFilter] = useState<'all' | 'with-tests' | 'without-tests'>('all');
+  const [quickFilters, setQuickFilters] = useState({
+    highConfidence: false,
+    roleMismatch: false,
+    featured: false,
+  });
 
   // publish modal state
   const [publishModal, setPublishModal] = useState(false);
@@ -585,6 +590,20 @@ export default function Dashboard() {
       if (projectTestsFilter === 'without-tests' && hasTests !== false) return false;
     }
 
+    if (quickFilters.highConfidence) {
+      const confidence = project.ai_evaluation?.confidence_score;
+      if (typeof confidence !== 'number' || confidence < 80) return false;
+    }
+
+    if (quickFilters.roleMismatch && project.ai_evaluation?.role_mismatch !== true) {
+      return false;
+    }
+
+    if (quickFilters.featured) {
+      const repoScore = project.ai_evaluation?.repo_score;
+      if (typeof repoScore !== 'number' || repoScore < 80) return false;
+    }
+
     return true;
   });
 
@@ -1006,6 +1025,29 @@ export default function Dashboard() {
                         <option value="without-tests">Without tests</option>
                       </select>
                     </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setQuickFilters((prev) => ({ ...prev, highConfidence: !prev.highConfidence }))}
+                        className={`rounded-full px-3 py-1 text-caption transition ${quickFilters.highConfidence ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                      >
+                        High confidence (80%+)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuickFilters((prev) => ({ ...prev, roleMismatch: !prev.roleMismatch }))}
+                        className={`rounded-full px-3 py-1 text-caption transition ${quickFilters.roleMismatch ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                      >
+                        Role mismatch
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuickFilters((prev) => ({ ...prev, featured: !prev.featured }))}
+                        className={`rounded-full px-3 py-1 text-caption transition ${quickFilters.featured ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                      >
+                        Featured quality (score 80%+)
+                      </button>
+                    </div>
                     <p className="mt-2 text-caption text-muted-foreground">
                       Showing {filteredProjects.length} of {projects.length} projects
                     </p>
@@ -1021,6 +1063,7 @@ export default function Dashboard() {
                           setProjectQuery('');
                           setProjectTypeFilter('all');
                           setProjectTestsFilter('all');
+                          setQuickFilters({ highConfidence: false, roleMismatch: false, featured: false });
                         }}
                       >
                         Reset filters

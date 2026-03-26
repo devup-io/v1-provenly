@@ -36,6 +36,7 @@ import HowItWorks from "./pages/HowItWorks";
 import Status from "./pages/Status";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
+import SeoArticlePage from "./pages/seo/SeoArticlePage";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,46 @@ function AppContent() {
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/status" element={<Status />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route
+          path="/resources/best-platform-to-showcase-developer-projects"
+          element={<SeoArticlePage slug="best-platform-to-showcase-developer-projects" />}
+        />
+        <Route
+          path="/resources/developer-portfolio-no-experience"
+          element={<SeoArticlePage slug="developer-portfolio-no-experience" />}
+        />
+        <Route
+          path="/resources/where-to-showcase-programming-projects"
+          element={<SeoArticlePage slug="where-to-showcase-programming-projects" />}
+        />
+        <Route
+          path="/resources/get-noticed-by-tech-recruiters"
+          element={<SeoArticlePage slug="get-noticed-by-tech-recruiters" />}
+        />
+        <Route
+          path="/resources/provenly-vs-github-portfolio"
+          element={<SeoArticlePage slug="provenly-vs-github-portfolio" />}
+        />
+        <Route
+          path="/resources/how-many-projects-in-coding-portfolio"
+          element={<SeoArticlePage slug="how-many-projects-in-coding-portfolio" />}
+        />
+        <Route
+          path="/resources/present-backend-projects-for-recruiters"
+          element={<SeoArticlePage slug="present-backend-projects-for-recruiters" />}
+        />
+        <Route
+          path="/resources/present-frontend-projects-for-recruiters"
+          element={<SeoArticlePage slug="present-frontend-projects-for-recruiters" />}
+        />
+        <Route
+          path="/resources/student-developer-portfolio-internships"
+          element={<SeoArticlePage slug="student-developer-portfolio-internships" />}
+        />
+        <Route
+          path="/resources/choose-featured-projects-developer-portfolio"
+          element={<SeoArticlePage slug="choose-featured-projects-developer-portfolio" />}
+        />
         <Route path="/dev/:username" element={<DeveloperProfile />} />
         <Route path="/compare" element={<CompareDevelopers />} />
         <Route path="/debug/auth" element={<DebugAuth />} />
