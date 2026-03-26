@@ -9,6 +9,10 @@ const footerLinks = {
     { label: "Pricing", href: "#" },
     { label: "Enterprise", href: "#" },
     { label: "Login / Sign Up", href: "/signup" },
+    { label: "Features", href: "/features" },
+    { label: "Use Cases", href: "/use-cases" },
+    { label: "What is Provenly?", href: "/what-is-provenly" },
+    { label: "Resource Guides", href: "/resources/best-platform-to-showcase-developer-projects" },
   ],
   Company: [
     { label: "About", href: "/about" },
@@ -17,10 +21,6 @@ const footerLinks = {
     { label: "Careers", href: "#" },
     { label: "Press", href: "#" },
     { label: "Contact", href: "/contact" },
-    { label: "Features", href: "/features" },
-    { label: "Use Cases", href: "/use-cases" },
-    { label: "What is Provenly?", href: "/what-is-provenly" },
-    { label: "Resource Guides", href: "/resources/best-platform-to-showcase-developer-projects" },
   ],
   Resources: [
     { label: "Help", href: "/help" },
