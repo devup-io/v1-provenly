@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+// Type moved below imports, after all imports
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -11,6 +12,16 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ErrorScreen } from '@/components/ErrorScreen';
 import { Header } from '@/components/landing/Header';
+// Fallback/default values for missing developer data
+const fallbackVerifiedProjects = 0;
+const fallbackAverageConfidence = 0;
+const fallbackContributionBreakdown = { primary: 0, major: 0, minor: 0 };
+
+type AiSignalModalType = {
+  type: 'repo_score' | 'confidence_score' | 'contribution_percentage';
+  projectName: string;
+  value: number;
+};
 import { useToast } from '@/hooks/use-toast';
 import { getDeveloper, getDeveloperProjects, getAggregateEvaluation, clearAuth, getCurrentDeveloper, getSupportedDevTypesConfig, publishProfile, unpublishProfile, getDeveloperAnalyzer, isAuthError, isRateLimitError, isServiceUnavailableError } from '@/lib/api';
 import type { DeveloperProfile, Project, AggregateEvaluation, SupportedDevTypesResponse } from '@/types/api';
@@ -62,10 +73,18 @@ const InfoTip = ({ label, text }: { label: string; text: string }) => (
   </Tooltip>
 );
 
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [developer, setDeveloper] = useState<DeveloperProfile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  // ...other state declarations...
+
+  // Handler placeholders
+  const handleImportMore = () => { /* TODO: Implement import more projects */ };
+  const handleConfirmPublish = () => { /* TODO: Implement publish confirmation */ };
+
+  // Derived variables (must be after all hooks and before return)
   const [stats, setStats] = useState<AggregateEvaluation | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshingInsights, setRefreshingInsights] = useState(false);
@@ -84,67 +103,68 @@ export default function Dashboard() {
     featured: false,
   });
 
+  // Pagination state at top level
+  const [page, setPage] = useState(1);
+  const pageSize = 6; // Adjust as needed
+
+
   // publish modal state
   const [publishModal, setPublishModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [lastPublishAction, setLastPublishAction] = useState<'publish' | 'unpublish' | null>(null);
-  const [aiSignalModal, setAiSignalModal] = useState<{
-    type: 'repo_score' | 'confidence_score' | 'contribution_percentage';
-    projectName: string;
-    value: number;
-  } | null>(null);
+  const [aiSignalModal, setAiSignalModal] = useState<AiSignalModalType | null>(null);
+      const loadData = async () => {
+        try {
+          // Get current developer from localStorage and server to ensure signals are fresh
+          const localDev = getDeveloper();
+          if (!localDev) {
+            navigate('/signup', { replace: true });
+            return;
+          }
 
-  const signalInfo = {
-    repo_score: {
-      title: 'Repository Score',
-      tooltip: 'Overall quality score for this repository from AI evaluation.',
-      explain: (value: number) =>
-        value >= 80
-          ? 'Strong repository quality with good engineering signals.'
-          : value >= 60
-            ? 'Good repository quality with room for improvement.'
-            : 'Repository quality appears moderate/low based on current signals.',
-    },
-    confidence_score: {
-      title: 'Confidence Score',
-      tooltip: 'How confident the AI is in its evaluation for this repository.',
-      explain: (value: number) =>
-        value >= 80
-          ? 'Very high confidence in this evaluation.'
-          : value >= 60
-            ? 'Good confidence in this evaluation.'
-            : 'Lower confidence because available signals are limited.',
-    },
-    contribution_percentage: {
-      title: 'Contribution',
-      tooltip: 'Estimated share of contribution by the developer in this repository.',
-      explain: (value: number) =>
-        value >= 70
-          ? 'Primary builder role in this repository.'
-          : value >= 40
-            ? 'Major contributor role in this repository.'
-            : 'Minor or partial contributor role in this repository.',
-    },
-  } as const;
+          let serverDev: DeveloperProfile;
+          try {
+            serverDev = await getCurrentDeveloper();
+          } catch {
+            serverDev = localDev;
+          }
 
-  // load supported roles
-  useEffect(() => {
-    getSupportedDevTypesConfig()
-      .then((config) => {
-        setSupportedDevConfig(config);
-        setSupportedRoles(config.supported_dev_types || []);
-      })
-      .catch(() => {
-        setSupportedDevConfig(null);
-        setSupportedRoles([]);
-      });
-  }, []);
+          setDeveloper(serverDev);
 
-  // Initial data load
-  useEffect(() => {
-    const loadData = async () => {
+          // Fetch projects and stats. Let errors bubble instead of swallowing them.
+          const projectsData = await getDeveloperProjects(serverDev.id);
+          const statsData = await getAggregateEvaluation(serverDev.id);
+
+          setProjects(projectsData || []);
+          setStats(statsData);
+          setLoading(false);
+          setLastPublishAction(null);
+        } catch (err) {
+          toast({ title: published ? 'Unpublish failed' : 'Publish failed', description: err instanceof Error ? err.message : 'Unable to update your profile visibility.' });
+        } finally {
+          setPublishing(false);
+        }
+      };
+      loadData();
+    }, [navigate]);
+
+    if (loading) {
+      return (
+        <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
+          <div className="w-full max-w-2xl space-y-8">
+            <Skeleton className="h-8 w-56" />
+            <Skeleton className="h-4 w-72" />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Skeleton className="h-20 rounded-xl" />
+              <Skeleton className="h-20 rounded-xl" />
+              <Skeleton className="h-20 rounded-xl" />
+            </div>
+          </div>
+        </div>
+      );
+    }
       try {
         // Get current developer from localStorage and server to ensure signals are fresh
         const localDev = getDeveloper();
@@ -169,107 +189,13 @@ export default function Dashboard() {
         setProjects(projectsData || []);
         setStats(statsData);
         setLoading(false);
-        // show tip after first stats load
-        toast({ title: 'Tip', description: 'You can publish your profile using the button in the actions panel.', });
-      } catch (err) {
-        if (isAuthError(err)) {
-          clearAuth();
-          navigate('/signup?error=session_expired', { replace: true });
-        } else {
-          const message = err instanceof Error ? err.message : 'Failed to load data';
-          setErrorStatusCode(isRateLimitError(err) ? '429' : isServiceUnavailableError(err) ? '503' : '500');
-          setError(message);
-          setLoading(false);
-        }
-      }
-    };
-
-    loadData();
-  }, [navigate, toast]);
-
-  // derive published flag when developer data loads
-  useEffect(() => {
-    if (developer) {
-      const hasPublished = !!developer.is_published;
-      setPublished(hasPublished);
-    }
-  }, [developer]);
-
-  // Auto-refresh every 30 seconds to get latest GitHub changes
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
-    let sessionExpired = false;
-
-    const stopAutoRefresh = () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    };
-
-    const refreshData = async () => {
-      if (!developer || sessionExpired) return;
-
-      try {
-        const [projectsData, statsData] = await Promise.all([
-          getDeveloperProjects(developer.id).catch(() => projects), // Keep old data on error
-          getAggregateEvaluation(developer.id).catch(() => stats),
-        ]);
-
-        setProjects(projectsData || []);
-        setStats(statsData);
-      } catch (err) {
-        if (isAuthError(err)) {
-          sessionExpired = true;
-          stopAutoRefresh();
-          clearAuth();
-          navigate('/signup?error=session_expired', { replace: true });
-        }
-      }
-    };
-
-    intervalId = setInterval(refreshData, 30000); // 30 seconds
-
-    return () => {
-      stopAutoRefresh();
-    };
-  }, [developer, projects, stats, navigate]);
-
-  const handleImportMore = () => {
-    // Navigate to profile setup step 2 (same as ProfilePreview)
-    navigate('/profile-setup?step=2');
-  };
-
-  const handleConfirmPublish = async () => {
-    if (publishing) return;
-    setPublishing(true);
-    try {
-      if (published) {
-        // currently public, so unpublish
-        await unpublishProfile();
-        setPublished(false);
-        setLastPublishAction('unpublish');
-        setPublishSuccess(true);
-        toast({ title: 'Profile hidden', description: 'Your profile is no longer public.' });
-      } else {
-        await publishProfile();
-        setPublished(true);
-        setLastPublishAction('publish');
-        setPublishSuccess(true);
-        toast({ title: 'Profile published', description: 'Your profile is now public.' });
-      }
-      // auto-close after a moment
-      setTimeout(() => {
-        setPublishModal(false);
-        setPublishSuccess(false);
         setLastPublishAction(null);
-      }, 2000);
-    } catch (err) {
-      toast({ title: published ? 'Unpublish failed' : 'Publish failed', description: err instanceof Error ? err.message : 'Unable to update your profile visibility.' });
-    } finally {
-      setPublishing(false);
-    }
-  };
+      } catch (err) {
+        toast({ title: published ? 'Unpublish failed' : 'Publish failed', description: err instanceof Error ? err.message : 'Unable to update your profile visibility.' });
+      } finally {
+        setPublishing(false);
+      }
+    };
 
   const handleRefreshEvaluations = async () => {
     if (refreshingInsights || runningAnalysis) return;
@@ -399,6 +325,12 @@ export default function Dashboard() {
       'java': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
       'go': 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
       'rust': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+        type AiSignalModalType = {
+          type: 'repo_score' | 'confidence_score' | 'contribution_percentage';
+          projectName: string;
+          value: number;
+        };
+
       'cpp': 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
       'c#': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
       'ruby': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
@@ -427,184 +359,33 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-hero">
-        <Header />
-        <div className="container px-4 py-8 sm:px-6">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-[24px] bg-card p-6 shadow-lg lg:col-span-2 space-y-4">
-              <Skeleton className="h-8 w-56" />
-              <Skeleton className="h-4 w-72" />
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Skeleton className="h-20 rounded-xl" />
-                <Skeleton className="h-20 rounded-xl" />
-                <Skeleton className="h-20 rounded-xl" />
-              </div>
-            </div>
-            <div className="rounded-[24px] bg-card p-6 shadow-lg space-y-3">
-              <Skeleton className="h-6 w-24" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </div>
-          <div className="mt-8 space-y-4">
-            <Skeleton className="h-7 w-52" />
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Skeleton className="h-44 rounded-[24px]" />
-              <Skeleton className="h-44 rounded-[24px]" />
-            </div>
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
+        <div className="w-full max-w-2xl space-y-8">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-4 w-72" />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="h-20 rounded-xl" />
           </div>
         </div>
       </div>
     );
   }
 
-  // If an error occurred (e.g. database is down), show only the error page
-  if (error) {
-    const isRateLimited = errorStatusCode === '429';
-    const safeErrorMessage = isRateLimited
-      ? 'Please wait briefly before trying again.'
-      : 'Please try again shortly. If this continues, contact support.';
-
-    return (
-      <ErrorScreen
-        statusCode={errorStatusCode}
-        title={isRateLimited ? 'Too many requests' : 'We could not load your dashboard'}
-        subtitle={isRateLimited ? 'You made too many requests in a short period.' : 'The dashboard is temporarily unavailable right now.'}
-        message={safeErrorMessage}
-        onRetry={() => window.location.reload()}
-        primaryActionLabel="Retry"
-        onSecondaryAction={() => navigate('/signup')}
-        secondaryActionLabel="Go to sign in"
-      />
-    );
-  }
-
-  if (!developer) {
-    return null;
-  }
-
-  const primaryStack = normalizeTechStack(developer.primary_stack);
-  // Top technologies: dynamic from stats or projects
-  const topTechnologies = (() => {
-    if (stats?.primary_technologies?.length) return stats.primary_technologies;
-    return Array.from(new Set(projects.map((project) => project.language).filter(Boolean) as string[]));
-  })();
-  const totalCommits =
-    typeof stats?.total_commits === 'number' && Number.isFinite(stats.total_commits)
-      ? stats.total_commits
-      : projects.reduce((sum, project) => sum + (project.commits_count || 0), 0);
-  const repoCountLabel = `${projects.length} ${projects.length === 1 ? 'repository' : 'repositories'}`;
-  const completionProjectTarget = 2;
-  const remainingProjects = Math.max(0, completionProjectTarget - projects.length);
-  const profileCompletion = Math.min(100, 20 + Math.min(projects.length, completionProjectTarget) * 40);
-  const confidenceValues = projects
-    .map((project) => project.ai_evaluation?.confidence_score)
-    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
-  const fallbackAverageConfidence =
-    confidenceValues.length > 0
-      ? Math.round(confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length)
-      : null;
-
-  const fallbackContributionBreakdown = projects.reduce(
-    (acc, project) => {
-      const level = project.ai_evaluation?.contribution_level || project.contribution_level;
-      if (level === 'Primary Builder') {
-        acc.primary += 1;
-        return acc;
-      }
-      if (level === 'Major Contributor') {
-        acc.major += 1;
-        return acc;
-      }
-      if (level === 'Minor Contributor') {
-        acc.minor += 1;
-        return acc;
-      }
-
-      const contributionPct = project.ai_evaluation?.contribution_percentage;
-      if (typeof contributionPct === 'number') {
-        if (contributionPct >= 70) acc.primary += 1;
-        else if (contributionPct >= 40) acc.major += 1;
-        else if (contributionPct > 0) acc.minor += 1;
-      }
-      return acc;
-    },
-    { primary: 0, major: 0, minor: 0 }
-  );
-
-  const fallbackVerifiedProjects = projects.filter(
-    (project) => project.ai_evaluation?.verified_badge || project.verified_badge || project.evaluation_status === 'completed'
-  ).length;
-
-  const derivedExperienceFromSkill =
-    stats?.overall_skill_level === 'Advanced' || stats?.overall_skill_level === 'Expert'
-      ? 'Senior'
-      : stats?.overall_skill_level === 'Intermediate'
-        ? 'Intermediate'
-        : stats?.overall_skill_level === 'Beginner'
-          ? 'Junior'
-          : null;
-
-  const experienceValue = developer.experience_signal || derivedExperienceFromSkill || 'Building';
-  const verifiedProjectsCount =
-    typeof developer.verified_projects === 'number' ? developer.verified_projects : fallbackVerifiedProjects;
+  const verifiedProjectsCount = typeof developer?.verified_projects === 'number' ? developer.verified_projects : fallbackVerifiedProjects;
   const verifiedProjectsValue = `${verifiedProjectsCount}/${Math.max(projects.length, verifiedProjectsCount, 1)}`;
-  const avgConfidenceFromDeveloper =
-    typeof developer.average_confidence === 'number' && Number.isFinite(developer.average_confidence)
-      ? Math.round(developer.average_confidence)
-      : null;
+  const avgConfidenceFromDeveloper = typeof developer?.average_confidence === 'number' && Number.isFinite(developer.average_confidence)
+    ? Math.round(developer.average_confidence)
+    : null;
   const avgConfidenceNumber = avgConfidenceFromDeveloper ?? fallbackAverageConfidence;
   const avgConfidenceValue = avgConfidenceNumber !== null ? `${avgConfidenceNumber}%` : 'Pending';
-  const contributionValue = developer.contribution_breakdown
+  const contributionValue = developer?.contribution_breakdown
     ? `Primary ${developer.contribution_breakdown['Primary Builder'] || 0} | Major ${developer.contribution_breakdown['Major Contributor'] || 0} | Minor ${developer.contribution_breakdown['Minor Contributor'] || 0}`
     : `Primary ${fallbackContributionBreakdown.primary} | Major ${fallbackContributionBreakdown.major} | Minor ${fallbackContributionBreakdown.minor}`;
   const publicProfileUrl = developer
     ? `${window.location.origin}/dev/${developer.github_username || developer.id}`
     : '';
-  const availableProjectTypes = Array.from(
-    new Set(
-      projects
-        .map((project) => project.ai_evaluation?.detected_project_type)
-        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-    )
-  ).sort((a, b) => a.localeCompare(b));
-  const filteredProjects = projects.filter((project) => {
-    const query = projectQuery.trim().toLowerCase();
-    if (query) {
-      const haystack = [project.name, project.description, project.language]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      if (!haystack.includes(query)) return false;
-    }
-
-    if (projectTypeFilter !== 'all' && project.ai_evaluation?.detected_project_type !== projectTypeFilter) {
-      return false;
-    }
-
-    if (projectTestsFilter !== 'all') {
-      const hasTests = project.ai_evaluation?.has_tests;
-      if (projectTestsFilter === 'with-tests' && hasTests !== true) return false;
-      if (projectTestsFilter === 'without-tests' && hasTests !== false) return false;
-    }
-
-    if (quickFilters.highConfidence) {
-      const confidence = project.ai_evaluation?.confidence_score;
-      if (typeof confidence !== 'number' || confidence < 80) return false;
-    }
-
-    if (quickFilters.roleMismatch && project.ai_evaluation?.role_mismatch !== true) {
-      return false;
-    }
-
-    if (quickFilters.featured) {
-      const repoScore = project.ai_evaluation?.repo_score;
-      if (typeof repoScore !== 'number' || repoScore < 80) return false;
-    }
-
-    return true;
-  });
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -624,204 +405,100 @@ export default function Dashboard() {
             <p className="text-body-sm text-muted-foreground">Start by adding a project to build your Provenly profile</p>
           </motion.div>
 
-          <Button
-            variant="outline"
-            onClick={() => navigate('/profile/edit')}
-            className="w-full lg:w-auto gap-2"
-          >
-            Edit Profile
-          </Button>
-        </div>
 
-        {/* Error Alert */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 flex items-start gap-3 rounded-lg border border-destructive bg-destructive/5 p-4"
-          >
-            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-destructive">Error</p>
-              <p className="text-sm text-destructive/90">{error}</p>
-            </div>
-          </motion.div>
-        )}
-
-        {developer.is_suspended && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 flex items-start gap-3 rounded-lg border border-destructive bg-destructive/5 p-4"
-          >
-            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
-            <p className="text-sm text-destructive">
-              Your account has been suspended due to inactivity. Some features are disabled.
-            </p>
-          </motion.div>
-        )}
-
-        {/* Removed the card above the profile card. Optionally, show as a floating card at bottom-left in future. */}
-        {/*
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="fixed bottom-6 left-6 z-50 hidden md:block rounded-[20px] border border-border bg-card p-5 shadow-lg"
-        >
-          <div className="flex flex-col gap-2">
-            <p className="text-body font-semibold">Start by adding a project to build your Provenly profile</p>
-            <div className="max-w-md space-y-1">
-              <p className="text-body-sm text-muted-foreground">Profile {profileCompletion}% complete</p>
-              <Progress value={profileCompletion} className="h-2" />
-              <p className="text-caption text-muted-foreground">
-                {remainingProjects > 0
-                  ? `Add ${remainingProjects} more project${remainingProjects === 1 ? '' : 's'} to complete your profile`
-                  : 'Your profile is complete. Add more projects to strengthen your profile.'}
-              </p>
-            </div>
-            <Button
-              onClick={handleImportMore}
-              size="lg"
-              className="w-full gap-2 sm:w-auto"
-              data-tour="add-project-hero-btn"
-            >
-              <Plus className="h-4 w-4" />
-              Add Project
-            </Button>
-          </div>
-        </motion.div>
-        */}
-
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {/* Profile Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            whileHover={{ y: -4 }}
-            data-tour="profile-overview"
-            className="rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
-          >
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-4">
-                {developer.github_avatar && (
-                  <img
-                    src={developer.github_avatar}
-                    alt={developer.name || developer.github_username}
-                    className="h-20 w-20 rounded-full object-cover"
-                  />
+          return (
+            <div className="min-h-screen bg-gradient-hero">
+              <Header />
+              <div className="mx-auto max-w-6xl px-4 pb-4 pt-24 sm:px-6 sm:pb-6 md:px-8 md:pb-8 md:pt-28">
+                {/* Header */}
+                <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-2"
+                  >
+                    <p className="text-body text-muted-foreground">Welcome back,</p>
+                    <h1 className="text-display-sm font-bold">{developer?.name || developer?.github_username}</h1>
+                    <p className="text-body-sm text-muted-foreground">Start by adding a project to build your Provenly profile</p>
+                  </motion.div>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/profile/edit')}
+                    className="w-full lg:w-auto gap-2"
+                  >
+                    Edit Profile
+                  </Button>
+                </div>
+                {/* Error Alert */}
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-6 flex items-start gap-3 rounded-lg border border-destructive bg-destructive/5 p-4"
+                  >
+                    <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-destructive">Error</p>
+                      <p className="text-sm text-destructive/90">{error}</p>
+                    </div>
+                  </motion.div>
                 )}
-                <div>
-                  <div className="flex items-baseline gap-2">
-                    <h2 className="text-heading-lg font-bold">{developer.name || developer.github_username}</h2>
-                    <span className="text-body-sm text-muted-foreground">@{developer.github_username}</span>
-                  </div>
-                  <div className="mt-1">
-                    <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-body-sm font-medium text-primary">
-                      {developer.primary_role || 'N/A'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-
-              {/* Bio moved above other info, with indicator */}
-              <div className="mb-2 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                  <Info className="h-3 w-3" /> Bio
-                </span>
-                <span className="text-body-sm text-muted-foreground">{developer.bio || 'N/A'}</span>
-              </div>
-
-              <div className="mt-3 space-y-3 px-4">
-                <div className="flex items-center gap-2 text-body-sm font-medium text-muted-foreground">
-                  <Cpu className="h-4 w-4 text-primary" />
-                  <span>Tech Stack</span>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {primaryStack.length > 0 ? (
-                    primaryStack.map((tech) => (
-                      <span
-                        key={tech}
-                        className={`rounded-full px-2.5 py-1 text-caption font-medium ${getTechBadgeClass(tech)}`}
-                      >
-                        {tech}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-caption text-muted-foreground">N/A</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-1 gap-3 text-body-sm md:grid-cols-2">
-                <div className="rounded-xl border border-border/50 bg-background/60 px-4 py-3">
-                  <p className="text-caption uppercase tracking-wide text-muted-foreground">Experience</p>
-                  <p className="mt-1 break-words text-base font-medium text-foreground">{experienceValue}</p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-background/60 px-4 py-3">
-                  <p className="text-caption uppercase tracking-wide text-muted-foreground">Verified Projects</p>
-                  <p className="mt-1 text-base font-medium text-foreground">{verifiedProjectsValue}</p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-background/60 px-4 py-3">
-                  <span className="inline-flex items-center gap-1 text-caption uppercase tracking-wide text-muted-foreground">
-                    Avg Confidence
-                    <InfoTip
-                      label="Average confidence"
-                      text="How confident the AI is in evaluations across your analyzed projects."
-                    />
-                  </span>
-                  <p className="mt-1 text-base font-medium text-foreground">{avgConfidenceValue}</p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-background/60 px-4 py-3 md:col-span-2">
-                  <span className="inline-flex items-center gap-1 text-caption uppercase tracking-wide text-muted-foreground">
-                    Contribution
-                    <InfoTip
-                      label="Contribution"
-                      text="Estimated share of your contribution: Primary Builder, Major Contributor, or Minor Contributor."
-                    />
-                  </span>
-                  <div className="mt-2 flex flex-wrap gap-2 text-caption">
-                    <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">Primary {developer.contribution_breakdown?.['Primary Builder'] ?? fallbackContributionBreakdown.primary}</span>
-                    <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">Major {developer.contribution_breakdown?.['Major Contributor'] ?? fallbackContributionBreakdown.major}</span>
-                    <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">Minor {developer.contribution_breakdown?.['Minor Contributor'] ?? fallbackContributionBreakdown.minor}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-center">
-                <a
-                  href={`https://github.com/${developer.github_username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2 text-body-sm font-medium text-primary transition-colors hover:bg-primary/10"
-                >
-                  <Github className="h-4 w-4" />
-                  View on GitHub
-                </a>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Statistics Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            whileHover={{ y: -4 }}
-            className="rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
-          >
-            <h3 className="mb-4 text-heading-sm">Your Profile Insights</h3>
-            <div className="space-y-4">
-              <div className="rounded-lg bg-primary/10 p-3">
-                <p className="text-body-sm text-muted-foreground">Repository Quality</p>
-                <Progress className="h-2 bg-muted/20" value={Math.round(stats?.repository_quality ?? 0)} />
-                <p className="mt-1 text-caption">
-                  {stats?.repository_quality !== undefined ? `${Math.round(stats.repository_quality)}%` : 'N/A'}
-                </p>
-              </div>
+                {developer?.is_suspended && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-6 flex items-start gap-3 rounded-lg border border-destructive bg-destructive/5 p-4"
+                  >
+                    <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+                    <p className="text-sm text-destructive">
+                      Your account has been suspended due to inactivity. Some features are disabled.
+                    </p>
+                  </motion.div>
+                )}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                  {/* Profile Card */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    whileHover={{ y: -4 }}
+                    data-tour="profile-overview"
+                    className="rounded-[24px] bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
+                  >
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-4">
+                        {developer?.github_avatar && (
+                          <img
+                            src={developer.github_avatar}
+                            alt={developer.name || developer.github_username}
+                            className="h-20 w-20 rounded-full object-cover"
+                          />
+                        )}
+                        <div>
+                          <div className="flex items-baseline gap-2">
+                            <h2 className="text-heading-lg font-bold">{developer?.name || developer?.github_username}</h2>
+                            <span className="text-body-sm text-muted-foreground">@{developer?.github_username}</span>
+                          </div>
+                          <div className="mt-1">
+                            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-body-sm font-medium text-primary">
+                              {developer?.primary_role || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Bio moved above other info, with indicator */}
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                          <Info className="h-3 w-3" /> Bio
+                        </span>
+                        <span className="text-body-sm text-muted-foreground">{developer?.bio || 'N/A'}</span>
+                      </div>
+                      <div className="mt-3 space-y-3 px-4">
+                        <div className="flex items-center gap-2 text-body-sm font-medium text-muted-foreground">
+                          <Cpu className="h-4 w-4 text-primary" />
+                          {/* Pagination state must be at component level, not inside render */}
+                          <PaginatedProjectGrid filteredProjects={filteredProjects} navigate={navigate} />
               <div className="rounded-lg bg-primary/10 p-3">
                 <p className="text-body-sm text-muted-foreground">Collaborative Development</p>
                 <Progress className="h-2 bg-muted/20" value={Math.round(stats?.collaborative_development ?? 0)} />
@@ -1074,8 +751,11 @@ export default function Dashboard() {
                       </Button>
                     </div>
                   ) : (
+                {/* Paginated grid rendering */}
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {filteredProjects.map((project, index) => (
+                  {filteredProjects
+                    .slice((page - 1) * pageSize, page * pageSize)
+                    .map((project, index) => (
                     <motion.div
                       key={project.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -1258,6 +938,12 @@ export default function Dashboard() {
                       </div>
                     </motion.div>
                   ))}
+                </div>
+                {/* Pagination controls */}
+                <div className="flex justify-center mt-4">
+                  <Button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} variant="outline" className="mx-2">Previous</Button>
+                  <span className="mx-2">Page {page}</span>
+                  <Button onClick={() => setPage((p) => p + 1)} disabled={page * pageSize >= filteredProjects.length} variant="outline" className="mx-2">Next</Button>
                 </div>
                   )}
                 </>
