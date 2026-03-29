@@ -119,10 +119,151 @@ const TooltipLabel = ({ text, tip }: { text: string; tip: string }) => (
 
 const EmptyState = () => <p className="text-caption text-muted-foreground">{NO_DATA_TEXT}</p>;
 
+// FloatingPanel component (from MockAnalyzer, adapted for Analysis)
+function FloatingPanel({ phase, checks, logs, onDismiss }) {
+  const logEndRef = useRef(null);
+  const [collapsed, setCollapsed] = useState(false);
+  const [bodyAnim, setBodyAnim] = useState('');
+  const [panelAnim, setPanelAnim] = useState('');
+  const [backdropAnim, setBackdropAnim] = useState('pa-backdrop-in');
+  const [visible, setVisible] = useState(false);
+
+  const isChecking = phase === 'checking';
+  const isAnalyzing = phase === 'logs';
+  const isDone = phase === 'ready' || phase === 'results';
+  const canClose = isDone;
+
+  useEffect(() => { if (phase !== null && !visible) setVisible(true); }, [phase]);
+  useEffect(() => { logEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
+
+  const toggleCollapse = () => {
+    if (collapsed) { setBodyAnim('open'); setCollapsed(false); }
+    else { setBodyAnim('close'); setTimeout(() => setCollapsed(true), 270); }
+  };
+  const handleDismiss = () => {
+    if (!canClose) return;
+    setPanelAnim('closing');
+    setBackdropAnim('pa-backdrop-out');
+    setTimeout(() => { setVisible(false); onDismiss(); }, 300);
+  };
+  if (!visible || phase === null) return null;
+
+  // Status checks for animation (match mock)
+  const STATUS_CHECKS = [
+    { label: 'Profile data loaded', key: 'profile' },
+    { label: 'Projects imported', key: 'projects' },
+    { label: 'AI evaluations available', key: 'ai' },
+    { label: 'Analyzer engine ready', key: 'engine' },
+  ];
+  const headerBg = isChecking ? 'var(--an-purple-dim)' : isAnalyzing ? 'var(--an-green-dim)' : 'var(--an-green-dim)';
+  const headerColor = isChecking ? 'var(--an-purple)' : isAnalyzing ? 'var(--an-green)' : 'var(--an-green)';
+  const headerLabel = isChecking ? 'Checking analyzer status…' : isAnalyzing ? 'Running analysis…' : 'Analysis complete';
+
+  return (
+    <>
+      {/* Backdrop */}
+      {!isDone && (
+        <div className={backdropAnim + ' pa-float-backdrop'} />
+      )}
+      {/* Panel */}
+      <div className={`pa-float-panel${panelAnim === 'closing' ? ' closing' : ''}${collapsed ? ' collapsed' : ''}`}>
+        {/* Drag pill */}
+        <div className="pa-float-drag" onClick={toggleCollapse}>
+          <div className="pa-float-pill" />
+        </div>
+        {/* Header */}
+        <div className={`pa-float-header${collapsed ? ' collapsed' : ''}`}> 
+          <div className="pa-float-header-main">
+            <div className="pa-float-header-icon" style={{ background: headerBg }}>
+              {isChecking && <Loader2 size={14} color={headerColor} style={{ animation: 'pa-spin 1s linear infinite' }} />}
+              {isAnalyzing && <Terminal size={14} color={headerColor} />}
+              {isDone && <CheckCircle2 size={14} color={headerColor} />}
+            </div>
+            <span className="pa-float-header-label">{headerLabel}</span>
+            {!isDone && (
+              <span className="pa-float-header-badge" style={{ background: headerBg, color: headerColor }}>
+                {isChecking ? 'Status check' : 'Analyzing'}
+              </span>
+            )}
+          </div>
+          <div className="pa-float-header-actions">
+            <button onClick={toggleCollapse} className="pa-float-collapse-btn">
+              {collapsed ? <ChevronUp size={18} color={'var(--an-muted)'} /> : <ChevronDown size={18} color={'var(--an-muted)'} />}
+            </button>
+            <button onClick={handleDismiss} disabled={!canClose} className="pa-close-btn" title={canClose ? 'Dismiss' : 'Wait for analysis to finish…'}>
+              <X size={17} color={canClose ? 'var(--an-muted-mid)' : 'var(--an-muted)'} />
+            </button>
+          </div>
+        </div>
+        {/* Body */}
+        {!collapsed && (
+          <div className={bodyAnim === 'open' ? 'pa-body-open' : bodyAnim === 'close' ? 'pa-body-close' : 'pa-body-open'}>
+            {/* STATUS CHECKS */}
+            {isChecking && (
+              <div className="pa-status-checks">
+                <p className="pa-status-checks-desc">Verifying prerequisites before analysis starts…</p>
+                {STATUS_CHECKS.map((item, i) => {
+                  const done = i < checks;
+                  const active = i === checks;
+                  return (
+                    <div key={item.key} className={`pa-check-row${done ? ' done' : active ? ' active' : ''}`}> 
+                      {done
+                        ? <CheckCircle2 size={15} color={'var(--an-green)'} style={{ flexShrink: 0 }} />
+                        : active
+                          ? <Loader2 size={15} color={'var(--an-purple)'} style={{ flexShrink: 0, animation: 'pa-spin 1s linear infinite' }} />
+                          : <div style={{ width: 15, height: 15, borderRadius: '50%', border: `1.5px solid rgba(255,255,255,0.15)`, flexShrink: 0 }} />
+                      }
+                      <span className={`pa-check-label${done ? ' done' : active ? ' active' : ''}`}>{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* ANALYSIS LOGS */}
+            {(isAnalyzing || isDone) && (
+              <div>
+                <div className="pa-log-header">
+                  <Terminal size={12} color={'var(--an-muted)'} />
+                  <span className="pa-log-title">Live log</span>
+                </div>
+                <div className="pa-log-box">
+                  {logs.map((line, i) => (
+                    <div key={i} className={`pa-log-line${line.startsWith('✓') ? ' done' : line.startsWith('→') ? ' active' : ''}`}>
+                      <span className="pa-log-line-num">{String(i + 1).padStart(2, '0')}</span>
+                      {line}
+                    </div>
+                  ))}
+                  {isAnalyzing && (
+                    <div className="pa-log-cursor-row">
+                      <span className="pa-log-line-num">--</span>
+                      <span className="pa-log-cursor pa-blink">▋</span>
+                    </div>
+                  )}
+                  <div ref={logEndRef} />
+                </div>
+                {isDone && (
+                  <div className="pa-log-success">
+                    <CheckCircle2 size={15} color={'var(--an-green)'} />
+                    <span className="pa-log-success-text">
+                      Profile score: <strong className="pa-log-success-check">✓</strong> — results ready below
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');`}</style>
+    </>
+  );
+}
+
 export default function Analysis() {
   const navigate = useNavigate();
   const [running, setRunning] = useState(false);
   const [modalStep, setModalStep] = useState<'checking' | 'logs' | 'ready' | 'results' | null>(null);
+  const [statusChecks, setStatusChecks] = useState(0);
   const [charts, setCharts] = useState<unknown>(null);
   const [logLines, setLogLines] = useState<string[]>([]);
   const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
@@ -410,6 +551,20 @@ export default function Analysis() {
     });
   };
 
+  // Responsive floating panel logic
+  useEffect(() => {
+    if (modalStep === 'checking') {
+      setStatusChecks(0);
+      let i = 0;
+      const interval = setInterval(() => {
+        i++;
+        setStatusChecks(i);
+        if (i >= 4) clearInterval(interval);
+      }, 700);
+      return () => clearInterval(interval);
+    }
+  }, [modalStep]);
+
   const run = async () => {
     if (!effectiveDevId) {
       toast({ title: 'Missing developer context', description: 'Open analysis from dashboard so we can target the right profile.', variant: 'destructive' });
@@ -424,10 +579,7 @@ export default function Analysis() {
 
     try {
       let triggered = false;
-
-      // Simulate status check modal
-      setTimeout(() => setModalStep('logs'), 1200);
-
+      setTimeout(() => setModalStep('logs'), 1200 + 4 * 700);
       try {
         await getDeveloperAnalyzer(effectiveDevId);
         appendLog('Developer-level analysis triggered. Waiting for updates...');
@@ -435,24 +587,18 @@ export default function Analysis() {
       } catch {
         appendLog('Developer-level trigger failed, attempting per-project AI evaluation fallback...');
       }
-
       if (!triggered && projects.length > 0) {
         const results = await Promise.allSettled(projects.map((project) => evaluateProjectAI(project.id)));
         const successCount = results.filter((result) => result.status === 'fulfilled').length;
-
         if (successCount > 0) {
           appendLog(`Triggered AI evaluation for ${successCount} project(s).`);
           triggered = true;
         }
       }
-
       if (!triggered) {
         throw new Error('No analysis trigger succeeded.');
       }
-
-      // Simulate logs modal, then ready modal
-      setTimeout(() => setModalStep('ready'), 2200);
-
+      setTimeout(() => setModalStep('ready'), 2200 + 4 * 700);
       startStream(effectiveDevId);
     } catch (err) {
       toast({ title: 'Analysis failed', description: 'Unable to run analysis, please try again.', variant: 'destructive' });
@@ -607,8 +753,10 @@ export default function Analysis() {
   ].filter(a => a.val);
 
   // Main render
+  // Blur main content when panel is active
+  const isPanelActive = modalStep === 'checking' || modalStep === 'logs' || modalStep === 'ready';
   return (
-    <div className="analyzer-root">
+    <div className="analyzer-root" style={isPanelActive ? { filter: 'blur(3px)', transition: 'filter 0.45s ease', pointerEvents: 'none', userSelect: 'none' } : {}}>
       {/* Header */}
       <div className="analyzer-header">
         <div className="analyzer-header-title">
@@ -758,3 +906,6 @@ export default function Analysis() {
     </div>
   );
 }
+
+// FloatingPanel overlays (must be rendered at root, not inside main <div>)
+// (No-op: FloatingPanel is now rendered inside the main component, after the main content)

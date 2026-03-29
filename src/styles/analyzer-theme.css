@@ -1,3 +1,207 @@
+
+/* FloatingPanel overlay and panel (from Analysis.tsx) */
+.pa-float-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.pa-float-panel {
+  position: fixed;
+  z-index: 60;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #16161a;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -12px 60px rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-bottom: none;
+  font-family: 'DM Sans', sans-serif;
+  overflow: hidden;
+  transition: border-radius 0.2s;
+}
+.pa-float-panel.collapsed {
+  border-radius: 20px 20px 0 0;
+}
+.pa-float-drag {
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+  padding-bottom: 4px;
+  cursor: pointer;
+}
+.pa-float-pill {
+  width: 36px;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.15);
+}
+.pa-float-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.pa-float-header.collapsed {
+  border-bottom: none;
+}
+.pa-float-header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pa-float-header-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pa-float-header-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--an-text);
+}
+.pa-float-header-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-left: 6px;
+}
+.pa-float-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pa-float-collapse-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--an-muted);
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.pa-body-open, .pa-body-close {
+  padding: 16px 20px 24px;
+}
+.pa-status-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pa-status-checks-desc {
+  font-size: 12px;
+  color: var(--an-muted);
+  margin-bottom: 4px;
+}
+.pa-check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.pa-check-row.done {
+  background: var(--an-green-dim);
+  border-color: rgba(52,199,128,0.2);
+}
+.pa-check-row.active {
+  background: var(--an-purple-dim);
+  border-color: rgba(139,130,240,0.25);
+}
+.pa-check-label {
+  font-size: 13px;
+  color: var(--an-muted);
+  font-weight: 400;
+}
+.pa-check-label.done {
+  color: #7de0b0;
+  font-weight: 500;
+}
+.pa-check-label.active {
+  color: #c4bfff;
+  font-weight: 500;
+}
+.pa-log-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.pa-log-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--an-muted);
+}
+.pa-log-box {
+  background: #0a0a0d;
+  border-radius: 14px;
+  padding: 12px 14px;
+  max-height: 190px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.8;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.pa-log-line {
+  color: #c0c0cc;
+}
+.pa-log-line.done {
+  color: var(--an-green);
+}
+.pa-log-line.active {
+  color: #8b82f0;
+}
+.pa-log-line-num {
+  color: #2e2e38;
+  margin-right: 10px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pa-log-cursor-row {
+  color: var(--an-purple);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+}
+.pa-log-cursor {
+  animation: pa-blink 1s step-end infinite;
+}
+.pa-log-success {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--an-green-dim);
+  border: 1px solid rgba(52,199,128,0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pa-log-success-text {
+  font-size: 13px;
+  color: #7de0b0;
+  font-weight: 500;
+}
+.pa-log-success-check {
+  color: var(--an-green);
+}
 /* --- Analysis/MockAnalyzer component classes --- */
 .score-ring { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
 .score-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }

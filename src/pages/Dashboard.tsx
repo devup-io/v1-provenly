@@ -606,10 +606,93 @@ export default function Dashboard() {
     return true;
   });
 
+  return (
+    <div className="min-h-screen bg-gradient-hero">
+      <Header />
 
-    return (
-      <>
-        {/* --- Responsive Header/Profile/Insights/Actions Cards from MockDashboard --- */}
+      <div className="mx-auto max-w-6xl px-4 pb-4 pt-24 sm:px-6 sm:pb-6 md:px-8 md:pb-8 md:pt-28">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-2"
+          >
+            <p className="text-body text-muted-foreground">Welcome back,</p>
+            <h1 className="text-display-sm font-bold">{developer.name || developer.github_username}</h1>
+            <p className="text-body-sm text-muted-foreground">Start by adding a project to build your Provenly profile</p>
+          </motion.div>
+
+          <Button
+            variant="outline"
+            onClick={() => navigate('/profile/edit')}
+            className="w-full lg:w-auto gap-2"
+          >
+            Edit Profile
+          </Button>
+        </div>
+
+        {/* Error Alert */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 flex items-start gap-3 rounded-lg border border-destructive bg-destructive/5 p-4"
+          >
+            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-destructive">Error</p>
+              <p className="text-sm text-destructive/90">{error}</p>
+            </div>
+          </motion.div>
+        )}
+
+        {developer.is_suspended && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 flex items-start gap-3 rounded-lg border border-destructive bg-destructive/5 p-4"
+          >
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+            <p className="text-sm text-destructive">
+              Your account has been suspended due to inactivity. Some features are disabled.
+            </p>
+          </motion.div>
+        )}
+
+        {/* Removed the card above the profile card. Optionally, show as a floating card at bottom-left in future. */}
+        {/*
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="fixed bottom-6 left-6 z-50 hidden md:block rounded-[20px] border border-border bg-card p-5 shadow-lg"
+        >
+          <div className="flex flex-col gap-2">
+            <p className="text-body font-semibold">Start by adding a project to build your Provenly profile</p>
+            <div className="max-w-md space-y-1">
+              <p className="text-body-sm text-muted-foreground">Profile {profileCompletion}% complete</p>
+              <Progress value={profileCompletion} className="h-2" />
+              <p className="text-caption text-muted-foreground">
+                {remainingProjects > 0
+                  ? `Add ${remainingProjects} more project${remainingProjects === 1 ? '' : 's'} to complete your profile`
+                  : 'Your profile is complete. Add more projects to strengthen your profile.'}
+              </p>
+            </div>
+            <Button
+              onClick={handleImportMore}
+              size="lg"
+              className="w-full gap-2 sm:w-auto"
+              data-tour="add-project-hero-btn"
+            >
+              <Plus className="h-4 w-4" />
+              Add Project
+            </Button>
+          </div>
+        </motion.div>
+        */}
+
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {/* Profile Card */}
           <motion.div
@@ -641,17 +724,22 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+
+
+              {/* Bio moved above other info, with indicator */}
               <div className="mb-2 flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
                   <Info className="h-3 w-3" /> Bio
                 </span>
                 <span className="text-body-sm text-muted-foreground">{developer.bio || 'N/A'}</span>
               </div>
+
               <div className="mt-3 space-y-3 px-4">
                 <div className="flex items-center gap-2 text-body-sm font-medium text-muted-foreground">
                   <Cpu className="h-4 w-4 text-primary" />
                   <span>Tech Stack</span>
                 </div>
+
                 <div className="flex flex-wrap gap-2">
                   {primaryStack.length > 0 ? (
                     primaryStack.map((tech) => (
@@ -667,6 +755,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
+
               <div className="mt-4 grid grid-cols-1 gap-3 text-body-sm md:grid-cols-2">
                 <div className="rounded-xl border border-border/50 bg-background/60 px-4 py-3">
                   <p className="text-caption uppercase tracking-wide text-muted-foreground">Experience</p>
@@ -701,6 +790,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+
               <div className="mt-6 flex justify-center">
                 <a
                   href={`https://github.com/${developer.github_username}`}
@@ -714,7 +804,8 @@ export default function Dashboard() {
               </div>
             </div>
           </motion.div>
-          {/* Insights Card */}
+
+          {/* Statistics Card */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -738,6 +829,7 @@ export default function Dashboard() {
                   {stats?.collaborative_development !== undefined ? `${Math.round(stats.collaborative_development)}%` : 'N/A'}
                 </p>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-border bg-card p-4">
                   <p className="text-body-sm text-muted-foreground">Total Projects</p>
@@ -769,6 +861,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+
               {!stats && (
                 <div className="py-2 text-center">
                   <Button onClick={handleRefreshEvaluations} variant="outline" size="sm" disabled={refreshingInsights || runningAnalysis}>
@@ -779,7 +872,8 @@ export default function Dashboard() {
               )}
             </div>
           </motion.div>
-          {/* Quick Actions Card */}
+
+          {/* Actions Card */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1185,7 +1279,7 @@ export default function Dashboard() {
             </TabsContent>
           </Tabs>
         </motion.div>
-      {/* Removed stray closing div to fix JSX fragment error */}
+      </div>
 
       <Dialog open={!!aiSignalModal} onOpenChange={(open) => !open && setAiSignalModal(null)}>
         <DialogContent className="sm:max-w-md">
@@ -1266,6 +1360,6 @@ export default function Dashboard() {
           )}
         </DialogContent>
       </Dialog>
-      </>
-    );
+    </div>
+  );
 }
