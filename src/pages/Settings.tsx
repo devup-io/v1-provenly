@@ -243,10 +243,101 @@ export default function Settings() {
               <Button onClick={handleSave} disabled={saving}>
                 {saving ? 'Saving...' : 'Save Preferences'}
               </Button>
+
+            </div>
+          </div> {/* Close main settings div before Danger Zone */}
+
+          {/* Danger Zone Section */}
+          <div className="mt-12">
+            <div className="rounded-2xl border-2 border-red-500 bg-red-50 p-6">
+              <h2 className="text-heading-sm font-bold text-red-700 mb-4">Danger Zone</h2>
+              <p className="text-caption text-red-700 mb-6">These actions are destructive and may be irreversible. Please proceed with caution.</p>
+
+              {/* Unpublish Profile */}
+              <DangerAction
+                actionLabel="Unpublish Profile"
+                description="Your profile will be hidden from public view. You can re-publish at any time."
+                buttonText="Unpublish"
+                onConfirm={async () => {
+                  try {
+                    const { unpublishProfile } = await import('@/lib/api');
+                    await unpublishProfile();
+                    window.location.reload();
+                  } catch (e) {
+                    alert('Failed to unpublish profile.');
+                  }
+                }}
+              />
+
+              {/* Deactivate Account */}
+              <DangerAction
+                actionLabel="Deactivate Account"
+                description="Temporarily disable your account. You can reactivate by logging in again."
+                buttonText="Deactivate"
+                onConfirm={async () => {
+                  // TODO: Implement deactivate API call
+                  alert('Deactivate account is not yet implemented.');
+                }}
+              />
+
+              {/* Delete Account */}
+              <DangerAction
+                actionLabel="Delete Account"
+                description="Permanently delete your account and all associated data. This cannot be undone."
+                buttonText="Delete"
+                onConfirm={async () => {
+                  // TODO: Implement delete API call
+                  alert('Delete account is not yet implemented.');
+                }}
+                destructive
+              />
             </div>
           </div>
         </motion.div>
       </div>
+    </div>
+  );
+}
+
+// DangerAction component using AlertDialog
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
+
+function DangerAction({ actionLabel, description, buttonText, onConfirm, destructive }: {
+  actionLabel: string;
+  description: string;
+  buttonText: string;
+  onConfirm: () => Promise<void>;
+  destructive?: boolean;
+}) {
+  return (
+    <div className="mb-6">
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant={destructive ? 'destructive' : 'outline'} className="border-red-500 text-red-700 hover:bg-red-100">
+            {buttonText}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{actionLabel}</AlertDialogTitle>
+            <AlertDialogDescription>{description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onConfirm}>{buttonText}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

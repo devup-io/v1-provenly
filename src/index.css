@@ -159,7 +159,8 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    margin: 0;        /* ✅ ADD THIS */
+    padding: 0;       /* optional but safe */
   }
 
   /* Smooth scrolling */

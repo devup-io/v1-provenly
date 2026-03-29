@@ -62,6 +62,8 @@ const InfoTip = ({ label, text }: { label: string; text: string }) => (
   </Tooltip>
 );
 
+const PROJECTS_PER_PAGE = 6;
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [developer, setDeveloper] = useState<DeveloperProfile | null>(null);
@@ -83,6 +85,9 @@ export default function Dashboard() {
     roleMismatch: false,
     featured: false,
   });
+
+  // pagination
+  const [currentPage, setCurrentPage] = useState(1);
 
   // publish modal state
   const [publishModal, setPublishModal] = useState(false);
@@ -141,6 +146,11 @@ export default function Dashboard() {
         setSupportedRoles([]);
       });
   }, []);
+
+  // Reset page to 1 whenever any filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [projectQuery, projectTypeFilter, projectTestsFilter, quickFilters]);
 
   // Initial data load
   useEffect(() => {
@@ -569,6 +579,7 @@ export default function Dashboard() {
         .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
     )
   ).sort((a, b) => a.localeCompare(b));
+
   const filteredProjects = projects.filter((project) => {
     const query = projectQuery.trim().toLowerCase();
     if (query) {
@@ -606,10 +617,79 @@ export default function Dashboard() {
     return true;
   });
 
+  // Pagination derived values
+  const totalPages = Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE);
+  const paginatedProjects = filteredProjects.slice(
+    (currentPage - 1) * PROJECTS_PER_PAGE,
+    currentPage * PROJECTS_PER_PAGE
+  );
 
-    return (
-      <>
-        {/* --- Responsive Header/Profile/Insights/Actions Cards from MockDashboard --- */}
+  // Build the page number array with ellipsis markers
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+    .reduce<(number | 'ellipsis')[]>((acc, page, idx, arr) => {
+      if (idx > 0 && (page as number) - (arr[idx - 1] as number) > 1) {
+        acc.push('ellipsis');
+      }
+      acc.push(page);
+      return acc;
+    }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-hero">
+      <Header />
+
+      <div className="mx-auto max-w-6xl px-4 pb-4 pt-24 sm:px-6 sm:pb-6 md:px-8 md:pb-8 md:pt-28">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-2"
+          >
+            <p className="text-body text-muted-foreground">Welcome back,</p>
+            <h1 className="text-display-sm font-bold">{developer.name || developer.github_username}</h1>
+            <p className="text-body-sm text-muted-foreground">Start by adding a project to build your Provenly profile</p>
+          </motion.div>
+
+          <Button
+            variant="outline"
+            onClick={() => navigate('/profile/edit')}
+            className="w-full lg:w-auto gap-2"
+          >
+            Edit Profile
+          </Button>
+        </div>
+
+        {/* Error Alert */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 flex items-start gap-3 rounded-lg border border-destructive bg-destructive/5 p-4"
+          >
+            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-destructive">Error</p>
+              <p className="text-sm text-destructive/90">{error}</p>
+            </div>
+          </motion.div>
+        )}
+
+        {developer.is_suspended && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 flex items-start gap-3 rounded-lg border border-destructive bg-destructive/5 p-4"
+          >
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+            <p className="text-sm text-destructive">
+              Your account has been suspended due to inactivity. Some features are disabled.
+            </p>
+          </motion.div>
+        )}
+
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {/* Profile Card */}
           <motion.div
@@ -641,17 +721,21 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+
+              {/* Bio moved above other info, with indicator */}
               <div className="mb-2 flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
                   <Info className="h-3 w-3" /> Bio
                 </span>
                 <span className="text-body-sm text-muted-foreground">{developer.bio || 'N/A'}</span>
               </div>
+
               <div className="mt-3 space-y-3 px-4">
                 <div className="flex items-center gap-2 text-body-sm font-medium text-muted-foreground">
                   <Cpu className="h-4 w-4 text-primary" />
                   <span>Tech Stack</span>
                 </div>
+
                 <div className="flex flex-wrap gap-2">
                   {primaryStack.length > 0 ? (
                     primaryStack.map((tech) => (
@@ -667,6 +751,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
+
               <div className="mt-4 grid grid-cols-1 gap-3 text-body-sm md:grid-cols-2">
                 <div className="rounded-xl border border-border/50 bg-background/60 px-4 py-3">
                   <p className="text-caption uppercase tracking-wide text-muted-foreground">Experience</p>
@@ -701,6 +786,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+
               <div className="mt-6 flex justify-center">
                 <a
                   href={`https://github.com/${developer.github_username}`}
@@ -714,7 +800,8 @@ export default function Dashboard() {
               </div>
             </div>
           </motion.div>
-          {/* Insights Card */}
+
+          {/* Statistics Card */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -738,6 +825,7 @@ export default function Dashboard() {
                   {stats?.collaborative_development !== undefined ? `${Math.round(stats.collaborative_development)}%` : 'N/A'}
                 </p>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-border bg-card p-4">
                   <p className="text-body-sm text-muted-foreground">Total Projects</p>
@@ -769,6 +857,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+
               {!stats && (
                 <div className="py-2 text-center">
                   <Button onClick={handleRefreshEvaluations} variant="outline" size="sm" disabled={refreshingInsights || runningAnalysis}>
@@ -779,7 +868,8 @@ export default function Dashboard() {
               )}
             </div>
           </motion.div>
-          {/* Quick Actions Card */}
+
+          {/* Actions Card */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -807,7 +897,11 @@ export default function Dashboard() {
                     await getDeveloperAnalyzer(developer.id);
                     toast({ title: 'Analysis complete ✅' });
                   } catch {
-                    toast({ title: 'Analysis failed', description: 'We couldn’t analyze this repo. Make sure it’s public and contains code.', variant: 'destructive' });
+                    toast({
+                      title: 'Analysis Failed',
+                      description: "We couldn't analyze this repository. Please ensure it is public, contains code, and try again.",
+                      variant: 'destructive',
+                    });
                   } finally {
                     setRunningAnalysis(false);
                     navigate(`/analysis?dev=${developer?.id}`);
@@ -894,7 +988,7 @@ export default function Dashboard() {
               {projects.length === 0 ? (
                 <div className="rounded-[24px] border border-dashed border-border bg-card/50 p-8 text-center">
                   <GitBranch className="mx-auto mb-4 h-8 w-8 text-muted-foreground" />
-                  <h3 className="mb-2 text-heading-sm">You haven’t added any projects yet</h3>
+                  <h3 className="mb-2 text-heading-sm">You haven't added any projects yet</h3>
                   <p className="mb-6 text-body text-muted-foreground">
                     Add your first repo to start your analysis
                   </p>
@@ -905,6 +999,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <>
+                  {/* Filter bar */}
                   <div className="rounded-2xl border border-border/60 bg-card p-4">
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                       <Input
@@ -980,191 +1075,276 @@ export default function Dashboard() {
                       </Button>
                     </div>
                   ) : (
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {filteredProjects.map((project, index) => (
-                    <motion.div
-                      key={project.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 + (index * 0.05) }}
-                      whileHover={{ y: -4 }}
-                      onClick={() => navigate(`/dashboard/projects/${project.id}`)}
-                      className="group cursor-pointer rounded-[24px] bg-gradient-to-br from-card to-card/80 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
-                    >
-                      {(() => {
-                        const metadataWarnings = Array.isArray((project.github_metadata as Record<string, unknown> | undefined)?.warnings)
-                          ? ((project.github_metadata as Record<string, unknown>).warnings as string[])
-                          : [];
-                        const roleWarningPattern = /(role|declared|mismatch|supported\s+role|alignment)/i;
-                        const allWarnings = Array.from(
-                          new Set([...(project.warnings || []), ...metadataWarnings].filter(Boolean))
-                        ).filter((warning) => !roleWarningPattern.test(String(warning)));
+                    <>
+                      {/* Project grid — paginated */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {paginatedProjects.map((project, index) => (
+                          <motion.div
+                            key={project.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.05 * index }}
+                            whileHover={{ y: -4 }}
+                            onClick={() => navigate(`/dashboard/projects/${project.id}`)}
+                            className="group cursor-pointer rounded-[24px] bg-gradient-to-br from-card to-card/80 p-4 shadow-lg transition-all hover:shadow-xl sm:p-6"
+                          >
+                            {(() => {
+                              const metadataWarnings = Array.isArray((project.github_metadata as Record<string, unknown> | undefined)?.warnings)
+                                ? ((project.github_metadata as Record<string, unknown>).warnings as string[])
+                                : [];
+                              const roleWarningPattern = /(role|declared|mismatch|supported\s+role|alignment)/i;
+                              const allWarnings = Array.from(
+                                new Set([...(project.warnings || []), ...metadataWarnings].filter(Boolean))
+                              ).filter((warning) => !roleWarningPattern.test(String(warning)));
 
-                        if (allWarnings.length === 0) return null;
+                              if (allWarnings.length === 0) return null;
 
-                        return (
-                          <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
-                            <p className="font-semibold">Advisory warnings</p>
-                            <ul className="mt-1 list-disc space-y-0.5 pl-4">
-                              {allWarnings.slice(0, 3).map((warning) => (
-                                <li key={`${project.id}-${warning}`}>{warning}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        );
-                      })()}
+                              return (
+                                <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
+                                  <p className="font-semibold">Advisory warnings</p>
+                                  <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                                    {allWarnings.slice(0, 3).map((warning) => (
+                                      <li key={`${project.id}-${warning}`}>{warning}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              );
+                            })()}
 
-                      {(() => {
-                        const projectUrl = project.github_url || project.url;
-                        const owner = projectUrl
-                          ? projectUrl.replace(/^https?:\/\/github\.com\//i, '').split('/')[0]?.toLowerCase()
-                          : undefined;
-                        const username = developer.github_username?.toLowerCase();
-                        const isOrganizationRepo = Boolean(owner && username && owner !== username);
-                        const hasVeryLowContribution = isOrganizationRepo && (project.commits_count ?? 0) <= 2;
+                            {(() => {
+                              const projectUrl = project.github_url || project.url;
+                              const owner = projectUrl
+                                ? projectUrl.replace(/^https?:\/\/github\.com\//i, '').split('/')[0]?.toLowerCase()
+                                : undefined;
+                              const username = developer.github_username?.toLowerCase();
+                              const isOrganizationRepo = Boolean(owner && username && owner !== username);
+                              const hasVeryLowContribution = isOrganizationRepo && (project.commits_count ?? 0) <= 2;
 
-                        if (!hasVeryLowContribution) return null;
+                              if (!hasVeryLowContribution) return null;
 
-                        return (
-                          <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
-                            Basic contribution detected: this is an organization repository and your visible commit history appears very limited for this project.
-                          </div>
-                        );
-                      })()}
+                              return (
+                                <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-caption text-yellow-900 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
+                                  Basic contribution detected: this is an organization repository and your visible commit history appears very limited for this project.
+                                </div>
+                              );
+                            })()}
 
-                      <div className="grid grid-cols-1 gap-4">
-                        <div>
-                          <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="break-words text-heading-sm m-0">{project.name || 'N/A'}</h3>
-                                {/* Complexity beside repo name */}
-                                <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${getComplexityColor(project.ai_evaluation?.difficulty_tier)}`}
-                                  title="Project complexity level">
-                                  {project.ai_evaluation?.difficulty_tier || 'N/A'}
-                                </span>
-                              </div>
-                              <div className="mb-2 flex flex-wrap items-center gap-2">
-                                {/* Language icon/title beside language (icon to be added in next step) */}
-                                {project.language && (
-                                  <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-medium bg-secondary text-secondary-foreground">
-                                    {/* Language icon/title */}
-                                    {(() => {
-                                      // Simple language icon mapping
-                                      const lang = project.language.toLowerCase();
-                                      if (lang === 'javascript') return <span title="JavaScript">🟨</span>;
-                                      if (lang === 'typescript') return <span title="TypeScript">🟦</span>;
-                                      if (lang === 'python') return <span title="Python">🐍</span>;
-                                      if (lang === 'java') return <span title="Java">☕</span>;
-                                      if (lang === 'go') return <span title="Go">💧</span>;
-                                      if (lang === 'rust') return <span title="Rust">🦀</span>;
-                                      if (lang === 'c++' || lang === 'cpp') return <span title="C++">➕</span>;
-                                      if (lang === 'c#') return <span title="C#">🎯</span>;
-                                      if (lang === 'php') return <span title="PHP">🐘</span>;
-                                      if (lang === 'ruby') return <span title="Ruby">💎</span>;
-                                      if (lang === 'swift') return <span title="Swift">🦅</span>;
-                                      if (lang === 'kotlin') return <span title="Kotlin">🟪</span>;
-                                      if (lang === 'html') return <span title="HTML">🌐</span>;
-                                      if (lang === 'css') return <span title="CSS">🎨</span>;
-                                      return null;
-                                    })()}
-                                    <span className="ml-1">{project.language}</span>
-                                  </span>
-                                )}
-                                <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-body-sm font-semibold text-white shadow-sm">
-                                  {(project.ai_evaluation?.difficulty_tier || 'N/A').replace(/\s*complexity\s*/gi, '').trim()} complexity
-                                </span>
-                                <InfoTip
-                                  label="Project complexity"
-                                  text="L1: foundational project. L2: intermediate project with real backend logic and multiple components. L3: advanced architecture with higher scale and complexity."
-                                />
-                              </div>
-                              <div className="mb-1 flex flex-wrap items-center gap-3 text-body-sm">
-                                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
-                                  {project.ai_evaluation?.repo_score !== undefined ? `${Math.round(project.ai_evaluation.repo_score)}% score` : 'N/A score'}
-                                </span>
-                                {project.ai_evaluation && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-0.5 text-secondary-foreground">
-                                    {Math.round(project.ai_evaluation.confidence_score)}% confidence
-                                    <InfoTip
-                                      label="Confidence score"
-                                      text="How confident the AI is in this project’s evaluation based on available repository signals."
-                                    />
-                                  </span>
-                                )}
-                                {project.ai_evaluation?.detected_project_type && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-3 py-0.5 font-semibold text-blue-700 dark:text-blue-300">
-                                    {project.ai_evaluation.detected_project_type}
-                                  </span>
-                                )}
-                                {project.ai_evaluation?.has_tests !== undefined && (
-                                  <span className={`inline-flex items-center gap-1 rounded-full px-3 py-0.5 ${
-                                    project.ai_evaluation.has_tests 
-                                      ? 'bg-green-500/10 text-green-700 dark:text-green-300' 
-                                      : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                                  }`}>
-                                    <TestTube className="h-3 w-3" />
-                                    {project.ai_evaluation.has_tests ? 'Has tests' : 'No tests'}
-                                  </span>
-                                )}
-                                {project.ai_evaluation?.contribution_percentage !== undefined && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-0.5 text-secondary-foreground">
-                                    {Math.round(project.ai_evaluation.contribution_percentage)}% contribution
-                                    <InfoTip
-                                      label="Contribution level"
-                                      text="Estimated share of your contribution in this repository."
-                                    />
-                                  </span>
-                                )}
-                                <span className="inline-flex items-center gap-1 rounded-full bg-muted/20 px-3 py-0.5 text-muted-foreground">
-                                  <GitBranch className="h-3 w-3" />
-                                  {project.commits_count !== undefined ? `${project.commits_count} commits` : 'N/A commits'}
-                                </span>
+                            <div className="grid grid-cols-1 gap-4">
+                              <div>
+                                <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <h3 className="break-words text-heading-sm m-0">{project.name || 'N/A'}</h3>
+                                      <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${getComplexityColor(project.ai_evaluation?.difficulty_tier)}`}
+                                        title="Project complexity level">
+                                        {project.ai_evaluation?.difficulty_tier || 'N/A'}
+                                      </span>
+                                    </div>
+                                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                                      {project.language && (
+                                        <span className="inline-flex items-center rounded-full px-3 py-1 text-body-sm font-medium bg-secondary text-secondary-foreground">
+                                          {(() => {
+                                            const lang = project.language.toLowerCase();
+                                            if (lang === 'javascript') return <span title="JavaScript">🟨</span>;
+                                            if (lang === 'typescript') return <span title="TypeScript">🟦</span>;
+                                            if (lang === 'python') return <span title="Python">🐍</span>;
+                                            if (lang === 'java') return <span title="Java">☕</span>;
+                                            if (lang === 'go') return <span title="Go">💧</span>;
+                                            if (lang === 'rust') return <span title="Rust">🦀</span>;
+                                            if (lang === 'c++' || lang === 'cpp') return <span title="C++">➕</span>;
+                                            if (lang === 'c#') return <span title="C#">🎯</span>;
+                                            if (lang === 'php') return <span title="PHP">🐘</span>;
+                                            if (lang === 'ruby') return <span title="Ruby">💎</span>;
+                                            if (lang === 'swift') return <span title="Swift">🦅</span>;
+                                            if (lang === 'kotlin') return <span title="Kotlin">🟪</span>;
+                                            if (lang === 'html') return <span title="HTML">🌐</span>;
+                                            if (lang === 'css') return <span title="CSS">🎨</span>;
+                                            return null;
+                                          })()}
+                                          <span className="ml-1">{project.language}</span>
+                                        </span>
+                                      )}
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1 text-body-sm font-semibold text-white shadow-sm">
+                                        {(project.ai_evaluation?.difficulty_tier || 'N/A').replace(/\s*complexity\s*/gi, '').trim()} complexity
+                                      </span>
+                                      <InfoTip
+                                        label="Project complexity"
+                                        text="L1: foundational project. L2: intermediate project with real backend logic and multiple components. L3: advanced architecture with higher scale and complexity."
+                                      />
+                                    </div>
+                                    <div className="mb-1 flex flex-wrap items-center gap-3 text-body-sm">
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-0.5 font-semibold text-primary">
+                                        {project.ai_evaluation?.repo_score !== undefined ? `${Math.round(project.ai_evaluation.repo_score)}% score` : 'N/A score'}
+                                      </span>
+                                      {project.ai_evaluation && (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-0.5 text-secondary-foreground">
+                                          {Math.round(project.ai_evaluation.confidence_score)}% confidence
+                                          <InfoTip
+                                            label="Confidence score"
+                                            text="How confident the AI is in this project's evaluation based on available repository signals."
+                                          />
+                                        </span>
+                                      )}
+                                      {project.ai_evaluation?.detected_project_type && (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-3 py-0.5 font-semibold text-blue-700 dark:text-blue-300">
+                                          {project.ai_evaluation.detected_project_type}
+                                        </span>
+                                      )}
+                                      {project.ai_evaluation?.has_tests !== undefined && (
+                                        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-0.5 ${
+                                          project.ai_evaluation.has_tests
+                                            ? 'bg-green-500/10 text-green-700 dark:text-green-300'
+                                            : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                                        }`}>
+                                          <TestTube className="h-3 w-3" />
+                                          {project.ai_evaluation.has_tests ? 'Has tests' : 'No tests'}
+                                        </span>
+                                      )}
+                                      {project.ai_evaluation?.contribution_percentage !== undefined && (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-0.5 text-secondary-foreground">
+                                          {Math.round(project.ai_evaluation.contribution_percentage)}% contribution
+                                          <InfoTip
+                                            label="Contribution level"
+                                            text="Estimated share of your contribution in this repository."
+                                          />
+                                        </span>
+                                      )}
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-muted/20 px-3 py-0.5 text-muted-foreground">
+                                        <GitBranch className="h-3 w-3" />
+                                        {project.commits_count !== undefined ? `${project.commits_count} commits` : 'N/A commits'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
+                                    Active
+                                    {project.github_url && (
+                                      <a
+                                        href={project.github_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-1 text-muted-foreground transition hover:text-primary"
+                                        onClick={(e) => e.stopPropagation()}
+                                        title="View on GitHub"
+                                      >
+                                        <Github className="h-4 w-4" />
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Info className="h-4 w-4 text-primary" />
+                                  <span className="font-semibold text-body-sm text-primary">Description</span>
+                                </div>
+                                <p className="text-body-sm text-muted-foreground">
+                                  {project.description || 'N/A'}
+                                </p>
+
+                                <div className="mt-4 flex justify-start">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/dashboard/projects/${project.id}`);
+                                    }}
+                                  >
+                                    View more about project
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
-                              Active
-                              {project.github_url && (
-                                <a
-                                  href={project.github_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ml-1 text-muted-foreground transition hover:text-primary"
-                                  onClick={(e) => e.stopPropagation()}
-                                  title="View on GitHub"
-                                >
-                                  <Github className="h-4 w-4" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
+                          </motion.div>
+                        ))}
+                      </div>
 
-                          <div className="flex items-center gap-2 mb-1">
-                            <Info className="h-4 w-4 text-primary" />
-                            <span className="font-semibold text-body-sm text-primary">Description</span>
-                          </div>
-                          <p className="text-body-sm text-muted-foreground">
-                            {project.description || 'N/A'}
+                      {/* Pagination controls */}
+                      {totalPages > 1 && (
+                        <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="text-caption text-muted-foreground">
+                            Page {currentPage} of {totalPages} &middot; {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''}
                           </p>
 
-                          <div className="mt-4 flex justify-start">
+                          <div className="flex items-center gap-1">
+                            {/* Jump to first */}
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/dashboard/projects/${project.id}`);
-                              }}
+                              onClick={() => setCurrentPage(1)}
+                              disabled={currentPage === 1}
+                              className="hidden sm:inline-flex px-2"
+                              aria-label="First page"
                             >
-                              View more about project
+                              «
+                            </Button>
+
+                            {/* Previous */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                              disabled={currentPage === 1}
+                              aria-label="Previous page"
+                            >
+                              ‹ Prev
+                            </Button>
+
+                            {/* Page number pills */}
+                            <div className="flex items-center gap-1">
+                              {pageNumbers.map((item, idx) =>
+                                item === 'ellipsis' ? (
+                                  <span
+                                    key={`ellipsis-${idx}`}
+                                    className="px-1 text-caption text-muted-foreground select-none"
+                                  >
+                                    …
+                                  </span>
+                                ) : (
+                                  <button
+                                    key={item}
+                                    type="button"
+                                    onClick={() => setCurrentPage(item as number)}
+                                    aria-label={`Page ${item}`}
+                                    aria-current={currentPage === item ? 'page' : undefined}
+                                    className={`h-8 w-8 rounded-lg text-caption font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                      currentPage === item
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-secondary text-secondary-foreground hover:bg-primary/10'
+                                    }`}
+                                  >
+                                    {item}
+                                  </button>
+                                )
+                              )}
+                            </div>
+
+                            {/* Next */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                              disabled={currentPage === totalPages}
+                              aria-label="Next page"
+                            >
+                              Next ›
+                            </Button>
+
+                            {/* Jump to last */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(totalPages)}
+                              disabled={currentPage === totalPages}
+                              className="hidden sm:inline-flex px-2"
+                              aria-label="Last page"
+                            >
+                              »
                             </Button>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -1185,7 +1365,7 @@ export default function Dashboard() {
             </TabsContent>
           </Tabs>
         </motion.div>
-      {/* Removed stray closing div to fix JSX fragment error */}
+      </div>
 
       <Dialog open={!!aiSignalModal} onOpenChange={(open) => !open && setAiSignalModal(null)}>
         <DialogContent className="sm:max-w-md">
@@ -1212,7 +1392,7 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* publish confirmation modal */}
+      {/* Publish confirmation modal */}
       <Dialog open={publishModal} onOpenChange={setPublishModal}>
         <DialogContent>
           {!publishSuccess ? (
@@ -1266,6 +1446,6 @@ export default function Dashboard() {
           )}
         </DialogContent>
       </Dialog>
-      </>
-    );
+    </div>
+  );
 }

@@ -28,7 +28,7 @@ import CompareDevelopers from "./pages/CompareDevelopers";
 import Settings from "./pages/Settings";
 import Analysis from "./pages/Analysis";
 import DebugAuth from "./pages/DebugAuth";
-import MockDashboard from "./pages/MockDashboard";
+import MockAnalyzer from "./pages/MockAnalyzer";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Help from "./pages/Help";
@@ -50,9 +50,15 @@ function AppContent() {
   const location = useLocation();
 
   if (isCheckingBackend) {
+    // Show a full-page skeleton while checking backend
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-hero p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-hero w-full">
+        <div className="w-full max-w-2xl space-y-6">
+          <div className="h-8 w-1/3 mb-4 rounded bg-muted animate-pulse" />
+          <div className="h-12 w-full mb-2 rounded bg-muted animate-pulse" />
+          <div className="h-64 w-full rounded bg-muted animate-pulse" />
+          <div className="h-8 w-1/2 mt-8 rounded bg-muted animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -75,9 +81,15 @@ function AppContent() {
   // Don't render routes while session is being validated
   // This prevents flash of protected content for expired sessions
   if (isChecking) {
+    // Show a full-page skeleton while checking session
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-hero p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-hero w-full">
+        <div className="w-full max-w-2xl space-y-6">
+          <div className="h-8 w-1/3 mb-4 rounded bg-muted animate-pulse" />
+          <div className="h-12 w-full mb-2 rounded bg-muted animate-pulse" />
+          <div className="h-64 w-full rounded bg-muted animate-pulse" />
+          <div className="h-8 w-1/2 mt-8 rounded bg-muted animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -91,7 +103,6 @@ function AppContent() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/mock-dashboard" element={<MockDashboard />} />
         <Route path="/dashboard/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/analysis" element={<Analysis />} />
@@ -152,6 +163,7 @@ function AppContent() {
         <Route path="/dev/:username" element={<DeveloperProfile />} />
         <Route path="/compare" element={<CompareDevelopers />} />
         <Route path="/debug/auth" element={<DebugAuth />} />
+        <Route path="/mock-analyzer" element={<MockAnalyzer />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

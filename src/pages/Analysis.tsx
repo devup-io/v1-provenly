@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Loader2, Info } from 'lucide-react';
+import { Loader2, RefreshCw, Info, AlertTriangle, TrendingUp, Lightbulb, Zap, CheckCircle2, X, ChevronDown, ChevronUp, Terminal } from 'lucide-react';
+import {
+  PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis,
+} from 'recharts';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getDeveloperAnalyzer, getDeveloperAnalyzerCharts, subscribeToAnalyzerStream, getCurrentDeveloper, getDeveloperProjects, evaluateProjectAI } from '@/lib/api';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Progress } from '@/components/ui/progress';
 import type { DeveloperProfile, Project } from '@/types/api';
+
+
+import '../styles/analyzer-theme.css';
 
 type AnalyzerPayload = Record<string, unknown>;
 
@@ -108,14 +111,9 @@ const readNumber = (...values: unknown[]): number => {
 const TooltipLabel = ({ text, tip }: { text: string; tip: string }) => (
   <div className="mb-2 flex items-center gap-2">
     <p className="text-body-sm text-muted-foreground">{text}</p>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button type="button" className="text-muted-foreground hover:text-foreground" aria-label={`${text} info`}>
-          <Info className="h-4 w-4" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-sm">{tip}</TooltipContent>
-    </Tooltip>
+    <button type="button" className="text-muted-foreground hover:text-foreground" aria-label={`${text} info`} title={tip}>
+      <Info className="h-4 w-4" />
+    </button>
   </div>
 );
 
@@ -462,373 +460,301 @@ export default function Analysis() {
       setModalStep(null);
     }
   };
+  // Helper color tokens (should match analyzer-theme.css)
+  const D = {
+    purple: 'var(--an-purple)',
+    purpleDim: 'var(--an-purple-dim)',
+    green: 'var(--an-green)',
+    greenDim: 'var(--an-green-dim)',
+    amber: 'var(--an-amber)',
+    amberDim: 'var(--an-amber-dim)',
+    blue: 'var(--an-blue)',
+    blueDim: 'var(--an-blue-dim)',
+    coral: 'var(--an-coral)',
+    coralDim: 'var(--an-coral-dim)',
+    pink: 'var(--an-pink)',
+    surface: 'var(--an-surface)',
+    surfaceEl: 'var(--an-surface-el)',
+    border: 'var(--an-border)',
+    borderMid: 'var(--an-border-mid)',
+    text: 'var(--an-text)',
+    muted: 'var(--an-muted)',
+    mutedMid: 'var(--an-muted-mid)',
+  };
+  const CONTRIB_COLORS = [D.purple, D.green, D.amber];
 
+  // Sub-components (inlined for brevity)
+  function ScoreRing({ score }) {
+    const r = 54, circ = 2 * Math.PI * r;
+    const offset = circ * (1 - score / 100);
+    return (
+      <div className="score-ring">
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="65" cy="65" r={r} fill="none" stroke={D.surfaceEl} strokeWidth="10" />
+          <circle cx="65" cy="65" r={r} fill="none" stroke={D.purple} strokeWidth="10"
+            strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+          />
+        </svg>
+        <div className="score-ring-center">
+          <span className="score-ring-value">{readNumber(overview.health_score, overview.profile_score, overview.score, 0)}</span>
+          <span className="score-ring-max">/100</span>
+        </div>
+      </div>
+    );
+  }
+  function BreakdownBar({ label, value, color }) {
+    return (
+      <div className="breakdown-bar">
+        <span className="breakdown-bar-label">{label}</span>
+        <div className="breakdown-bar-row">
+          <div className="breakdown-bar-bg">
+            <div className="breakdown-bar-fill" style={{ width: `${value}%`, background: color }} />
+          </div>
+          <span className="breakdown-bar-value">{value}</span>
+        </div>
+      </div>
+    );
+  }
+  function Card({ children, style={} }) {
+    return (
+      <div className="an-card" style={style}>
+        {children}
+      </div>
+    );
+  }
+  function CardHeader({ icon, iconBg, title }) {
+    return (
+      <div className="an-card-header">
+        <div className="an-card-header-icon" style={{ background: iconBg }}>{icon}</div>
+        <span className="an-card-header-title">{title}</span>
+      </div>
+    );
+  }
+  function StatCard({ label, value, sub }) {
+    return (
+      <div className="stat-card">
+        <div className="stat-card-label">{label}</div>
+        <div className="stat-card-value">{value}</div>
+        {sub && <div className="stat-card-sub">{sub}</div>}
+      </div>
+    );
+  }
+  function InsightItem({ dot, text }) {
+    return (
+      <div className="insight-item">
+        <div className="insight-dot" style={{ background: dot }} />
+        <span>{text}</span>
+      </div>
+    );
+  }
+  function GapItem({ text }) {
+    return (
+      <div className="gap-item">
+        <AlertTriangle size={14} className="gap-icon" style={{ color: D.coral }} />
+        <span>{text}</span>
+      </div>
+    );
+  }
+  function SuggestionItem({ num, text }) {
+    return (
+      <div className="suggestion-item">
+        <div className="suggestion-num">{num}</div>
+        <span>{text}</span>
+      </div>
+    );
+  }
+  function ProgressBar({ label, value, max, color, unit='' }) {
+    return (
+      <div className="progress-bar">
+        <div className="progress-bar-row">
+          <span className="progress-bar-label">{label}</span>
+          <span className="progress-bar-value">{value}{unit}</span>
+        </div>
+        <div className="progress-bar-bg">
+          <div className="progress-bar-fill" style={{ width: `${Math.min(100,(value/max)*100)}%`, background: color }} />
+        </div>
+      </div>
+    );
+  }
+  function ActivityRow({ label, val }) {
+    return (
+      <div className="activity-row">
+        <span className="activity-label">{label}</span>
+        <span className="activity-value">{val}</span>
+      </div>
+    );
+  }
+
+  // Extracted backend data for each section
+  const healthScore = readNumber(overview.health_score, overview.profile_score, overview.score, 0);
+  const breakdowns = [
+    { label: 'Project Quality', value: readNumber(overview.project_quality, overview.quality_score), color: D.purple },
+    { label: 'Contribution', value: readNumber(overview.contribution, overview.contribution_score), color: D.green },
+    { label: 'Consistency', value: readNumber(overview.consistency, overview.consistency_score), color: D.amber },
+    { label: 'Role Alignment', value: readNumber(overview.role_alignment, overview.role_alignment_score), color: D.blue },
+  ];
+  const keyInsights = Array.isArray(payload.insights) ? payload.insights : [];
+  const gaps = Array.isArray(payload.gaps) ? payload.gaps : [];
+  const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions : [];
+  const activityStats = Array.isArray(payload.activity_stats) ? payload.activity_stats : [];
+  // fallback for activity
+  const activityRows = activityStats.length ? activityStats : [
+    { label: 'Last active', val: overview.last_active },
+    { label: 'Projects this month', val: overview.projects_this_month },
+    { label: 'Projects this year', val: overview.projects_this_year },
+    { label: 'Avg project age', val: overview.avg_project_age },
+    { label: 'Oldest project', val: overview.oldest_project },
+  ].filter(a => a.val);
+
+  // Main render
   return (
-    <div className="min-h-screen bg-gradient-hero py-8">
-      {/* Modal flow for status, logs, ready */}
-      <Dialog open={modalStep === 'checking'}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Checking Analyzer Status</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">Checking all analyzer statuses...</div>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={modalStep === 'logs'}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Analyzer Logs</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">Analyzer log output (see below for live logs)...</div>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={modalStep === 'ready'}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Analyzer Ready</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">The analyzer is ready. You can now view your results.</div>
-          <DialogFooter>
-            <Button onClick={() => setModalStep('results')}>See Results</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <div className="container max-w-2xl px-4 text-center sm:px-6">
-        <h1 className="text-display-sm mb-6">Profile Analyzer</h1>
-        <p className="text-body mb-4">Run thorough AI evaluations across your imported repos.</p>
-        <Button onClick={run} disabled={running} className="w-full gap-2 sm:w-auto">
-          {running && <Loader2 className="h-4 w-4 animate-spin" />}
-          {running ? 'Analyzing...' : 'Start Analysis'}
-        </Button>
-        <div className="mt-8">
-          <Button variant="outline" onClick={() => window.history.back()} className="w-full sm:w-auto">Back to Dashboard</Button>
+    <div className="analyzer-root">
+      {/* Header */}
+      <div className="analyzer-header">
+        <div className="analyzer-header-title">
+          <span className="analyzer-title-text">Profile Analyzer</span>
+          <span className="analyzer-title-badge">AI Coach</span>
+        </div>
+        <button onClick={run} disabled={running} className="analyzer-refresh-btn">
+          {running ? <Loader2 size={14} style={{ animation: 'pa-spin 1s linear infinite' }} /> : <RefreshCw size={14} />}
+          {running ? 'Analyzing...' : 'Refresh'}
+        </button>
+      </div>
+
+      {/* Health Score Hero */}
+      <div className="an-health-hero">
+        <ScoreRing score={healthScore} />
+        <div>
+          <div className="an-health-title">Profile Strength</div>
+          <div className="an-breakdown-grid">
+            {breakdowns.map(b => <BreakdownBar key={b.label} {...b} />)}
+          </div>
         </div>
       </div>
 
-      <div className="container mt-6 max-w-4xl px-4 sm:px-6">
-        <details open={!readinessComplete} className="rounded-lg border border-border bg-card p-4">
-          <summary className="cursor-pointer list-none text-left">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-body-sm font-semibold">Analyzer readiness</p>
-              <span className={`rounded-full px-2 py-1 text-caption ${readinessComplete ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}`}>
-                {readinessComplete ? 'Ready' : `${missingReadinessItems.length} missing requirement${missingReadinessItems.length === 1 ? '' : 's'}`}
-              </span>
-            </div>
-          </summary>
+      {/* Quick Stats */}
+      <div className="an-quick-stats">
+        <StatCard label="Experience" value={experienceSignal} sub="Complexity signals" />
+        <StatCard label="Avg Confidence" value={avgConfidence ? `${avgConfidence}%` : '—'} sub="Across projects" />
+        <StatCard label="Verified" value={verifiedProjects} sub="of imported" />
+        <StatCard label="Complexity" value={systemComplexityScore ? `${systemComplexityScore}/10` : '—'} sub="Architecture score" />
+      </div>
 
-          <div className="mt-3 space-y-3 text-left">
-            <p className="text-body-sm text-muted-foreground">
-              If you keep seeing “Not enough analyzed projects yet”, the most common cause is that imported projects exist but none has `ai_evaluation` yet.
-            </p>
+      {/* Insights + Gaps */}
+      <div className="an-insights-gaps">
+        <Card>
+          <CardHeader icon={<Info size={15} color={D.purple} />} iconBg={D.purpleDim} title="Key Insights" />
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {keyInsights.length ? keyInsights.map((ins, i) => <InsightItem key={i} dot={D.purple} text={ins} />) : <EmptyState />}
+          </div>
+        </Card>
+        <Card>
+          <CardHeader icon={<AlertTriangle size={15} color={D.coral} />} iconBg={D.coralDim} title="Issues & Gaps" />
+          {gaps.length ? gaps.map((g, i) => <GapItem key={i} text={g} />) : <EmptyState />}
+        </Card>
+      </div>
 
-            <div className="space-y-2">
-              {readinessChecks.map((item) => (
-                <div key={item.label} className="flex flex-col gap-2 rounded-md border border-border/70 px-3 py-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="text-body-sm">{item.label}</p>
-                    {!item.pass && <p className="text-caption text-muted-foreground">{item.fix}</p>}
-                  </div>
-                  <span className={`text-caption font-medium ${item.pass ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {item.pass ? 'OK' : 'Missing'}
-                  </span>
-                </div>
+      {/* Suggestions + Activity */}
+      <div className="an-suggestions-activity">
+        <Card>
+          <CardHeader icon={<Lightbulb size={15} color={D.green} />} iconBg={D.greenDim} title="Actionable Suggestions" />
+          {suggestions.length ? suggestions.map((s, i) => <SuggestionItem key={i} num={i+1} text={s} />) : <EmptyState />}
+        </Card>
+        <Card>
+          <CardHeader icon={<TrendingUp size={15} color={D.green} />} iconBg={D.greenDim} title="Growth & Activity" />
+          {activityRows.length ? activityRows.map((a, i) => <ActivityRow key={i} label={a.label} val={a.val} />) : <EmptyState />}
+          {activityPattern.length > 0 && (
+            <div style={{ marginTop:'1rem' }}>
+              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.8px', textTransform:'uppercase', color:D.muted, marginBottom:'0.75rem' }}>Activity by Year</div>
+              {activityPattern.map(a => (
+                <ProgressBar key={a.label} label={a.label} value={a.value} max={5} color={D.green} unit=" projects" />
               ))}
             </div>
-
-            <div className="rounded-md bg-muted/30 p-3 text-caption text-muted-foreground">
-              Stream state: {analysisStatus || 'idle'}. If it stays `idle`, the page is not currently consuming live updates from `/api/v1/developers/{'{id}'}/analyze-stream`.
-            </div>
-
-            <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2 lg:grid-cols-4">
-              {needsProfileFix && (
-                <Button size="sm" variant="outline" onClick={() => navigate('/profile/edit')} className="w-full">
-                  Fix Profile
-                </Button>
-              )}
-              {needsMoreProjects && (
-                <Button size="sm" variant="outline" onClick={() => navigate('/profile-setup?step=2')} className="w-full">
-                  Import More Repos
-                </Button>
-              )}
-              {needsPublish && (
-                <Button size="sm" variant="outline" onClick={() => navigate('/dashboard')} className="w-full">
-                  Go Publish Profile
-                </Button>
-              )}
-              {needsAiEval && (
-                <Button size="sm" onClick={run} disabled={running || !effectiveDevId} className="w-full">
-                  {running ? 'Analyzing...' : 'Run Analysis Now'}
-                </Button>
-              )}
-            </div>
-          </div>
-        </details>
+          )}
+        </Card>
       </div>
 
-      <div className="container mt-4 max-w-4xl px-4 sm:px-6">
-        <details className="rounded-lg border border-border bg-card p-4">
-          <summary className="cursor-pointer list-none text-left">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-body-sm font-semibold">Temporary Debug: Raw analyzer response</p>
-              <span className="rounded-full bg-muted px-2 py-1 text-caption text-muted-foreground">
-                {rawAnalyzerResponse ? 'payload received' : 'no payload yet'}
+      {/* Charts Row */}
+      <div className="an-charts-row">
+        <Card>
+          <CardHeader icon={<Zap size={15} color={D.amber} />} iconBg={D.amberDim} title="Project Complexity" />
+          <ResponsiveContainer width="100%" height={140}>
+            <BarChart data={complexityBreakdown} barSize={28}>
+              <XAxis dataKey="label" tick={{ fontSize:11, fill:D.muted }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize:11, fill:D.muted }} axisLine={false} tickLine={false} />
+              <Bar dataKey="value" radius={[8,8,0,0]}>
+                {complexityBreakdown.map((_,i)=><Cell key={i} fill={['#5a53c4','#7F77DD','#a49ef0'][i]||D.purple}/>)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card>
+          <CardHeader icon={<Info size={15} color={D.blue} />} iconBg={D.blueDim} title="Tech Usage" />
+          <ResponsiveContainer width="100%" height={140}>
+            <BarChart data={technologyUsage} layout="vertical" barSize={18}>
+              <XAxis type="number" tick={{ fontSize:11, fill:D.muted }} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} domain={[0,100]} />
+              <YAxis dataKey="label" type="category" tick={{ fontSize:11, fill:D.muted }} axisLine={false} tickLine={false} width={52} />
+              <Bar dataKey="value" radius={[0,8,8,0]}>
+                {technologyUsage.map((_,i)=><Cell key={i} fill={[D.blue,'#2a6eb5'][i]||D.blue}/>)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card>
+          <CardHeader icon={<Info size={15} color={D.purple} />} iconBg={D.purpleDim} title="Contribution Split" />
+          <ResponsiveContainer width="100%" height={110}>
+            <PieChart>
+              <Pie data={mergedContributionDonut} dataKey="value" nameKey="label" cx="50%" cy="50%" innerRadius={30} outerRadius={50}>
+                {mergedContributionDonut.map((_,i)=><Cell key={i} fill={CONTRIB_COLORS[i]||'#ccc'}/>)}
+              </Pie>
+              <RechartsTooltip
+                contentStyle={{ background:D.surfaceEl, border:`1px solid ${D.border}`, borderRadius:10, color:D.text, fontSize:12 }}
+                formatter={(val,name)=>[`${val}%`,name]}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="an-contrib-legend">
+            {mergedContributionDonut.map((c,i)=>(
+              <span key={i} className="an-contrib-legend-item">
+                <span className="an-contrib-legend-dot" style={{ background: CONTRIB_COLORS[i] }}/>
+                {c.label.replace(' Builder','').replace(' Contributor','')} {c.value}%
               </span>
-            </div>
-          </summary>
-
-          <div className="mt-3 rounded-md bg-muted/20 p-3">
-            {rawAnalyzerResponse ? (
-              <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words text-caption text-foreground">
-                {rawAnalyzerResponse}
-              </pre>
-            ) : (
-              <p className="text-caption text-muted-foreground">
-                No analyzer payload has been received yet. Run analysis to populate this panel.
-              </p>
-            )}
+            ))}
           </div>
-        </details>
+        </Card>
       </div>
 
-      {/* Live log panel — always visible while running or after logs exist */}
-      {(running || logLines.length > 0) && (
-        <div className="container mt-6 max-w-2xl px-4 sm:px-6">
-          <div className="mx-auto w-full rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-body-sm font-medium text-foreground">Live analyzer log</p>
-              <span className="text-caption text-muted-foreground">
-                Status: <span className={`font-medium ${
-                  analysisStatus === 'complete' ? 'text-green-600' :
-                  running ? 'text-primary' :
-                  'text-muted-foreground'
-                }`}>{analysisStatus || 'idle'}</span>
-              </span>
-            </div>
-            <div className="h-52 overflow-y-auto rounded-xl bg-muted/10 p-3 text-xs font-mono">
-              {logLines.length === 0 ? (
-                <p className="text-muted-foreground">Starting analysis…</p>
-              ) : (
-                <ul className="space-y-1">
-                  {logLines.map((line, idx) => (
-                    <li key={idx} className="break-words leading-relaxed">
-                      <span className="mr-2 select-none text-muted-foreground/40">{String(idx + 1).padStart(2, '0')}</span>
-                      {line}
-                    </li>
-                  ))}
-                  <li ref={logEndRef} />
-                </ul>
-              )}
-            </div>
+      {/* Strength + Role */}
+      <div className="an-strength-role">
+        <Card>
+          <CardHeader icon={<Zap size={15} color={D.green} />} iconBg={D.greenDim} title="Strength Areas" />
+          {strengthAreas.length ? strengthAreas.map(s=>(
+            <ProgressBar key={s.label} label={s.label} value={s.value} max={10} color={D.purple} unit="/10" />
+          )) : <EmptyState />}
+        </Card>
+        <Card>
+          <CardHeader icon={<Info size={15} color={D.pink} />} iconBg="rgba(232,96,138,0.15)" title="Role Alignment" />
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11, color:D.muted, marginBottom:4 }}>Claimed role</div>
+            <div style={{ fontSize:14, fontWeight:600, color:D.text }}>{String(roleAlignment.claimed_role || '')}</div>
           </div>
-        </div>
-      )}
-
-      {/* Results area */}
-      {!running && modalStep === 'results' && (
-        <div className="container mt-12 max-w-6xl px-4 sm:px-6">
-          <h2 className="text-heading-md mb-4">Recent Analysis</h2>
-          <div className="grid grid-cols-1 gap-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel
-                  text="Experience Signal"
-                  tip={notes.experience_signal || DEFAULT_TOOLTIPS.experience_signal}
-                />
-                <p className="text-heading-sm">{experienceSignal || NO_DATA_TEXT}</p>
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel
-                  text="Verified Projects"
-                  tip={notes.verified_projects || DEFAULT_TOOLTIPS.verified_projects}
-                />
-                <p className="text-heading-sm">{Number.isFinite(verifiedProjects) ? verifiedProjects : NO_DATA_TEXT}</p>
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel
-                  text="Avg Confidence"
-                  tip={notes.avg_confidence || DEFAULT_TOOLTIPS.avg_confidence}
-                />
-                <p className="text-heading-sm">
-                  {Number.isFinite(avgConfidence) ? `${Math.round(avgConfidence)}%` : NO_DATA_TEXT}
-                </p>
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel
-                  text="Contribution"
-                  tip={notes.contribution || DEFAULT_TOOLTIPS.contribution}
-                />
-                <p className="text-heading-sm">
-                  {Number.isFinite(primaryBuilderPct) ? `${Math.round(primaryBuilderPct)}% primary` : NO_DATA_TEXT}
-                </p>
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel
-                  text="System Complexity Score"
-                  tip={notes.system_complexity_score || DEFAULT_TOOLTIPS.system_complexity_score}
-                />
-                <p className="text-heading-sm">
-                  {Number.isFinite(systemComplexityScore) && systemComplexityScore > 0 ? `${systemComplexityScore.toFixed(1)}/10` : NO_DATA_TEXT}
-                </p>
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel
-                  text="Project Longevity"
-                  tip={notes.project_longevity || DEFAULT_TOOLTIPS.project_longevity}
-                />
-                {Number(projectLongevity.average_project_age_years) > 0 ? (
-                  <p className="text-body-sm">
-                    Avg {Number(projectLongevity.average_project_age_years).toFixed(1)}y • Oldest {Number(projectLongevity.oldest_project_age_years || 0).toFixed(1)}y
-                  </p>
-                ) : (
-                  <EmptyState />
-                )}
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel text="Project Complexity (Bar)" tip="complexity_breakdown → x: L1/L2/L3, y: counts." />
-                {complexityBreakdown.length === 0 ? (
-                  <EmptyState />
-                ) : (
-                  <div className="space-y-2">
-                    {complexityBreakdown.map((item) => (
-                      <div key={item.label}>
-                        <div className="mb-1 flex items-center justify-between text-caption">
-                          <span>{item.label}</span>
-                          <span>{item.value}</span>
-                        </div>
-                        <Progress className="h-2 bg-muted/20" value={Math.min(item.value * 10, 100)} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel text="Technology Usage (Horizontal Bar)" tip="technology_usage → x: percentage, y: name." />
-                {technologyUsage.length === 0 ? (
-                  <EmptyState />
-                ) : (
-                  <div className="space-y-2">
-                    {technologyUsage.slice(0, 8).map((item) => (
-                      <div key={item.label}>
-                        <div className="mb-1 flex items-center justify-between text-caption">
-                          <span>{item.label}</span>
-                          <span>{item.value}%</span>
-                        </div>
-                        <Progress className="h-2 bg-muted/20" value={Math.min(item.value, 100)} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel text="Contribution (Donut)" tip="contribution_level.primary_builder_pct, major_contributor_pct, minor_contributor_pct." />
-                {mergedContributionDonut.length === 0 ? (
-                  <EmptyState />
-                ) : (
-                  <div className="space-y-2">
-                    {mergedContributionDonut.map((item) => (
-                      <div key={item.label} className="flex items-center justify-between text-body-sm">
-                        <span>{item.label}</span>
-                        <span className="font-medium">{item.value.toFixed(1)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel text="Credibility (Gauge)" tip="credibility_gauge.score (0–10), subtitle from credibility_gauge.level." />
-                {Number(credibilityGauge.score) > 0 ? (
-                  <>
-                    <p className="text-heading-sm">{Number(credibilityGauge.score).toFixed(1)}/10</p>
-                    <p className="text-caption text-muted-foreground">{String(credibilityGauge.level || '')}</p>
-                  </>
-                ) : (
-                  <EmptyState />
-                )}
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel text="Strength Areas (Radar)" tip="strength_areas 5 axes (api_development, database_design, system_architecture, performance_optimization, testing)." />
-                {strengthAreas.length === 0 ? (
-                  <EmptyState />
-                ) : (
-                  <div className="space-y-2">
-                    {strengthAreas.map((item) => (
-                      <div key={item.label} className="flex items-center justify-between text-body-sm">
-                        <span>{item.label}</span>
-                        <span className="font-medium">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel text="Activity Pattern (Line/Bar)" tip="activity_pattern year → project count." />
-                {activityPattern.length === 0 ? (
-                  <EmptyState />
-                ) : (
-                  <div className="space-y-2">
-                    {activityPattern.map((item) => (
-                      <div key={item.label}>
-                        <div className="mb-1 flex items-center justify-between text-caption">
-                          <span>{item.label}</span>
-                          <span>{item.value}</span>
-                        </div>
-                        <Progress className="h-2 bg-muted/20" value={Math.min(item.value * 10, 100)} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel text="Role Alignment (Stacked Bar)" tip="role_alignment.detected_roles, with badge text from claimed_role and alignment_score." />
-                {roleAlignmentRoles.length === 0 ? (
-                  <EmptyState />
-                ) : (
-                  <>
-                    <p className="mb-2 text-caption text-muted-foreground">
-                      Claimed role: {String(roleAlignment.claimed_role || 'N/A')} • Alignment: {String(roleAlignment.alignment_score ?? 'N/A')}
-                    </p>
-                    <div className="space-y-1">
-                      {roleAlignmentRoles.map((item) => (
-                        <div key={item.label} className="flex items-center justify-between text-body-sm">
-                          <span>{item.label}</span>
-                          <span>{item.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="rounded-lg border border-border bg-card p-6">
-                <TooltipLabel text="Project Longevity (Card/mini chart)" tip="project_longevity.average_project_age_years, oldest_project_age_years, organization_projects_over_threshold, note." />
-                {Number(projectLongevity.average_project_age_years) > 0 ? (
-                  <div className="space-y-1 text-body-sm">
-                    <p>Average age: {Number(projectLongevity.average_project_age_years).toFixed(1)} years</p>
-                    <p>Oldest age: {Number(projectLongevity.oldest_project_age_years || 0).toFixed(1)} years</p>
-                    <p>Org projects over threshold: {Number(projectLongevity.organization_projects_over_threshold || 0)}</p>
-                    {projectLongevity.note && <p className="text-caption text-muted-foreground">{String(projectLongevity.note)}</p>}
-                  </div>
-                ) : (
-                  <EmptyState />
-                )}
-              </div>
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11, color:D.muted, marginBottom:6 }}>Alignment score</div>
+            <div style={{ height:10, borderRadius:99, background:'rgba(255,255,255,0.07)', overflow:'hidden' }}>
+              <div style={{ width:`${(Number(roleAlignment.alignment_score || 0)/10)*100}%`, height:'100%', borderRadius:99, background:D.pink }} />
             </div>
-
+            <div style={{ fontSize:12, fontWeight:600, marginTop:4, color:D.text }}>{Number(roleAlignment.alignment_score || 0)}/10</div>
           </div>
-        </div>
-      )}
+          <div style={{ display:'flex', gap:8 }}>
+            {roleAlignmentRoles.length ? roleAlignmentRoles.map(r=>(
+              <div key={String(r.label)} style={{ flex:1, borderRadius:12, background:D.surfaceEl, border:`1px solid ${D.border}`, padding:10, textAlign:'center' }}>
+                <div style={{ fontFamily:'Syne, sans-serif', fontSize:18, fontWeight:700, color:D.text }}>{Number(r.value)}</div>
+                <div style={{ fontSize:11, color:D.muted }}>{String(r.label)}</div>
+              </div>
+            )) : <EmptyState />}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
