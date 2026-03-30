@@ -9,7 +9,7 @@ export default function HowItWorks() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-gradient-hero font-grotesk">
       <Header />
       <main className="mx-auto max-w-5xl px-4 pb-16 pt-28 sm:px-6 md:px-8 md:pt-32">
         <div className="mb-8 space-y-3">

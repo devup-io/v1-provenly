@@ -3,9 +3,10 @@ import { Hero } from "@/components/landing/Hero";
 import { SocialProof } from "@/components/landing/SocialProof";
 import { Features } from "@/components/landing/Features";
 import { HowItWorksNew } from "@/components/landing/HowItWorksNew";
-import { FeaturedDevelopers } from "@/components/landing/FeaturedDevelopers";
 import { DeveloperShowcase } from "@/components/landing/DeveloperShowcase";
+import { ForCompanies } from "@/components/landing/ForCompanies";
 import { WhyJoin } from "@/components/landing/WhyJoin";
+import { Integrations } from "@/components/landing/Integrations";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { Stats } from "@/components/landing/Stats";
 import { CTA } from "@/components/landing/CTA";
@@ -21,7 +22,9 @@ const Index = () => {
         <Features />
         <HowItWorksNew />
         <DeveloperShowcase />
+        <ForCompanies />
         <WhyJoin />
+        <Integrations />
         <CTA />
       </main>
       <Footer />

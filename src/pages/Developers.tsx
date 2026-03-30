@@ -310,7 +310,7 @@ export default function Developers() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-grotesk">
       <Header />
 
       <main className="container py-8 pt-28">

@@ -427,7 +427,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-hero">
+      <div className="min-h-screen bg-gradient-hero font-grotesk">
         <Header />
         <div className="container px-4 py-8 sm:px-6">
           <div className="grid gap-6 lg:grid-cols-3">
@@ -607,7 +607,7 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-gradient-hero font-grotesk">
       <Header />
 
       <div className="mx-auto max-w-6xl px-4 pb-4 pt-24 sm:px-6 sm:pb-6 md:px-8 md:pb-8 md:pt-28">

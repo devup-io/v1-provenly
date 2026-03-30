@@ -17,6 +17,7 @@ export default {
       fontFamily: {
         sans: [
           'Inter',
+          'Space Grotesk',
           '-apple-system',
           'BlinkMacSystemFont',
           'Segoe UI',
@@ -24,6 +25,26 @@ export default {
           'Helvetica Neue',
           'Arial',
           'sans-serif',
+        ],
+        grotesk: [
+          'Space Grotesk',
+          'Inter',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
+          'Arial',
+          'sans-serif',
+        ],
+        mono: [
+          'Space Mono',
+          'Menlo',
+          'Monaco',
+          'Consolas',
+          'Liberation Mono',
+          'Courier New',
+          'monospace',
         ],
       },
       colors: {

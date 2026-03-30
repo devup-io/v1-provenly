@@ -98,7 +98,7 @@ export default function ProjectDetails() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center font-mono">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-body text-muted-foreground">Loading project details...</p>
@@ -109,7 +109,7 @@ export default function ProjectDetails() {
 
   if (error || !project) {
     return (
-      <div className="min-h-screen bg-gradient-hero py-8">
+      <div className="min-h-screen bg-gradient-hero py-8 font-mono">
         <div className="container max-w-4xl">
           <Button variant="outline" onClick={() => navigate(backPath)} className="mb-6">
             {backLabel}
@@ -244,7 +244,7 @@ export default function ProjectDetails() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero py-8">
+    <div className="min-h-screen bg-gradient-hero py-8 font-mono">
       <div className="container max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

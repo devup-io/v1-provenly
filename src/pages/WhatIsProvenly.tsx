@@ -13,7 +13,7 @@ const orgSchema = {
 
 export default function WhatIsProvenly() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-grotesk">
       <SeoHead
         title="What is Provenly? | Verified Developer Profiles and Project Showcasing"
         description="Learn what Provenly is, who it is for, and how it helps developers showcase projects through structured, shareable profiles."
