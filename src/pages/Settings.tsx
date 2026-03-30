@@ -59,7 +59,7 @@ const INITIAL = {
 
 function Toggle({ checked, onChange, id }) {
   return (
-    <label className="st-toggle" htmlFor={id}>
+    <label htmlFor={id} className="relative inline-flex items-center cursor-pointer select-none">
       <input
         id={id}
         type="checkbox"
@@ -67,58 +67,61 @@ function Toggle({ checked, onChange, id }) {
         onChange={e => onChange(e.target.checked)}
         aria-label="Toggle setting"
         title="Toggle setting"
+        className="sr-only peer"
       />
-      <div className="st-toggle-track" />
-      <div className={`st-toggle-thumb${checked ? ' st-toggle-thumb-checked' : ''}`} />
+      <div className="w-10 h-6 bg-gray-200 dark:bg-neutral-700 rounded-full peer-checked:bg-purple-500 transition-colors duration-200" />
+      <div className={`absolute left-0 top-0 w-6 h-6 bg-white dark:bg-neutral-900 rounded-full shadow transform transition-transform duration-200 ${checked ? 'translate-x-4 border-purple-500 border' : 'border-gray-300 border'}`}/>
     </label>
   );
 }
 
 function SettingRow({ icon: Icon, iconColor, iconBg, label, description, children, danger = false }) {
   return (
-    <div className={`st-setting-row${danger ? ' st-setting-row-danger' : ''}`}>
-      <div className="st-setting-row-left">
-        <div className="st-setting-row-icon" style={{ background: iconBg || T.surfaceEl }}>
-          <Icon size={15} color={iconColor || T.mutedMid} />
+    <div className={`flex items-center justify-between gap-4 px-2 py-3 rounded-lg ${danger ? 'bg-red-50 dark:bg-red-900/20' : 'hover:bg-gray-50 dark:hover:bg-neutral-800/60'} transition-colors`}>
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: iconBg || T.surfaceEl }}>
+          <Icon size={16} color={iconColor || T.mutedMid} />
         </div>
-        <div className="st-setting-row-labels">
-          <div className="st-setting-row-label" style={{ color: danger ? T.red : T.text }}>{label}</div>
-          <div className="st-setting-row-desc">{description}</div>
+        <div className="min-w-0">
+          <div className={`font-medium text-sm truncate ${danger ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>{label}</div>
+          <div className="text-xs text-gray-500 dark:text-neutral-400 truncate">{description}</div>
         </div>
       </div>
-      <div className="st-setting-row-right">{children}</div>
+      <div>{children}</div>
     </div>
   );
 }
 
 function SectionCard({ title, subtitle, icon: Icon, iconColor, iconBg, children, style={} }) {
   return (
-    <div className="st-section" style={style}>
-      <div className="st-section-header">
-        <div className="st-section-header-icon" style={{ background: iconBg || T.surfaceEl }}>
-          <Icon size={15} color={iconColor || T.mutedMid} />
+    <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 mb-8 p-6" style={style}>
+      <div className="flex items-center gap-4 mb-4">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: iconBg || T.surfaceEl }}>
+          <Icon size={18} color={iconColor || T.mutedMid} />
         </div>
         <div>
-          <div className="st-section-header-title">{title}</div>
-          {subtitle && <div className="st-section-header-subtitle">{subtitle}</div>}
+          <div className="font-bold text-lg text-gray-900 dark:text-white">{title}</div>
+          {subtitle && <div className="text-xs text-gray-500 dark:text-neutral-300 mt-0.5">{subtitle}</div>}
         </div>
       </div>
-      <div className="st-section-content">{children}</div>
+      <div className="flex flex-col gap-2">{children}</div>
     </div>
   );
 }
 
 function Btn({ label, onClick, disabled = false, variant = 'outline', icon: Icon, small, danger = false }) {
-  const [hov, setHov] = useState(false);
   const isPrimary = variant === 'primary';
   const isDanger  = variant === 'danger' || danger;
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      className={`st-btn${isPrimary ? ' st-btn-primary' : ''}${isDanger ? ' st-btn-danger' : ''}${small ? ' st-btn-small' : ''}${hov ? ' st-btn-hov' : ''}`}
+      className={`inline-flex items-center gap-2 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2
+        ${isPrimary ? 'bg-purple-600 text-white hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600' : ''}
+        ${isDanger ? 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600' : ''}
+        ${!isPrimary && !isDanger ? 'bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-700' : ''}
+        ${small ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm'}
+        ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
     >
       {Icon && <Icon size={13} />}
       {label}
@@ -131,33 +134,32 @@ function Btn({ label, onClick, disabled = false, variant = 'outline', icon: Icon
 function ConfirmModal({ open, onClose, title, description, confirmLabel, onConfirm, isDangerous, loading }) {
   if (!open) return null;
   return (
-    <div className="st-backdrop" style={{ zIndex:200 }}>
-      <div className="st-modal">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-xl w-full max-w-md p-6">
         <button
           onClick={onClose}
-          className="st-modal-close-btn"
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           title="Close"
           aria-label="Close"
         >
-          <X size={16} />
+          <X size={18} />
         </button>
         {/* Icon */}
-        <div style={{ width:44, height:44, borderRadius:14, background: isDangerous ? T.redDim : T.purpleDim, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:14 }}>
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${isDangerous ? 'bg-red-100 dark:bg-red-900' : 'bg-purple-100 dark:bg-purple-900'}`}>
           {isDangerous
-            ? <AlertTriangle size={20} color={T.red} />
-            : <Shield size={20} color={T.purple} />
+            ? <AlertTriangle size={22} color={T.red} />
+            : <Shield size={22} color={T.purple} />
           }
         </div>
-        <div style={{ fontFamily:'Syne, sans-serif', fontSize:17, fontWeight:700, color:T.text, marginBottom:8 }}>{title}</div>
-        <p style={{ fontSize:13, color:T.muted, lineHeight:1.65, marginBottom:'1.5rem' }}>{description}</p>
-        <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+        <div className="font-bold text-lg text-gray-900 dark:text-white mb-2">{title}</div>
+        <p className="text-sm text-gray-500 dark:text-neutral-300 mb-6">{description}</p>
+        <div className="flex gap-3 justify-end">
           <Btn label="Cancel" onClick={onClose} variant="outline" icon={undefined} small={false} />
           <Btn
             label={loading ? 'Processing…' : confirmLabel}
             onClick={onConfirm}
-            disabled={loading}    
-                    small={false}
-
+            disabled={loading}
+            small={false}
             variant={isDangerous ? 'danger' : 'primary'}
             icon={loading ? undefined : isDangerous ? Trash2 : Check}
           />
@@ -172,8 +174,8 @@ function ConfirmModal({ open, onClose, title, description, confirmLabel, onConfi
 function SaveToast({ visible }) {
   if (!visible) return null;
   return (
-    <div style={{ position:'fixed', bottom:24, left:'50%', transform:'translateX(-50%)', zIndex:300, background:T.surfaceEl, border:`1px solid ${T.borderMid}`, borderRadius:14, padding:'10px 20px', display:'flex', alignItems:'center', gap:8, fontSize:13, fontWeight:500, color:T.text, boxShadow:'0 8px 32px rgba(0,0,0,0.5)', animation:'st-popIn 0.25s ease both', whiteSpace:'nowrap' }}>
-      <Check size={14} color={T.green} />
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-neutral-800 border border-neutral-700 rounded-xl px-6 py-3 flex items-center gap-2 text-sm font-medium text-white shadow-lg animate-bounceIn">
+      <Check size={16} color={T.green} />
       Settings saved
     </div>
   );
@@ -277,19 +279,21 @@ export default function Settings() {
   const cfg = modal ? MODAL_CONFIG[modal.type] : null;
 
   return (
-    <div className="st-root">
-      <div className="st-ambient-glow" />
-      <div className="st-page-inner">
-        <div className="st-topbar">
-          <div className="st-topbar-left">
-            <button className="st-back-btn" onClick={() => window.history.back()}>
-              <ChevronLeft size={14} /> Back
+    <div className="relative min-h-screen w-full bg-gray-50 dark:bg-neutral-900 flex flex-col items-center py-8 px-2 md:px-8">
+      {/* Ambient Glow */}
+      <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-br from-purple-200/20 via-transparent to-blue-200/10 dark:from-purple-900/20 dark:to-blue-900/10" />
+      <div className="relative z-10 w-full max-w-4xl mx-auto">
+        {/* Topbar */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <button className="flex items-center gap-1 text-sm text-gray-500 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 font-medium transition-colors" onClick={() => window.history.back()}>
+              <ChevronLeft size={16} /> Back
             </button>
-            <div className="st-topbar-title">
-              <div className="st-topbar-icon">
-                <SettingsIcon size={15} color={T.purple} />
-              </div>
-              <span className="st-topbar-heading">Settings</span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900">
+                <SettingsIcon size={18} color={T.purple} />
+              </span>
+              <span className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Settings</span>
             </div>
           </div>
           <Btn
@@ -301,7 +305,7 @@ export default function Settings() {
             small={false}
           />
         </div>
-        <div className="st-main-cols">
+        <div className="flex flex-col gap-8 w-full max-w-3xl mx-auto">
 
           {/* ── Notifications ── */}
           <SectionCard title="Notifications" subtitle="Control how we reach you" icon={Bell} iconColor={T.blue} iconBg={T.blueDim}>
@@ -374,42 +378,39 @@ export default function Settings() {
           </SectionCard>
 
           {/* ── Danger Zone ── */}
-          <div className="st-section" style={{ borderRadius:20, border:`1px solid ${T.redMid}`, background:`hsla(0,72%,60%,0.04)`, overflow:'hidden' }}>
+          <div className="rounded-2xl border border-red-300 dark:border-red-900 bg-red-50/40 dark:bg-red-900/10 overflow-hidden mb-8">
             {/* Header */}
-            <div style={{ padding:'16px 20px', borderBottom:`1px solid ${T.redMid}`, display:'flex', alignItems:'center', gap:10 }}>
-              <div style={{ width:32, height:32, borderRadius:10, background:T.redDim, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <AlertTriangle size={15} color={T.red} />
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-red-200 dark:border-red-800">
+              <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={18} color={T.red} />
               </div>
               <div>
-                <div style={{ fontFamily:'Syne, sans-serif', fontSize:14, fontWeight:700, color:T.red }}>Danger Zone</div>
-                <div style={{ fontSize:11, color:`hsla(0,72%,60%,0.65)`, marginTop:1 }}>These actions are destructive and may be irreversible</div>
+                <div className="font-bold text-sm text-red-600">Danger Zone</div>
+                <div className="text-xs text-red-400 mt-0.5">These actions are destructive and may be irreversible</div>
               </div>
             </div>
-
-            <div style={{ padding:'4px 20px 16px' }}>
+            <div className="flex flex-col gap-4 px-5 py-4">
               {/* Unpublish */}
-              <div className="st-danger-row">
+              <div className="flex items-center justify-between gap-4 py-2">
                 <div>
-                  <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:3 }}>Unpublish profile</div>
-                  <div style={{ fontSize:12, color:T.muted, maxWidth:340, lineHeight:1.55 }}>Your profile will be hidden from public view. You can re-publish at any time.</div>
+                  <div className="text-[13px] font-medium text-gray-900 dark:text-white mb-1">Unpublish profile</div>
+                  <div className="text-xs text-gray-500 dark:text-neutral-400 max-w-xs leading-snug">Your profile will be hidden from public view. You can re-publish at any time.</div>
                 </div>
                 <Btn label="Unpublish" onClick={() => openConfirm('unpublish')} icon={EyeOff} small danger disabled={false} />
               </div>
-
               {/* Deactivate */}
-              <div className="st-danger-row">
+              <div className="flex items-center justify-between gap-4 py-2">
                 <div>
-                  <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:3 }}>Deactivate account</div>
-                  <div style={{ fontSize:12, color:T.muted, maxWidth:340, lineHeight:1.55 }}>Temporarily disable your account. Reactivate by signing back in.</div>
+                  <div className="text-[13px] font-medium text-gray-900 dark:text-white mb-1">Deactivate account</div>
+                  <div className="text-xs text-gray-500 dark:text-neutral-400 max-w-xs leading-snug">Temporarily disable your account. Reactivate by signing back in.</div>
                 </div>
                 <Btn label="Deactivate" onClick={() => openConfirm('deactivate')} icon={UserX} small danger disabled={false} />
               </div>
-
               {/* Delete */}
-              <div className="st-danger-row" style={{ borderBottom:'none', paddingBottom:0 }}>
+              <div className="flex items-center justify-between gap-4 py-2 border-b-0 pb-0">
                 <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:T.red, marginBottom:3 }}>Delete account</div>
-                  <div style={{ fontSize:12, color:T.muted, maxWidth:340, lineHeight:1.55 }}>Permanently delete your account and all data. <strong style={{ color:`hsla(0,72%,60%,0.8)` }}>This cannot be undone.</strong></div>
+                  <div className="text-[13px] font-semibold text-red-600 mb-1">Delete account</div>
+                  <div className="text-xs text-gray-500 dark:text-neutral-400 max-w-xs leading-snug">Permanently delete your account and all data. <strong className="text-red-500">This cannot be undone.</strong></div>
                 </div>
                 <Btn label="Delete" onClick={() => openConfirm('delete')} icon={Trash2} small danger disabled={false} />
               </div>
@@ -417,7 +418,7 @@ export default function Settings() {
           </div>
 
           {/* ── Bottom save bar ── */}
-          <div className="st-bottom-save">
+          <div className="sticky bottom-0 left-0 w-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur border-t border-gray-200 dark:border-neutral-800 flex justify-end py-4 px-2 md:px-0 z-20">
             <Btn
               label={saving ? 'Saving…' : 'Save Preferences'}
               onClick={() => openConfirm('save')}

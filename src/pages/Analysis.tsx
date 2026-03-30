@@ -10,7 +10,7 @@ import { getDeveloperAnalyzer, getDeveloperAnalyzerCharts, subscribeToAnalyzerSt
 import type { DeveloperProfile, Project } from '@/types/api';
 
 
-import '../styles/analyzer-theme.css';
+
 
 type AnalyzerPayload = Record<string, unknown>;
 
@@ -110,14 +110,14 @@ const readNumber = (...values: unknown[]): number => {
 
 const TooltipLabel = ({ text, tip }: { text: string; tip: string }) => (
   <div className="mb-2 flex items-center gap-2">
-    <p className="text-body-sm text-muted-foreground">{text}</p>
-    <button type="button" className="text-muted-foreground hover:text-foreground" aria-label={`${text} info`} title={tip}>
+    <p className="text-sm text-gray-400">{text}</p>
+    <button type="button" className="text-gray-400 hover:text-gray-200" aria-label={`${text} info`} title={tip}>
       <Info className="h-4 w-4" />
     </button>
   </div>
 );
 
-const EmptyState = () => <p className="text-caption text-muted-foreground">{NO_DATA_TEXT}</p>;
+const EmptyState = () => <p className="text-xs text-gray-400 italic">{NO_DATA_TEXT}</p>;
 
 // FloatingPanel component (from MockAnalyzer, adapted for Analysis)
 function FloatingPanel({ phase, checks, logs, onDismiss }) {
@@ -125,7 +125,7 @@ function FloatingPanel({ phase, checks, logs, onDismiss }) {
   const [collapsed, setCollapsed] = useState(false);
   const [bodyAnim, setBodyAnim] = useState('');
   const [panelAnim, setPanelAnim] = useState('');
-  const [backdropAnim, setBackdropAnim] = useState('pa-backdrop-in');
+  const [backdropAnim, setBackdropAnim] = useState('backdrop-in');
   const [visible, setVisible] = useState(false);
 
   const isChecking = phase === 'checking';
@@ -143,7 +143,7 @@ function FloatingPanel({ phase, checks, logs, onDismiss }) {
   const handleDismiss = () => {
     if (!canClose) return;
     setPanelAnim('closing');
-    setBackdropAnim('pa-backdrop-out');
+    setBackdropAnim('backdrop-out');
     setTimeout(() => { setVisible(false); onDismiss(); }, 300);
   };
   if (!visible || phase === null) return null;
@@ -155,65 +155,67 @@ function FloatingPanel({ phase, checks, logs, onDismiss }) {
     { label: 'AI evaluations available', key: 'ai' },
     { label: 'Analyzer engine ready', key: 'engine' },
   ];
-  const headerBg = isChecking ? 'var(--an-purple-dim)' : isAnalyzing ? 'var(--an-green-dim)' : 'var(--an-green-dim)';
-  const headerColor = isChecking ? 'var(--an-purple)' : isAnalyzing ? 'var(--an-green)' : 'var(--an-green)';
+  const headerBg = isChecking ? 'bg-purple-900' : isAnalyzing ? 'bg-green-900' : 'bg-green-900';
+  const headerColor = isChecking ? 'text-purple-400' : isAnalyzing ? 'text-green-400' : 'text-green-400';
   const headerLabel = isChecking ? 'Checking analyzer status…' : isAnalyzing ? 'Running analysis…' : 'Analysis complete';
 
   return (
     <>
       {/* Backdrop */}
       {!isDone && (
-        <div className={backdropAnim + ' pa-float-backdrop'} />
+        <div className={`fixed inset-0 z-50 bg-black/70 backdrop-blur-sm ${backdropAnim === 'backdrop-in' ? 'animate-fadeIn' : 'animate-fadeOut'}`} />
       )}
       {/* Panel */}
-      <div className={`pa-float-panel${panelAnim === 'closing' ? ' closing' : ''}${collapsed ? ' collapsed' : ''}`}>
+      <div className={`fixed z-60 bottom-0 left-0 right-0 bg-[#16161a] rounded-t-3xl shadow-2xl border-t border-l border-r border-white/10 font-dmsans overflow-hidden transition-all ${panelAnim === 'closing' ? 'animate-slideDown' : 'animate-slideUp'} ${collapsed ? 'rounded-t-xl' : ''}`}
+        style={{ borderBottom: 'none' }}
+      >
         {/* Drag pill */}
-        <div className="pa-float-drag" onClick={toggleCollapse}>
-          <div className="pa-float-pill" />
+        <div className="flex justify-center pt-2.5 pb-1 cursor-pointer" onClick={toggleCollapse}>
+          <div className="w-9 h-1 rounded-full bg-white/15" />
         </div>
         {/* Header */}
-        <div className={`pa-float-header${collapsed ? ' collapsed' : ''}`}> 
-          <div className="pa-float-header-main">
-            <div className="pa-float-header-icon" style={{ background: headerBg }}>
-              {isChecking && <Loader2 size={14} color={headerColor} style={{ animation: 'pa-spin 1s linear infinite' }} />}
-              {isAnalyzing && <Terminal size={14} color={headerColor} />}
-              {isDone && <CheckCircle2 size={14} color={headerColor} />}
+        <div className={`flex items-center justify-between px-5 pt-2 pb-3 border-b border-white/10 ${collapsed ? '' : ''}`}> 
+          <div className="flex items-center gap-2">
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${headerBg}`}>
+              {isChecking && <Loader2 size={14} className={`${headerColor} animate-spin`} />}
+              {isAnalyzing && <Terminal size={14} className={headerColor} />}
+              {isDone && <CheckCircle2 size={14} className={headerColor} />}
             </div>
-            <span className="pa-float-header-label">{headerLabel}</span>
+            <span className="font-syne text-sm font-bold text-gray-100">{headerLabel}</span>
             {!isDone && (
-              <span className="pa-float-header-badge" style={{ background: headerBg, color: headerColor }}>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ml-1 ${headerBg} ${headerColor}`}>
                 {isChecking ? 'Status check' : 'Analyzing'}
               </span>
             )}
           </div>
-          <div className="pa-float-header-actions">
-            <button onClick={toggleCollapse} className="pa-float-collapse-btn">
-              {collapsed ? <ChevronUp size={18} color={'var(--an-muted)'} /> : <ChevronDown size={18} color={'var(--an-muted)'} />}
+          <div className="flex items-center gap-1">
+            <button onClick={toggleCollapse} className="bg-transparent border-none cursor-pointer text-gray-400 p-1.5 rounded-lg hover:bg-white/10 transition">
+              {collapsed ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
             </button>
-            <button onClick={handleDismiss} disabled={!canClose} className="pa-close-btn" title={canClose ? 'Dismiss' : 'Wait for analysis to finish…'}>
-              <X size={17} color={canClose ? 'var(--an-muted-mid)' : 'var(--an-muted)'} />
+            <button onClick={handleDismiss} disabled={!canClose} className="bg-transparent border-none cursor-pointer text-gray-400 p-1.5 rounded-lg hover:bg-white/10 transition disabled:opacity-40" title={canClose ? 'Dismiss' : 'Wait for analysis to finish…'}>
+              <X size={17} className={canClose ? 'text-gray-300' : 'text-gray-400'} />
             </button>
           </div>
         </div>
         {/* Body */}
         {!collapsed && (
-          <div className={bodyAnim === 'open' ? 'pa-body-open' : bodyAnim === 'close' ? 'pa-body-close' : 'pa-body-open'}>
+          <div className={`px-5 pb-6 pt-4 transition-all duration-300 ${bodyAnim === 'open' ? '' : bodyAnim === 'close' ? '' : ''}`}>
             {/* STATUS CHECKS */}
             {isChecking && (
-              <div className="pa-status-checks">
-                <p className="pa-status-checks-desc">Verifying prerequisites before analysis starts…</p>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-gray-400 mb-1">Verifying prerequisites before analysis starts…</p>
                 {STATUS_CHECKS.map((item, i) => {
                   const done = i < checks;
                   const active = i === checks;
                   return (
-                    <div key={item.key} className={`pa-check-row${done ? ' done' : active ? ' active' : ''}`}> 
+                    <div key={item.key} className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${done ? 'bg-green-900 border-green-300/20' : active ? 'bg-purple-900 border-purple-300/25' : 'bg-white/5 border-white/10'}`}> 
                       {done
-                        ? <CheckCircle2 size={15} color={'var(--an-green)'} style={{ flexShrink: 0 }} />
+                        ? <CheckCircle2 size={15} className="text-green-400 flex-shrink-0" />
                         : active
-                          ? <Loader2 size={15} color={'var(--an-purple)'} style={{ flexShrink: 0, animation: 'pa-spin 1s linear infinite' }} />
-                          : <div style={{ width: 15, height: 15, borderRadius: '50%', border: `1.5px solid rgba(255,255,255,0.15)`, flexShrink: 0 }} />
+                          ? <Loader2 size={15} className="text-purple-400 flex-shrink-0 animate-spin" />
+                          : <div className="w-[15px] h-[15px] rounded-full border border-white/20 flex-shrink-0" />
                       }
-                      <span className={`pa-check-label${done ? ' done' : active ? ' active' : ''}`}>{item.label}</span>
+                      <span className={`text-sm ${done ? 'text-green-300 font-medium' : active ? 'text-purple-200 font-medium' : 'text-gray-400 font-normal'}`}>{item.label}</span>
                     </div>
                   );
                 })}
@@ -222,30 +224,30 @@ function FloatingPanel({ phase, checks, logs, onDismiss }) {
             {/* ANALYSIS LOGS */}
             {(isAnalyzing || isDone) && (
               <div>
-                <div className="pa-log-header">
-                  <Terminal size={12} color={'var(--an-muted)'} />
-                  <span className="pa-log-title">Live log</span>
+                <div className="flex items-center gap-1 mb-2">
+                  <Terminal size={12} className="text-gray-400" />
+                  <span className="text-[11px] font-semibold tracking-wide uppercase text-gray-400">Live log</span>
                 </div>
-                <div className="pa-log-box">
+                <div className="bg-[#0a0a0d] rounded-xl p-3 max-h-48 overflow-y-auto font-mono text-xs leading-7 border border-white/10">
                   {logs.map((line, i) => (
-                    <div key={i} className={`pa-log-line${line.startsWith('✓') ? ' done' : line.startsWith('→') ? ' active' : ''}`}>
-                      <span className="pa-log-line-num">{String(i + 1).padStart(2, '0')}</span>
+                    <div key={i} className={`flex items-center ${line.startsWith('✓') ? 'text-green-300 font-medium' : line.startsWith('→') ? 'text-purple-200 font-medium' : 'text-gray-300 font-normal'}`}>
+                      <span className="text-gray-700 mr-2 select-none w-6 text-right">{String(i + 1).padStart(2, '0')}</span>
                       {line}
                     </div>
                   ))}
                   {isAnalyzing && (
-                    <div className="pa-log-cursor-row">
-                      <span className="pa-log-line-num">--</span>
-                      <span className="pa-log-cursor pa-blink">▋</span>
+                    <div className="flex items-center text-purple-400 mt-1">
+                      <span className="text-gray-700 mr-2 select-none w-6 text-right">--</span>
+                      <span className="animate-blink">▋</span>
                     </div>
                   )}
                   <div ref={logEndRef} />
                 </div>
                 {isDone && (
-                  <div className="pa-log-success">
-                    <CheckCircle2 size={15} color={'var(--an-green)'} />
-                    <span className="pa-log-success-text">
-                      Profile score: <strong className="pa-log-success-check">✓</strong> — results ready below
+                  <div className="mt-3 flex items-center gap-2 bg-green-900 border border-green-300/20 rounded-xl px-3 py-2">
+                    <CheckCircle2 size={15} className="text-green-400" />
+                    <span className="text-green-300 font-medium text-sm">
+                      Profile score: <strong className="text-green-400">✓</strong> — results ready below
                     </span>
                   </div>
                 )}
@@ -254,7 +256,7 @@ function FloatingPanel({ phase, checks, logs, onDismiss }) {
           </div>
         )}
       </div>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');`}</style>
+      {/* Tailwind handles fonts via config; no external CSS needed */}
     </>
   );
 }
@@ -634,99 +636,99 @@ export default function Analysis() {
     const r = 54, circ = 2 * Math.PI * r;
     const offset = circ * (1 - score / 100);
     return (
-      <div className="score-ring">
+      <div className="relative w-[130px] h-[130px] flex-shrink-0">
         <svg width="130" height="130" viewBox="0 0 130 130">
           <circle cx="65" cy="65" r={r} fill="none" stroke={D.surfaceEl} strokeWidth="10" />
           <circle cx="65" cy="65" r={r} fill="none" stroke={D.purple} strokeWidth="10"
             strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
           />
         </svg>
-        <div className="score-ring-center">
-          <span className="score-ring-value">{readNumber(overview.health_score, overview.profile_score, overview.score, 0)}</span>
-          <span className="score-ring-max">/100</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="font-syne text-3xl font-extrabold text-gray-100">{readNumber(overview.health_score, overview.profile_score, overview.score, 0)}</span>
+          <span className="text-xs text-gray-400 font-semibold">/100</span>
         </div>
       </div>
     );
   }
   function BreakdownBar({ label, value, color }) {
     return (
-      <div className="breakdown-bar">
-        <span className="breakdown-bar-label">{label}</span>
-        <div className="breakdown-bar-row">
-          <div className="breakdown-bar-bg">
-            <div className="breakdown-bar-fill" style={{ width: `${value}%`, background: color }} />
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{label}</span>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, background: color }} />
           </div>
-          <span className="breakdown-bar-value">{value}</span>
+          <span className="text-xs font-semibold min-w-[28px] text-right text-gray-100">{value}</span>
         </div>
       </div>
     );
   }
   function Card({ children, style={} }) {
     return (
-      <div className="an-card" style={style}>
+      <div className="rounded-2xl border border-white/10 bg-[#131316] p-5" style={style}>
         {children}
       </div>
     );
   }
   function CardHeader({ icon, iconBg, title }) {
     return (
-      <div className="an-card-header">
-        <div className="an-card-header-icon" style={{ background: iconBg }}>{icon}</div>
-        <span className="an-card-header-title">{title}</span>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: iconBg }}>{icon}</div>
+        <span className="font-syne text-base font-bold text-gray-100">{title}</span>
       </div>
     );
   }
   function StatCard({ label, value, sub }) {
     return (
-      <div className="stat-card">
-        <div className="stat-card-label">{label}</div>
-        <div className="stat-card-value">{value}</div>
-        {sub && <div className="stat-card-sub">{sub}</div>}
+      <div className="rounded-xl p-3 bg-[#1a1a1e] border border-white/10 flex flex-col">
+        <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1">{label}</div>
+        <div className="font-syne text-xl font-bold text-gray-100 leading-tight">{value}</div>
+        {sub && <div className="text-[11px] text-gray-400 mt-1">{sub}</div>}
       </div>
     );
   }
   function InsightItem({ dot, text }) {
     return (
-      <div className="insight-item">
-        <div className="insight-dot" style={{ background: dot }} />
+      <div className="flex items-start gap-2 p-2 rounded-xl bg-[#1a1a1e] border border-white/10 text-sm text-gray-400">
+        <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1" style={{ background: dot }} />
         <span>{text}</span>
       </div>
     );
   }
   function GapItem({ text }) {
     return (
-      <div className="gap-item">
-        <AlertTriangle size={14} className="gap-icon" style={{ color: D.coral }} />
+      <div className="flex items-start gap-2 p-2 rounded-xl bg-[#2a1510] border border-[#ff6b4a]/20 text-sm text-[#ffb3a0] mb-2">
+        <AlertTriangle size={14} className="mt-1 flex-shrink-0" style={{ color: D.coral }} />
         <span>{text}</span>
       </div>
     );
   }
   function SuggestionItem({ num, text }) {
     return (
-      <div className="suggestion-item">
-        <div className="suggestion-num">{num}</div>
+      <div className="flex items-start gap-2 p-2 rounded-xl bg-green-950 border border-green-300/20 text-sm text-green-300 mb-2">
+        <div className="w-5 h-5 rounded-full bg-green-400 text-green-950 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{num}</div>
         <span>{text}</span>
       </div>
     );
   }
   function ProgressBar({ label, value, max, color, unit='' }) {
     return (
-      <div className="progress-bar">
-        <div className="progress-bar-row">
-          <span className="progress-bar-label">{label}</span>
-          <span className="progress-bar-value">{value}{unit}</span>
+      <div className="flex flex-col gap-1 mb-2">
+        <div className="flex justify-between text-xs">
+          <span className="text-gray-400">{label}</span>
+          <span className="font-semibold text-gray-100">{value}{unit}</span>
         </div>
-        <div className="progress-bar-bg">
-          <div className="progress-bar-fill" style={{ width: `${Math.min(100,(value/max)*100)}%`, background: color }} />
+        <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100,(value/max)*100)}%`, background: color }} />
         </div>
       </div>
     );
   }
   function ActivityRow({ label, val }) {
     return (
-      <div className="activity-row">
-        <span className="activity-label">{label}</span>
-        <span className="activity-value">{val}</span>
+      <div className="flex items-center justify-between py-2 border-b border-white/10 text-sm">
+        <span className="text-gray-400">{label}</span>
+        <span className="font-semibold text-gray-100">{val}</span>
       </div>
     );
   }
@@ -756,32 +758,41 @@ export default function Analysis() {
   // Blur main content when panel is active
   const isPanelActive = modalStep === 'checking' || modalStep === 'logs' || modalStep === 'ready';
   return (
-    <div className="analyzer-root" style={isPanelActive ? { filter: 'blur(3px)', transition: 'filter 0.45s ease', pointerEvents: 'none', userSelect: 'none' } : {}}>
+    <div
+      className={
+        `min-h-screen w-full max-w-3xl mx-auto relative bg-[#0d0d0f] font-dmsans px-2 sm:px-4 pb-24 sm:pb-16` +
+        (isPanelActive ? ' blur-[3px] transition-all duration-500 pointer-events-none select-none' : '')
+      }
+    >
       {/* Header */}
-      <div className="analyzer-header">
-        <div className="analyzer-header-title">
-          <span className="analyzer-title-text">Profile Analyzer</span>
-          <span className="analyzer-title-badge">AI Coach</span>
+      <div className="flex items-center justify-between mb-7 flex-wrap gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-syne text-2xl font-extrabold tracking-tight text-[#f0f0f2]">Profile Analyzer</span>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#0f1e30] text-[#4a9eff] tracking-wide">AI Coach</span>
         </div>
-        <button onClick={run} disabled={running} className="analyzer-refresh-btn">
-          {running ? <Loader2 size={14} style={{ animation: 'pa-spin 1s linear infinite' }} /> : <RefreshCw size={14} />}
+        <button
+          onClick={run}
+          disabled={running}
+          className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-full border border-[#232336] bg-[#1a1a1e] text-[#9494a0] transition-opacity duration-200 enabled:hover:opacity-80 disabled:opacity-50"
+        >
+          {running ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           {running ? 'Analyzing...' : 'Refresh'}
         </button>
       </div>
 
       {/* Health Score Hero */}
-      <div className="an-health-hero">
+      <div className="rounded-2xl border border-white/10 bg-[#131316] p-4 sm:p-8 mb-5 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 sm:gap-8 items-center">
         <ScoreRing score={healthScore} />
         <div>
-          <div className="an-health-title">Profile Strength</div>
-          <div className="an-breakdown-grid">
+          <div className="font-syne text-xl font-bold mb-4 text-gray-100">Profile Strength</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {breakdowns.map(b => <BreakdownBar key={b.label} {...b} />)}
           </div>
         </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="an-quick-stats">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
         <StatCard label="Experience" value={experienceSignal} sub="Complexity signals" />
         <StatCard label="Avg Confidence" value={avgConfidence ? `${avgConfidence}%` : '—'} sub="Across projects" />
         <StatCard label="Verified" value={verifiedProjects} sub="of imported" />
@@ -789,41 +800,47 @@ export default function Analysis() {
       </div>
 
       {/* Insights + Gaps */}
-      <div className="an-insights-gaps">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-5 items-start">
         <Card>
           <CardHeader icon={<Info size={15} color={D.purple} />} iconBg={D.purpleDim} title="Key Insights" />
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          <div className="flex flex-col gap-2">
             {keyInsights.length ? keyInsights.map((ins, i) => <InsightItem key={i} dot={D.purple} text={ins} />) : <EmptyState />}
           </div>
         </Card>
         <Card>
           <CardHeader icon={<AlertTriangle size={15} color={D.coral} />} iconBg={D.coralDim} title="Issues & Gaps" />
-          {gaps.length ? gaps.map((g, i) => <GapItem key={i} text={g} />) : <EmptyState />}
+          <div className="flex flex-col gap-2">
+            {gaps.length ? gaps.map((g, i) => <GapItem key={i} text={g} />) : <EmptyState />}
+          </div>
         </Card>
       </div>
 
       {/* Suggestions + Activity */}
-      <div className="an-suggestions-activity">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-5 items-start">
         <Card>
           <CardHeader icon={<Lightbulb size={15} color={D.green} />} iconBg={D.greenDim} title="Actionable Suggestions" />
-          {suggestions.length ? suggestions.map((s, i) => <SuggestionItem key={i} num={i+1} text={s} />) : <EmptyState />}
+          <div className="flex flex-col gap-2">
+            {suggestions.length ? suggestions.map((s, i) => <SuggestionItem key={i} num={i+1} text={s} />) : <EmptyState />}
+          </div>
         </Card>
         <Card>
           <CardHeader icon={<TrendingUp size={15} color={D.green} />} iconBg={D.greenDim} title="Growth & Activity" />
-          {activityRows.length ? activityRows.map((a, i) => <ActivityRow key={i} label={a.label} val={a.val} />) : <EmptyState />}
-          {activityPattern.length > 0 && (
-            <div style={{ marginTop:'1rem' }}>
-              <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.8px', textTransform:'uppercase', color:D.muted, marginBottom:'0.75rem' }}>Activity by Year</div>
-              {activityPattern.map(a => (
-                <ProgressBar key={a.label} label={a.label} value={a.value} max={5} color={D.green} unit=" projects" />
-              ))}
-            </div>
-          )}
+          <div className="flex flex-col gap-2">
+            {activityRows.length ? activityRows.map((a, i) => <ActivityRow key={i} label={a.label} val={a.val} />) : <EmptyState />}
+            {activityPattern.length > 0 && (
+              <div className="mt-4">
+                <div className="text-[11px] font-semibold tracking-wide uppercase text-gray-400 mb-3">Activity by Year</div>
+                {activityPattern.map(a => (
+                  <ProgressBar key={a.label} label={a.label} value={a.value} max={5} color={D.green} unit=" projects" />
+                ))}
+              </div>
+            )}
+          </div>
         </Card>
       </div>
 
       {/* Charts Row */}
-      <div className="an-charts-row">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 mb-5 items-start">
         <Card>
           <CardHeader icon={<Zap size={15} color={D.amber} />} iconBg={D.amberDim} title="Project Complexity" />
           <ResponsiveContainer width="100%" height={140}>
@@ -861,10 +878,10 @@ export default function Analysis() {
               />
             </PieChart>
           </ResponsiveContainer>
-          <div className="an-contrib-legend">
+          <div className="flex flex-wrap gap-2 mt-2">
             {mergedContributionDonut.map((c,i)=>(
-              <span key={i} className="an-contrib-legend-item">
-                <span className="an-contrib-legend-dot" style={{ background: CONTRIB_COLORS[i] }}/>
+              <span key={i} className="flex items-center gap-1 text-xs text-gray-400">
+                <span className="w-2 h-2 rounded bg-gray-400 inline-block" style={{ background: CONTRIB_COLORS[i] }}/>
                 {c.label.replace(' Builder','').replace(' Contributor','')} {c.value}%
               </span>
             ))}
@@ -873,31 +890,33 @@ export default function Analysis() {
       </div>
 
       {/* Strength + Role */}
-      <div className="an-strength-role">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-5 items-start">
         <Card>
           <CardHeader icon={<Zap size={15} color={D.green} />} iconBg={D.greenDim} title="Strength Areas" />
-          {strengthAreas.length ? strengthAreas.map(s=>(
-            <ProgressBar key={s.label} label={s.label} value={s.value} max={10} color={D.purple} unit="/10" />
-          )) : <EmptyState />}
+          <div className="flex flex-col gap-2">
+            {strengthAreas.length ? strengthAreas.map(s=>(
+              <ProgressBar key={s.label} label={s.label} value={s.value} max={10} color={D.purple} unit="/10" />
+            )) : <EmptyState />}
+          </div>
         </Card>
         <Card>
           <CardHeader icon={<Info size={15} color={D.pink} />} iconBg="rgba(232,96,138,0.15)" title="Role Alignment" />
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:11, color:D.muted, marginBottom:4 }}>Claimed role</div>
-            <div style={{ fontSize:14, fontWeight:600, color:D.text }}>{String(roleAlignment.claimed_role || '')}</div>
+          <div className="mb-3">
+            <div className="text-[11px] text-gray-400 mb-1">Claimed role</div>
+            <div className="text-sm font-semibold text-gray-100">{String(roleAlignment.claimed_role || '')}</div>
           </div>
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:11, color:D.muted, marginBottom:6 }}>Alignment score</div>
-            <div style={{ height:10, borderRadius:99, background:'rgba(255,255,255,0.07)', overflow:'hidden' }}>
+          <div className="mb-3">
+            <div className="text-[11px] text-gray-400 mb-1">Alignment score</div>
+            <div className="h-2 rounded-full bg-white/10 overflow-hidden">
               <div style={{ width:`${(Number(roleAlignment.alignment_score || 0)/10)*100}%`, height:'100%', borderRadius:99, background:D.pink }} />
             </div>
-            <div style={{ fontSize:12, fontWeight:600, marginTop:4, color:D.text }}>{Number(roleAlignment.alignment_score || 0)}/10</div>
+            <div className="text-xs font-semibold mt-1 text-gray-100">{Number(roleAlignment.alignment_score || 0)}/10</div>
           </div>
-          <div style={{ display:'flex', gap:8 }}>
+          <div className="flex gap-2">
             {roleAlignmentRoles.length ? roleAlignmentRoles.map(r=>(
-              <div key={String(r.label)} style={{ flex:1, borderRadius:12, background:D.surfaceEl, border:`1px solid ${D.border}`, padding:10, textAlign:'center' }}>
-                <div style={{ fontFamily:'Syne, sans-serif', fontSize:18, fontWeight:700, color:D.text }}>{Number(r.value)}</div>
-                <div style={{ fontSize:11, color:D.muted }}>{String(r.label)}</div>
+              <div key={String(r.label)} className="flex-1 rounded-xl bg-[#1a1a1e] border border-white/10 p-2 text-center">
+                <div className="font-syne text-lg font-bold text-gray-100">{Number(r.value)}</div>
+                <div className="text-[11px] text-gray-400">{String(r.label)}</div>
               </div>
             )) : <EmptyState />}
           </div>
